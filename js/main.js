@@ -903,7 +903,7 @@ const HELPER_TIPS = {
     halfwayPoint: {
         id: "halfwayPoint",
         condition: (state) => state.day === 15,
-        message: "📅 Halfway through summer! You have 15 days left. Current cash: $" + (state => formatMoney(state.cash)),
+        message: "📅 Halfway through summer! You have 15 days left. Keep pushing!",
         once: true
     },
     fiveDaysLeft: {
@@ -2573,6 +2573,12 @@ function nextDay() {
     // Update market supply tracking
     updateMarketSupply();
 
+    // Check if summer season has ended
+    if (checkSeasonEnd()) {
+        updateUI();
+        return;
+    }
+
     // Check game end (isDayEnd = true for full bankruptcy check)
     if (!checkGameEnd(true)) {
         const weatherIcon = CONFIG.weather[gameState.weather].icon;
@@ -2819,8 +2825,10 @@ function resetGame() {
     }
 
     // Initial generation
+    console.log("Generating boats and buyers...");
     gameState.boats = generateBoats();
     gameState.buyers = generateBuyers();
+    console.log("Boats:", gameState.boats.length, "Buyers:", gameState.buyers.length);
 
     // Fisherman welcome greeting
     fishermanSays(getRandomComment(CONFIG.dockworker.morning));
@@ -2829,7 +2837,9 @@ function resetGame() {
         log(`${gameState.boats[0].captain} has arrived with fresh lobsters!`);
     }
 
+    console.log("Calling updateUI...");
     updateUI();
+    console.log("Game initialized!");
 }
 
 // ============================================
@@ -2938,7 +2948,7 @@ function updateUI() {
     document.getElementById("cash").textContent = formatMoney(gameState.cash);
     document.getElementById("debt").textContent = formatMoney(gameState.debt);
     document.getElementById("day").textContent = gameState.day;
-    document.getElementById("season").textContent = gameState.season;
+    // Season is always Summer for the 30-day challenge, no need to display
     document.getElementById("weather-icon").textContent = CONFIG.weather[gameState.weather].icon;
     document.getElementById("weather-name").textContent = CONFIG.weather[gameState.weather].name;
     document.getElementById("tomorrow-weather").textContent = CONFIG.weather[gameState.tomorrowWeather].icon;
@@ -3014,12 +3024,19 @@ function updateUI() {
     // Weather effects
     updateWeatherEffects();
 
+    // Goal progress and countdown
+    updateGoalUI();
+
     // Check achievements
     checkAchievements();
+
+    // Check for helper tips
+    checkHelperTips();
 }
 
 function updateDockUI() {
     const container = document.getElementById("boats-container");
+    console.log("updateDockUI - container:", container, "boats:", gameState.boats.length);
     container.innerHTML = "";
 
     if (gameState.boats.length === 0) {
@@ -3070,6 +3087,7 @@ function updateDockUI() {
 
 function updateBuyersUI() {
     const container = document.getElementById("buyers-list");
+    console.log("updateBuyersUI - container:", container, "buyers:", gameState.buyers.length);
     container.innerHTML = "";
 
     if (gameState.buyers.length === 0) {
@@ -4171,6 +4189,256 @@ function addAmbientSeagulls() {
 }
 
 // ============================================
+// TUTORIAL SYSTEM
+// ============================================
+let currentTutorialStep = 0;
+let tutorialActive = false;
+let shownHelperTips = {};
+
+function startTutorial() {
+    tutorialActive = true;
+    currentTutorialStep = 0;
+    showTutorialStep(0);
+}
+
+function showTutorialStep(stepIndex) {
+    const overlay = document.getElementById("tutorial-overlay");
+    const box = document.getElementById("tutorial-box");
+    const highlight = document.getElementById("tutorial-highlight");
+    const step = TUTORIAL_STEPS[stepIndex];
+
+    if (!step || !overlay) return;
+
+    overlay.style.display = "block";
+
+    // Update content
+    document.getElementById("tutorial-step").textContent = `${stepIndex + 1}/${TUTORIAL_STEPS.length}`;
+    document.getElementById("tutorial-title").textContent = step.title;
+    document.getElementById("tutorial-message").textContent = step.message;
+
+    // Update button text
+    const nextBtn = document.getElementById("tutorial-next");
+    nextBtn.textContent = stepIndex === TUTORIAL_STEPS.length - 1 ? "Start Playing!" : "Next";
+
+    // Position box and highlight
+    box.className = "tutorial-box " + step.position;
+
+    if (step.highlight) {
+        const targetEl = document.querySelector(step.highlight);
+        if (targetEl) {
+            const rect = targetEl.getBoundingClientRect();
+            highlight.style.display = "block";
+            highlight.style.top = (rect.top - 5) + "px";
+            highlight.style.left = (rect.left - 5) + "px";
+            highlight.style.width = (rect.width + 10) + "px";
+            highlight.style.height = (rect.height + 10) + "px";
+        } else {
+            highlight.style.display = "none";
+        }
+    } else {
+        highlight.style.display = "none";
+    }
+}
+
+function nextTutorialStep() {
+    currentTutorialStep++;
+    if (currentTutorialStep >= TUTORIAL_STEPS.length) {
+        endTutorial();
+    } else {
+        showTutorialStep(currentTutorialStep);
+    }
+}
+
+function endTutorial() {
+    tutorialActive = false;
+    const overlay = document.getElementById("tutorial-overlay");
+    if (overlay) {
+        overlay.style.display = "none";
+    }
+    // Save that tutorial was completed
+    localStorage.setItem('lobsterTycoon_tutorialDone', 'true');
+}
+
+function skipTutorial() {
+    endTutorial();
+}
+
+// ============================================
+// HELPER TIPS SYSTEM
+// ============================================
+function checkHelperTips() {
+    if (tutorialActive) return; // Don't show tips during tutorial
+
+    for (const [tipId, tip] of Object.entries(HELPER_TIPS)) {
+        // Skip if already shown (for one-time tips)
+        if (tip.once && shownHelperTips[tipId]) continue;
+
+        // Check condition
+        try {
+            if (tip.condition(gameState)) {
+                showHelperTip(tip);
+                if (tip.once) {
+                    shownHelperTips[tipId] = true;
+                }
+                break; // Only show one tip at a time
+            }
+        } catch (e) {
+            // Condition check failed, skip
+        }
+    }
+}
+
+function showHelperTip(tip) {
+    // Remove existing tip if any
+    const existing = document.querySelector(".helper-tip");
+    if (existing) existing.remove();
+
+    const tipEl = document.createElement("div");
+    tipEl.className = "helper-tip";
+
+    // Handle dynamic message
+    let message = tip.message;
+    if (typeof message === 'function') {
+        message = message(gameState);
+    }
+
+    tipEl.innerHTML = `
+        <button class="helper-tip-close">✕</button>
+        <span>${message}</span>
+    `;
+
+    document.body.appendChild(tipEl);
+
+    // Close button
+    tipEl.querySelector(".helper-tip-close").addEventListener("click", () => {
+        tipEl.remove();
+    });
+
+    // Auto-dismiss after 8 seconds
+    setTimeout(() => {
+        if (tipEl.parentNode) {
+            tipEl.style.opacity = "0";
+            tipEl.style.transition = "opacity 0.3s";
+            setTimeout(() => tipEl.remove(), 300);
+        }
+    }, 8000);
+}
+
+// ============================================
+// GOAL & COUNTDOWN SYSTEM
+// ============================================
+function updateGoalUI() {
+    const daysLeft = Math.max(0, CONFIG.summerLength - gameState.day + 1);
+    const daysLeftEl = document.getElementById("days-left");
+    const countdownEl = document.getElementById("countdown");
+    const totalDaysEl = document.getElementById("total-days");
+    const goalBarEl = document.getElementById("goal-bar");
+    const goalTierEl = document.getElementById("goal-tier");
+
+    if (daysLeftEl) daysLeftEl.textContent = daysLeft;
+    if (totalDaysEl) totalDaysEl.textContent = CONFIG.summerLength;
+
+    // Update countdown urgency
+    if (countdownEl) {
+        if (daysLeft <= 5) {
+            countdownEl.classList.add("urgent");
+        } else {
+            countdownEl.classList.remove("urgent");
+        }
+    }
+
+    // Find current goal tier
+    const tiers = CONFIG.goalTiers;
+    let currentTier = null;
+    let nextTier = tiers[0];
+
+    for (let i = 0; i < tiers.length; i++) {
+        if (gameState.cash >= tiers[i].cash) {
+            currentTier = tiers[i];
+            nextTier = tiers[i + 1] || tiers[i];
+        } else {
+            nextTier = tiers[i];
+            break;
+        }
+    }
+
+    // Update goal bar
+    if (goalBarEl) {
+        const prevCash = currentTier ? currentTier.cash : 0;
+        const targetCash = nextTier.cash;
+        const progress = Math.min(100, ((gameState.cash - prevCash) / (targetCash - prevCash)) * 100);
+        goalBarEl.style.width = Math.max(0, progress) + "%";
+    }
+
+    // Update tier display
+    if (goalTierEl) {
+        const stars = "⭐".repeat(nextTier.stars);
+        goalTierEl.textContent = `${stars} $${formatMoney(nextTier.cash / 1000)}K`;
+    }
+}
+
+function checkSeasonEnd() {
+    if (gameState.day > CONFIG.summerLength) {
+        showSeasonEndScreen();
+        return true;
+    }
+    return false;
+}
+
+function showSeasonEndScreen() {
+    gameState.gameOver = true;
+
+    // Calculate final tier
+    const tiers = CONFIG.goalTiers;
+    let finalTier = null;
+
+    for (const tier of tiers) {
+        if (gameState.cash >= tier.cash) {
+            finalTier = tier;
+        }
+    }
+
+    const modal = document.getElementById("game-over-modal");
+    const title = document.getElementById("game-over-title");
+    const msg = document.getElementById("game-over-message");
+
+    title.textContent = "🏖️ Summer's Over!";
+    title.style.color = "var(--gold)";
+
+    const stars = finalTier ? "⭐".repeat(finalTier.stars) : "☆";
+    const rankTitle = finalTier ? finalTier.title : "Struggling Newcomer";
+    const rankDesc = finalTier ? finalTier.description : "Better luck next summer!";
+
+    // Award prestige based on performance
+    const prestigeEarned = finalTier ? finalTier.stars : 0;
+    if (prestigeEarned > 0) {
+        gameState.prestige = (gameState.prestige || 0) + prestigeEarned;
+        savePrestige();
+    }
+
+    msg.innerHTML = `
+        <div class="season-end-results">
+            <div class="season-end-stars">${stars}</div>
+            <div class="season-end-rank">${rankTitle}</div>
+            <p>${rankDesc}</p>
+            <div class="season-end-stats">
+                <p>Final Cash: $${formatMoney(gameState.cash)}</p>
+                <p>Days Played: ${gameState.day - 1}</p>
+                <p>Lobsters Traded: ${formatMoney(gameState.stats.totalLobstersBought)} lbs</p>
+                <p>Total Earned: $${formatMoney(gameState.stats.totalMoneyEarned)}</p>
+                ${prestigeEarned > 0 ? `<p style="color: var(--gold);">Prestige Earned: +${prestigeEarned} ⭐</p>` : ''}
+            </div>
+        </div>
+    `;
+
+    modal.style.display = "flex";
+
+    if (finalTier && finalTier.stars >= 3) {
+        createCelebrationEffect();
+    }
+}
+
+// ============================================
 // WELCOME SCREEN
 // ============================================
 function startGame() {
@@ -4188,10 +4456,20 @@ function startGame() {
     // Initialize weather effects
     updateWeatherEffects();
 
-    // Show Bob's welcome message
-    setTimeout(() => {
-        fishermanSays("Welcome to the dock! I'm Old Barnacle Bob. Been fishin' these waters for 40 years. Let me show ya the ropes!");
-    }, 800);
+    // Check if tutorial has been done before
+    const tutorialDone = localStorage.getItem('lobsterTycoon_tutorialDone');
+
+    if (!tutorialDone) {
+        // Start tutorial after a short delay
+        setTimeout(() => {
+            startTutorial();
+        }, 600);
+    } else {
+        // Show Bob's welcome message for returning players
+        setTimeout(() => {
+            fishermanSays("Welcome back! You've got 30 days of summer to make your fortune. Good luck!");
+        }, 800);
+    }
 }
 
 // ============================================
@@ -4200,6 +4478,10 @@ function startGame() {
 function initEventHandlers() {
     // Welcome screen
     document.getElementById("start-game-btn").addEventListener("click", startGame);
+
+    // Tutorial buttons
+    document.getElementById("tutorial-next").addEventListener("click", nextTutorialStep);
+    document.getElementById("tutorial-skip").addEventListener("click", skipTutorial);
 
     document.getElementById("next-day-btn").addEventListener("click", nextDay);
     document.getElementById("restart-btn").addEventListener("click", resetGame);

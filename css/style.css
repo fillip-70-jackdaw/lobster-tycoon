@@ -3071,6 +3071,264 @@ body::before {
 }
 
 /* ========================================
+   TUTORIAL SYSTEM
+   ======================================== */
+.tutorial-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+}
+
+.tutorial-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.tutorial-box {
+    position: absolute;
+    background: linear-gradient(135deg, var(--ocean-dark) 0%, var(--ocean-deepest) 100%);
+    border: 3px solid var(--gold);
+    border-radius: 12px;
+    padding: 20px 25px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.3), 0 10px 40px rgba(0, 0, 0, 0.5);
+    animation: tutorialAppear 0.3s ease;
+    z-index: 10001;
+}
+
+.tutorial-box.center {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.tutorial-box.right {
+    top: 50%;
+    left: calc(50% + 100px);
+    transform: translateY(-50%);
+}
+
+.tutorial-box.left {
+    top: 50%;
+    right: calc(50% + 100px);
+    left: auto;
+    transform: translateY(-50%);
+}
+
+.tutorial-box.top {
+    bottom: calc(50% + 50px);
+    left: 50%;
+    top: auto;
+    transform: translateX(-50%);
+}
+
+.tutorial-box.bottom {
+    top: calc(50% + 50px);
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+@keyframes tutorialAppear {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+.tutorial-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.tutorial-step {
+    background: var(--gold);
+    color: var(--ocean-darkest);
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: 0.75em;
+    font-weight: bold;
+}
+
+.tutorial-header h3 {
+    color: var(--gold);
+    margin: 0;
+    font-size: 1.1em;
+}
+
+.tutorial-message {
+    color: var(--ocean-foam);
+    line-height: 1.6;
+    margin-bottom: 15px;
+    white-space: pre-line;
+}
+
+.tutorial-buttons {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.tutorial-highlight {
+    position: absolute;
+    border: 3px solid var(--gold);
+    border-radius: 8px;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7), 0 0 20px var(--gold);
+    pointer-events: none;
+    transition: all 0.3s ease;
+    z-index: 10000;
+}
+
+/* ========================================
+   GOAL PROGRESS BAR
+   ======================================== */
+.goal-row {
+    justify-content: center;
+    gap: 10px;
+}
+
+.goal-label {
+    color: var(--dock-wood);
+    font-size: 0.85em;
+}
+
+.goal-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    max-width: 250px;
+}
+
+.goal-bar-container {
+    flex: 1;
+    height: 12px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--ocean-foam);
+}
+
+.goal-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--success) 0%, var(--gold) 100%);
+    border-radius: 6px;
+    width: 0%;
+    transition: width 0.5s ease;
+}
+
+.goal-tier {
+    color: var(--gold);
+    font-size: 0.8em;
+    white-space: nowrap;
+}
+
+.countdown {
+    color: var(--warning);
+    font-size: 0.9em;
+}
+
+.countdown.urgent {
+    color: var(--danger);
+    animation: urgentPulse 1s ease-in-out infinite;
+}
+
+@keyframes urgentPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+/* Helper tip toast (distinct from regular toasts) */
+.helper-tip {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, var(--ocean-deepest) 100%);
+    border: 2px solid var(--gold);
+    border-radius: 10px;
+    padding: 12px 20px;
+    max-width: 400px;
+    color: var(--ocean-foam);
+    z-index: 8000;
+    animation: tipSlideUp 0.3s ease;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes tipSlideUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+.helper-tip-close {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: var(--ocean-foam);
+    cursor: pointer;
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+.helper-tip-close:hover {
+    opacity: 1;
+}
+
+/* Season End Modal */
+.season-end-results {
+    text-align: center;
+}
+
+.season-end-title {
+    font-size: 1.5em;
+    color: var(--gold);
+    margin-bottom: 15px;
+}
+
+.season-end-stars {
+    font-size: 2em;
+    margin: 15px 0;
+}
+
+.season-end-stats {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+
+.season-end-stats p {
+    margin: 8px 0;
+}
+
+.season-end-rank {
+    color: var(--gold);
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+/* ========================================
    RESPONSIVE
    ======================================== */
 @media (max-width: 500px) {
