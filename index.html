@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maine Lobster Dealer Tycoon</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Welcome Screen -->
+    <div id="welcome-screen" class="welcome-screen">
+        <div class="welcome-content">
+            <div class="welcome-scene">
+                <div class="welcome-sky"></div>
+                <div class="welcome-ocean">
+                    <div class="welcome-wave wave1"></div>
+                    <div class="welcome-wave wave2"></div>
+                    <div class="welcome-wave wave3"></div>
+                </div>
+                <div class="welcome-dock"></div>
+                <div class="welcome-shack">
+                    <div class="shack-roof"></div>
+                    <div class="shack-body">
+                        <div class="shack-sign">LOBSTER</div>
+                        <div class="shack-door"></div>
+                    </div>
+                </div>
+                <div class="welcome-truck">
+                    <div class="truck-cab"></div>
+                    <div class="truck-bed"></div>
+                    <div class="truck-wheel wheel1"></div>
+                    <div class="truck-wheel wheel2"></div>
+                </div>
+                <div class="welcome-lobster">🦞</div>
+                <div class="welcome-lobster lobster2">🦞</div>
+                <div class="welcome-scale">⚖️</div>
+                <div class="welcome-bob">🧔</div>
+            </div>
+            <h1 class="welcome-title">Maine Lobster<br>Dealer Tycoon</h1>
+            <p class="welcome-subtitle">Build your lobster empire on the Maine coast!</p>
+            <div class="welcome-tips">
+                <p>🦞 Buy low from fishermen in remote villages</p>
+                <p>💰 Sell high to tourists in wealthy towns</p>
+                <p>🚚 Upgrade your equipment to expand</p>
+                <p>📈 Watch the market and weather!</p>
+            </div>
+            <button id="start-game-btn" class="btn btn-large welcome-btn">Start Game</button>
+            <p class="welcome-credit">A tycoon game by Claude</p>
+        </div>
+    </div>
+
+    <!-- Tutorial Overlay -->
+    <div id="tutorial-overlay" class="tutorial-overlay" style="display: none;">
+        <div class="tutorial-backdrop"></div>
+        <div class="tutorial-box" id="tutorial-box">
+            <div class="tutorial-header">
+                <span class="tutorial-step" id="tutorial-step">1/8</span>
+                <h3 id="tutorial-title">Welcome!</h3>
+            </div>
+            <p class="tutorial-message" id="tutorial-message">Tutorial message here</p>
+            <div class="tutorial-buttons">
+                <button id="tutorial-skip" class="btn btn-small">Skip Tutorial</button>
+                <button id="tutorial-next" class="btn btn-primary">Next</button>
+            </div>
+        </div>
+        <div class="tutorial-highlight" id="tutorial-highlight"></div>
+    </div>
+
+    <div class="game-container">
+        <!-- Header -->
+        <header class="game-header">
+            <h1>Maine Lobster Dealer Tycoon</h1>
+            <div class="status-bar">
+                <div class="status-row">
+                    <span class="cash">Cash: $<span id="cash">5,000</span></span>
+                    <span class="debt">Debt: $<span id="debt">0</span></span>
+                    <span class="date">Day <span id="day">1</span>/<span id="total-days">30</span></span>
+                    <span class="countdown" id="countdown">🏖️ <span id="days-left">30</span> days left</span>
+                </div>
+                <div class="status-row goal-row">
+                    <span class="goal-label">Goal Progress:</span>
+                    <span class="goal-progress">
+                        <span class="goal-bar-container">
+                            <span class="goal-bar" id="goal-bar"></span>
+                        </span>
+                        <span class="goal-tier" id="goal-tier">⭐ $10K</span>
+                    </span>
+                </div>
+                <div class="status-row">
+                    <span class="weather">
+                        <span id="weather-icon">☀️</span> <span id="weather-name">Sunny</span>
+                        <span class="forecast">Tomorrow: <span id="tomorrow-weather">☀️</span></span>
+                    </span>
+                    <span id="market-trend" class="trend-stable">➡️ Stable</span>
+                </div>
+                <div class="status-row daily-tracker">
+                    <span class="daily-stat spent">Spent: $<span id="daily-spent">0</span></span>
+                    <span class="daily-stat earned">Earned: $<span id="daily-earned">0</span></span>
+                    <span class="daily-stat" id="daily-profit">Net: $0</span>
+                </div>
+                <div class="status-row location-row">
+                    <span class="location-info">
+                        <span id="location-emoji">🎣</span>
+                        <span id="location-name">Stonington</span>
+                        <span class="location-traits" id="location-traits">Fishing Hub</span>
+                    </span>
+                    <span class="price-mods">
+                        <span class="buy-mod" title="Buy price modifier">Buy: <span id="buy-mod">-20%</span></span>
+                        <span class="sell-mod" title="Sell price modifier">Sell: <span id="sell-mod">-15%</span></span>
+                    </span>
+                </div>
+            </div>
+            <div class="header-buttons">
+                <button id="map-btn" class="btn btn-small">Map</button>
+                <button id="shop-btn" class="btn btn-small">Shop</button>
+                <button id="bank-btn" class="btn btn-small">Bank</button>
+                <button id="stats-btn" class="btn btn-small">Stats</button>
+            </div>
+        </header>
+
+        <!-- Animated Scene Overlay -->
+        <div class="scene-overlay" id="scene-overlay">
+            <!-- Weather effects container -->
+            <div class="weather-effects" id="weather-effects"></div>
+            <!-- Boat arrival animation -->
+            <div class="boat-arrival" id="boat-arrival">
+                <div class="arrival-boat">🚤</div>
+                <div class="arrival-wake"></div>
+            </div>
+            <!-- Truck travel animation -->
+            <div class="truck-travel" id="truck-travel">
+                <div class="travel-truck">🚚</div>
+                <div class="travel-road"></div>
+            </div>
+        </div>
+
+        <!-- Main Game Area - Horizontal Layout -->
+        <main class="game-main">
+            <!-- Left Column: Dock -->
+            <div class="column column-left">
+                <section class="panel dock-panel">
+                    <h2>The Dock</h2>
+                    <div id="boats-container">
+                        <p class="waiting">Waiting for boats...</p>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Center Column: Tank + Controls -->
+            <div class="column column-center">
+                <section class="panel tank-panel">
+                    <h2>Your Tanks</h2>
+                    <div class="tank-display">
+                        <div class="tank-visual">
+                            <div class="tank-water">
+                                <div class="tank-fill" id="tank-fill"></div>
+                            </div>
+                            <div class="lobster-icons" id="lobster-icons"></div>
+                        </div>
+                        <div class="tank-stats">
+                            <div class="inventory-breakdown" id="inventory-breakdown" style="display: none;">
+                                <span class="grade-a">A: <span id="inventory-a">0</span></span>
+                                <span class="grade-b">B: <span id="inventory-b">0</span></span>
+                                <span class="grade-c">C: <span id="inventory-c">0</span></span>
+                            </div>
+                            <p class="total">Total: <span id="inventory-total">0</span> / <span id="capacity">500</span> lbs</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Action Bar in Center -->
+                <div class="action-bar">
+                    <button id="next-day-btn" class="btn btn-large">Next Day</button>
+                </div>
+
+                <!-- Leaderboard Panel (includes rivals) -->
+                <section class="panel leaderboard-panel">
+                    <h2>Leaderboard</h2>
+                    <div id="leaderboard-list">
+                        <p class="waiting">Loading...</p>
+                    </div>
+                    <div class="prestige-display" id="prestige-display">
+                        <span class="prestige-title" id="prestige-title">Newcomer</span>
+                        <span class="prestige-stars">⭐ <span id="prestige-points">0</span></span>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Column: Buyers + Contracts -->
+            <div class="column column-right">
+                <section class="panel buyers-panel">
+                    <h2>Buyers</h2>
+                    <div id="buyers-list">
+                        <p class="waiting">No buyers today...</p>
+                    </div>
+                </section>
+
+                <section class="panel contracts-panel">
+                    <h2>Contracts</h2>
+                    <div class="contracts-section">
+                        <h3>Active Contracts</h3>
+                        <div id="active-contracts">
+                            <p class="waiting">No active contracts</p>
+                        </div>
+                    </div>
+                    <div class="contracts-section">
+                        <h3>Available</h3>
+                        <div id="available-contracts">
+                            <p class="waiting">Need Delivery Van</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Game Log - Full Width Bottom -->
+        <section class="panel log-panel">
+            <h2>Log</h2>
+            <div id="game-log">
+                <p>Welcome to Maine! Build your lobster empire!</p>
+            </div>
+        </section>
+
+        <!-- Shop Modal -->
+        <div id="shop-modal" class="modal" style="display: none;">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h2>Equipment Shop</h2>
+                    <button id="close-shop-btn" class="btn btn-small">X</button>
+                </div>
+                <div id="equipment-list" class="equipment-list">
+                    <!-- Equipment items populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Bank Modal -->
+        <div id="bank-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>First Maine Bank</h2>
+                    <button id="close-bank-btn" class="btn btn-small">X</button>
+                </div>
+                <div class="bank-info">
+                    <p>Cash: $<span id="bank-cash">0</span></p>
+                    <p>Current Debt: $<span id="bank-debt">0</span></p>
+                    <p>Max Loan: $<span id="max-loan">0</span></p>
+                    <p>Interest: <span id="interest-rate">5</span>% per week</p>
+                </div>
+                <div class="bank-actions">
+                    <div class="bank-row">
+                        <input type="number" id="loan-amount" placeholder="Amount" value="5000">
+                        <button id="loan-btn" class="btn btn-primary">Take Loan</button>
+                    </div>
+                    <div class="bank-row">
+                        <input type="number" id="pay-amount" placeholder="Amount">
+                        <button id="pay-btn" class="btn btn-primary">Pay Debt</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Modal -->
+        <div id="stats-modal" class="modal" style="display: none;">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h2>Business Statistics</h2>
+                    <button id="close-stats-btn" class="btn btn-small">X</button>
+                </div>
+                <div class="stats-content">
+                    <div class="stats-section">
+                        <h3>Trading</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-label">Lobsters Bought</span>
+                                <span class="stat-value" id="stat-bought">0 lbs</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Lobsters Sold</span>
+                                <span class="stat-value" id="stat-sold">0 lbs</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Money Earned</span>
+                                <span class="stat-value" id="stat-earned">$0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Money Spent</span>
+                                <span class="stat-value" id="stat-spent">$0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Total Profit</span>
+                                <span class="stat-value positive" id="stat-profit">$0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stats-section">
+                        <h3>Records</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-label">Best Day Profit</span>
+                                <span class="stat-value positive" id="stat-best-day">$0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Worst Day Loss</span>
+                                <span class="stat-value negative" id="stat-worst-day">$0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Contracts Completed</span>
+                                <span class="stat-value" id="stat-contracts-done">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Contracts Failed</span>
+                                <span class="stat-value" id="stat-contracts-fail">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stats-section">
+                        <h3>Relationships</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-label">Favorite Captain</span>
+                                <span class="stat-value" id="stat-fav-captain">None yet</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Best Buyer</span>
+                                <span class="stat-value" id="stat-best-buyer">None yet</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stats-section">
+                        <h3>Competition</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-label">Rivals Outbid</span>
+                                <span class="stat-value positive" id="stat-rivals-beat">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Lost to Rivals</span>
+                                <span class="stat-value negative" id="stat-rivals-lost">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stats-section retirement-section" id="retirement-section" style="display: none;">
+                        <h3>Retirement Options</h3>
+                        <p class="retirement-intro">Cash out and start a new game with prestige bonuses!</p>
+                        <div class="retirement-options" id="retirement-options">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map Modal -->
+        <div id="map-modal" class="modal" style="display: none;">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h2>Maine Coast Map</h2>
+                    <button id="close-map-btn" class="btn btn-small">X</button>
+                </div>
+                <div class="map-container">
+                    <div class="map-visual" id="map-visual">
+                        <!-- Map background and town markers rendered by JS -->
+                        <div class="map-coastline"></div>
+                    </div>
+                    <div class="map-legend">
+                        <h3>Towns</h3>
+                        <div id="town-list" class="town-list">
+                            <!-- Town list populated by JS -->
+                        </div>
+                        <div class="travel-info" id="travel-info">
+                            <p class="travel-requirement">Requires: Delivery Van</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Modal -->
+        <div id="game-over-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h2 id="game-over-title">Game Over</h2>
+                <p id="game-over-message"></p>
+                <button id="restart-btn" class="btn btn-primary">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
