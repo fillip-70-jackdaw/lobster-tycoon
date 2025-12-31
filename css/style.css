@@ -38,6 +38,16 @@
     --white: #ffffff;
     --black: #0a0a0a;
     --shadow: rgba(0, 0, 0, 0.5);
+
+    /* Dawn/Atmospheric */
+    --dawn-sky-top: #1a0a20;
+    --dawn-sky-mid: #4a2040;
+    --dawn-horizon: #ff6b4a;
+    --dawn-glow: #ffb347;
+    --dawn-water: #0a1628;
+    --silhouette: #0a0a0a;
+    --ceremony-glow: rgba(255, 215, 0, 0.6);
+    --ceremony-pulse: rgba(255, 215, 0, 0.3);
 }
 
 * {
@@ -86,342 +96,290 @@ body::before {
 }
 
 /* ========================================
-   WELCOME SCREEN
+   WELCOME SCREEN - Atmospheric Dawn
    ======================================== */
 .welcome-screen {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(180deg,
-        #ff7e5f 0%,
-        #feb47b 30%,
-        #87ceeb 60%,
-        var(--ocean-medium) 100%
-    );
+    inset: 0;
     z-index: 2000;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    justify-content: flex-end;
     align-items: center;
-    padding: 20px;
+    padding: 40px 20px;
+    overflow: hidden;
 }
 
 .welcome-screen.hidden {
     display: none;
 }
 
+/* Atmospheric Hero Background */
+.welcome-hero {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+/* Dawn Sky Gradient */
+.hero-sky {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60%;
+    background: linear-gradient(180deg,
+        var(--dawn-sky-top) 0%,
+        var(--dawn-sky-mid) 35%,
+        var(--dawn-horizon) 70%,
+        var(--dawn-glow) 100%
+    );
+}
+
+/* Rising Sun */
+.hero-sun {
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 80px;
+    background: radial-gradient(circle,
+        #fff8e7 0%,
+        var(--dawn-glow) 30%,
+        var(--dawn-horizon) 60%,
+        transparent 70%
+    );
+    border-radius: 50%;
+    animation: sunRise 8s ease-out infinite;
+    filter: blur(2px);
+}
+
+@keyframes sunRise {
+    0%, 100% { transform: translateX(-50%) translateY(0); opacity: 0.9; }
+    50% { transform: translateX(-50%) translateY(-10px); opacity: 1; }
+}
+
+/* Dawn Ocean */
+.hero-ocean {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 45%;
+    background: linear-gradient(180deg,
+        var(--dawn-water) 0%,
+        var(--ocean-deep) 50%,
+        var(--ocean-dark) 100%
+    );
+}
+
+/* Subtle wave reflection */
+.hero-ocean::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: linear-gradient(180deg,
+        rgba(255, 180, 100, 0.3) 0%,
+        rgba(255, 180, 100, 0.1) 50%,
+        transparent 100%
+    );
+    animation: gentleWave 6s ease-in-out infinite;
+}
+
+@keyframes gentleWave {
+    0%, 100% { transform: scaleY(1); opacity: 0.5; }
+    50% { transform: scaleY(1.1); opacity: 0.7; }
+}
+
+/* Dock Silhouette */
+.hero-dock-silhouette {
+    position: absolute;
+    bottom: 44%;
+    left: 15%;
+    width: 70%;
+    height: 12px;
+    background: var(--silhouette);
+}
+
+/* Dock posts */
+.hero-dock-silhouette::before {
+    content: "";
+    position: absolute;
+    bottom: -20px;
+    left: 10%;
+    width: 8px;
+    height: 20px;
+    background: var(--silhouette);
+    box-shadow:
+        60px 0 0 var(--silhouette),
+        120px 0 0 var(--silhouette),
+        180px 0 0 var(--silhouette),
+        240px 0 0 var(--silhouette);
+}
+
+/* Lighthouse Silhouette */
+.hero-lighthouse {
+    position: absolute;
+    bottom: 44%;
+    right: 12%;
+    width: 25px;
+    height: 90px;
+    background: var(--silhouette);
+    clip-path: polygon(20% 100%, 80% 100%, 65% 25%, 70% 20%, 70% 10%, 30% 10%, 30% 20%, 35% 25%);
+}
+
+/* Lighthouse glow */
+.hero-lighthouse::before {
+    content: "";
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 12px;
+    height: 12px;
+    background: var(--dawn-glow);
+    border-radius: 50%;
+    box-shadow:
+        0 0 20px var(--dawn-glow),
+        0 0 40px var(--warning),
+        0 0 60px var(--warning);
+    animation: lighthouseGlow 4s ease-in-out infinite;
+}
+
+@keyframes lighthouseGlow {
+    0%, 100% { opacity: 0.4; transform: translateX(-50%) scale(0.9); }
+    50% { opacity: 1; transform: translateX(-50%) scale(1.1); }
+}
+
+/* Lobster Silhouette - Front and Center */
+.hero-lobster-silhouette {
+    position: absolute;
+    bottom: 48%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 100px;
+    color: var(--silhouette);
+    filter: drop-shadow(0 0 40px rgba(255, 107, 107, 0.4));
+    animation: lobsterFloat 5s ease-in-out infinite;
+}
+
+@keyframes lobsterFloat {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-8px); }
+}
+
+/* Welcome Content - Positioned over hero */
 .welcome-content {
+    position: relative;
+    z-index: 10;
     text-align: center;
     max-width: 600px;
+    padding-bottom: 40px;
 }
 
-.welcome-scene {
-    position: relative;
-    height: 200px;
-    margin-bottom: 20px;
-    border-radius: 12px;
-    overflow: hidden;
-    border: 5px solid var(--black);
-    background: linear-gradient(180deg,
-        #87ceeb 0%,
-        #87ceeb 50%,
-        var(--ocean-light) 50%,
-        var(--ocean-medium) 100%
-    );
-}
-
-.welcome-sky {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 50%;
-}
-
-/* Add sun */
-.welcome-sky::before {
-    content: "☀️";
-    position: absolute;
-    top: 20px;
-    right: 40px;
-    font-size: 40px;
-    animation: sunPulse 3s ease-in-out infinite;
-}
-
-/* Add clouds */
-.welcome-sky::after {
-    content: "☁️  ☁️";
-    position: absolute;
-    top: 30px;
-    left: 30px;
-    font-size: 24px;
-    animation: cloudDrift 20s linear infinite;
-}
-
-@keyframes sunPulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-}
-
-@keyframes cloudDrift {
-    0% { transform: translateX(-20px); }
-    50% { transform: translateX(20px); }
-    100% { transform: translateX(-20px); }
-}
-
-.welcome-ocean {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 50%;
-    overflow: hidden;
-}
-
-.welcome-wave {
-    position: absolute;
-    width: 200%;
-    height: 30px;
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120'%3E%3Cpath fill='%234a9cc7' d='M0,60 C200,100 400,20 600,60 C800,100 1000,20 1200,60 L1200,120 L0,120 Z'/%3E%3C/svg%3E") repeat-x;
-    background-size: 600px 30px;
-    animation: waveMove 4s linear infinite;
-}
-
-.wave1 { top: 0; opacity: 0.7; animation-duration: 4s; }
-.wave2 { top: 10px; opacity: 0.5; animation-duration: 5s; animation-delay: -1s; }
-.wave3 { top: 20px; opacity: 0.3; animation-duration: 6s; animation-delay: -2s; }
-
-@keyframes waveMove {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-600px); }
-}
-
-.welcome-dock {
-    position: absolute;
-    bottom: 20px;
-    left: 30%;
-    width: 45%;
-    height: 25px;
-    background: linear-gradient(90deg,
-        var(--wood-dark) 0%,
-        var(--wood-medium) 50%,
-        var(--wood-dark) 100%
-    );
-    border: 3px solid var(--black);
-    border-radius: 3px;
-}
-
-/* Wood plank pattern */
-.welcome-dock::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: repeating-linear-gradient(
-        90deg,
-        transparent 0px,
-        transparent 25px,
-        rgba(0,0,0,0.2) 25px,
-        rgba(0,0,0,0.2) 27px
-    );
-}
-
-.welcome-shack {
-    position: absolute;
-    bottom: 45px;
-    left: 10%;
-    width: 80px;
-}
-
-.shack-roof {
-    width: 90px;
-    height: 35px;
-    background: linear-gradient(180deg, #8B0000 0%, #5c0000 100%);
-    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-    margin-left: -5px;
-    border: 2px solid var(--black);
-}
-
-.shack-body {
-    width: 80px;
-    height: 45px;
-    background: linear-gradient(180deg, var(--wood-medium) 0%, var(--wood-dark) 100%);
-    border: 3px solid var(--black);
-    position: relative;
-}
-
-.shack-sign {
-    position: absolute;
-    top: 5px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 6px;
-    color: var(--gold);
-    background: var(--lobster-dark);
-    padding: 2px 5px;
-    border-radius: 2px;
-    font-family: 'Press Start 2P', cursive;
-}
-
-.shack-door {
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 20px;
-    height: 30px;
-    background: var(--wood-dark);
-    border: 2px solid var(--black);
-    border-bottom: none;
-}
-
-.welcome-truck {
-    position: absolute;
-    bottom: 45px;
-    right: 15%;
-    width: 70px;
-    height: 35px;
-}
-
-.truck-cab {
-    position: absolute;
-    right: 0;
-    bottom: 10px;
-    width: 25px;
-    height: 25px;
-    background: linear-gradient(180deg, #4169E1 0%, #2c4a9e 100%);
-    border: 2px solid var(--black);
-    border-radius: 3px 3px 0 0;
-}
-
-.truck-cab::before {
-    content: "";
-    position: absolute;
-    top: 5px;
-    left: 3px;
-    width: 15px;
-    height: 10px;
-    background: rgba(135, 206, 250, 0.7);
-    border: 1px solid var(--black);
-}
-
-.truck-bed {
-    position: absolute;
-    left: 0;
-    bottom: 10px;
-    width: 45px;
-    height: 20px;
-    background: linear-gradient(180deg, #4169E1 0%, #2c4a9e 100%);
-    border: 2px solid var(--black);
-}
-
-.truck-wheel {
-    position: absolute;
-    bottom: 0;
-    width: 14px;
-    height: 14px;
-    background: #333;
-    border: 2px solid var(--black);
-    border-radius: 50%;
-}
-
-.wheel1 { left: 8px; }
-.wheel2 { right: 5px; }
-
-.welcome-lobster {
-    position: absolute;
-    bottom: 70px;
-    left: 45%;
-    font-size: 36px;
-    animation: lobsterWalk 3s ease-in-out infinite;
-    filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.5));
-}
-
-.welcome-lobster.lobster2 {
-    left: 55%;
-    font-size: 28px;
-    animation-delay: -1.5s;
-    bottom: 72px;
-}
-
-@keyframes lobsterWalk {
-    0%, 100% { transform: translateX(0) scaleX(1); }
-    25% { transform: translateX(10px) scaleX(1); }
-    50% { transform: translateX(10px) scaleX(-1); }
-    75% { transform: translateX(0) scaleX(-1); }
-}
-
-.welcome-scale {
-    position: absolute;
-    bottom: 48px;
-    left: 38%;
-    font-size: 24px;
-    filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.5));
-}
-
-.welcome-bob {
-    position: absolute;
-    bottom: 48px;
-    left: 22%;
-    font-size: 32px;
-    animation: bobWave 2s ease-in-out infinite;
-    filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.5));
-}
-
-@keyframes bobWave {
-    0%, 100% { transform: rotate(-5deg); }
-    50% { transform: rotate(5deg); }
-}
-
+/* Title - Bigger, Dominant */
 .welcome-title {
-    font-size: 24px;
-    color: var(--lobster-red);
+    font-size: 28px;
+    color: var(--cream);
     text-shadow:
-        4px 4px 0px var(--black),
-        -2px -2px 0px var(--gold);
-    margin-bottom: 10px;
-    letter-spacing: 2px;
-    line-height: 1.4;
-}
-
-.welcome-subtitle {
-    font-size: 10px;
-    color: var(--cream);
-    text-shadow: 2px 2px 0px var(--black);
+        4px 4px 0 var(--black),
+        0 0 40px rgba(255, 107, 107, 0.5),
+        0 0 80px rgba(255, 107, 107, 0.3);
     margin-bottom: 20px;
+    letter-spacing: 2px;
+    line-height: 1.3;
 }
 
-.welcome-tips {
-    background: rgba(0,0,0,0.4);
-    padding: 16px 20px;
+@media (min-width: 768px) {
+    .welcome-title {
+        font-size: 42px;
+        letter-spacing: 3px;
+    }
+}
+
+/* Single Killer Tagline */
+.welcome-tagline {
+    font-size: 11px;
+    color: var(--ocean-foam);
+    text-shadow: 2px 2px 0 var(--black);
+    margin-bottom: 40px;
+    letter-spacing: 1px;
+    opacity: 0.9;
+}
+
+@media (min-width: 768px) {
+    .welcome-tagline {
+        font-size: 13px;
+    }
+}
+
+/* Ceremonial Button */
+.btn-ceremony {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 12px;
+    padding: 20px 40px;
+    background: linear-gradient(180deg, var(--gold) 0%, var(--gold-dark) 100%);
+    color: var(--black);
+    border: 5px solid var(--black);
     border-radius: 8px;
-    margin-bottom: 24px;
-    text-align: left;
+    cursor: pointer;
+    position: relative;
+    box-shadow:
+        0 0 0 3px var(--gold),
+        0 8px 0 var(--wood-dark),
+        0 0 60px var(--ceremony-glow);
+    animation: ceremonialPulse 2.5s ease-in-out infinite;
+    transition: transform 0.1s ease;
 }
 
-.welcome-tips p {
-    font-size: 8px;
-    color: var(--cream);
-    margin: 8px 0;
-    line-height: 1.6;
+.btn-ceremony:hover {
+    transform: translateY(-2px);
 }
 
-.welcome-btn {
-    animation: btnPulse 2s ease-in-out infinite;
+.btn-ceremony:active {
+    transform: translateY(4px);
+    box-shadow:
+        0 0 0 3px var(--gold),
+        0 4px 0 var(--wood-dark),
+        0 0 40px var(--ceremony-glow);
 }
 
-@keyframes btnPulse {
-    0%, 100% { box-shadow: 0 4px 0 #8a6b00, 0 6px 12px var(--shadow); }
-    50% { box-shadow: 0 4px 0 #8a6b00, 0 6px 12px var(--shadow), 0 0 30px rgba(255, 215, 0, 0.5); }
+@keyframes ceremonialPulse {
+    0%, 100% {
+        box-shadow:
+            0 0 0 3px var(--gold),
+            0 8px 0 var(--wood-dark),
+            0 0 60px var(--ceremony-glow);
+    }
+    50% {
+        box-shadow:
+            0 0 0 4px var(--gold),
+            0 8px 0 var(--wood-dark),
+            0 0 100px var(--ceremony-glow),
+            0 0 140px var(--ceremony-pulse);
+    }
 }
 
-.welcome-credit {
-    font-size: 7px;
-    color: rgba(255,255,255,0.5);
-    margin-top: 16px;
+@media (min-width: 768px) {
+    .btn-ceremony {
+        font-size: 14px;
+        padding: 24px 56px;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .hero-sun,
+    .hero-lobster-silhouette,
+    .hero-lighthouse::before,
+    .hero-ocean::before,
+    .btn-ceremony {
+        animation: none;
+    }
 }
 
 /* Game Container */
@@ -631,6 +589,330 @@ body::before {
 }
 
 /* ========================================
+   MOBILE DAY CARD
+   ======================================== */
+/* Default: Show Day Card (mobile), hide full header */
+.day-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.header-desktop {
+    display: none;
+}
+
+.day-card-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.day-card-day {
+    font-size: 14px;
+    color: var(--cream);
+    text-shadow: 2px 2px 0 var(--black);
+}
+
+.day-card-location {
+    font-size: 11px;
+    color: var(--gold);
+    text-shadow: 1px 1px 0 var(--black);
+}
+
+.day-card-metrics {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.day-card-cash {
+    font-size: 16px;
+    color: var(--success-glow);
+    text-shadow: 0 0 10px var(--success), 2px 2px 0 var(--black);
+}
+
+.day-card-signal {
+    font-size: 9px;
+    color: var(--ocean-foam);
+    background: rgba(0, 0, 0, 0.3);
+    padding: 4px 10px;
+    border-radius: 4px;
+}
+
+.day-card-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.btn-tiny {
+    font-size: 14px;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid var(--ocean-light);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.1s ease;
+}
+
+.btn-tiny:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--gold);
+}
+
+/* Desktop: Show full header, hide Day Card */
+@media (min-width: 1024px) {
+    .day-card {
+        display: none;
+    }
+
+    .header-desktop {
+        display: block;
+    }
+}
+
+/* ========================================
+   MOBILE STICKY ACTION BAR
+   ======================================== */
+.sticky-action {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 12px 16px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0));
+    background: linear-gradient(180deg, transparent 0%, var(--ocean-deepest) 30%);
+    z-index: 500;
+}
+
+.btn-sticky {
+    width: 100%;
+    font-size: 14px;
+    padding: 18px;
+    background: linear-gradient(180deg, var(--gold) 0%, var(--gold-dark) 100%);
+    color: var(--black);
+    border: 4px solid var(--black);
+    box-shadow:
+        0 0 0 2px var(--gold),
+        0 4px 0 var(--wood-dark),
+        0 0 30px var(--ceremony-glow);
+    animation: stickyPulse 2s ease-in-out infinite;
+}
+
+@keyframes stickyPulse {
+    0%, 100% {
+        box-shadow:
+            0 0 0 2px var(--gold),
+            0 4px 0 var(--wood-dark),
+            0 0 30px var(--ceremony-glow);
+    }
+    50% {
+        box-shadow:
+            0 0 0 3px var(--gold),
+            0 4px 0 var(--wood-dark),
+            0 0 50px var(--ceremony-glow),
+            0 0 80px var(--ceremony-pulse);
+    }
+}
+
+/* Hide sticky button on desktop */
+@media (min-width: 1024px) {
+    .sticky-action {
+        display: none;
+    }
+}
+
+/* Add padding to game container for sticky button on mobile */
+@media (max-width: 1023px) {
+    .game-container {
+        padding-bottom: 100px;
+    }
+}
+
+/* ========================================
+   DAY SUMMARY MODAL
+   ======================================== */
+.modal-fullscreen {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    background: rgba(0, 0, 0, 0.9);
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-fullscreen .modal-content {
+    background: linear-gradient(180deg, var(--ocean-dark) 0%, var(--ocean-deepest) 100%);
+    border: 5px solid var(--gold);
+    border-radius: 12px;
+    padding: 30px;
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 0 60px rgba(255, 215, 0, 0.3);
+}
+
+.day-summary h2 {
+    font-size: 16px;
+    color: var(--gold);
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 0 var(--black);
+}
+
+.summary-verdict {
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+.summary-stats {
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.summary-row:last-child {
+    border-bottom: none;
+}
+
+.summary-label {
+    font-size: 9px;
+    color: var(--ocean-foam);
+}
+
+.summary-value {
+    font-size: 11px;
+    color: var(--cream);
+}
+
+.summary-value.positive {
+    color: var(--success-glow);
+}
+
+.summary-value.negative {
+    color: var(--danger);
+}
+
+.summary-total {
+    border-top: 2px solid var(--gold);
+    margin-top: 8px;
+}
+
+/* Summary Sections */
+.summary-section {
+    margin-bottom: 16px;
+}
+
+.summary-section h3 {
+    font-size: 10px;
+    color: var(--ocean-foam);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.summary-achieved h3::before {
+    content: "✓ ";
+    color: var(--positive);
+}
+
+.summary-missed h3::before {
+    content: "✗ ";
+    color: var(--danger);
+}
+
+.summary-missed-content {
+    background: rgba(139, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 12px;
+    border-left: 3px solid var(--danger);
+}
+
+.missed-item {
+    font-size: 9px;
+    margin: 6px 0;
+    color: var(--cream);
+}
+
+.missed-rival {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin: 8px 0;
+}
+
+.rival-icon {
+    font-size: 20px;
+}
+
+.rival-text {
+    font-size: 9px;
+    color: #ff9800;
+}
+
+.missed-total {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 8px;
+    margin-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.summary-value.warning {
+    color: #ff9800;
+}
+
+.summary-total .summary-label,
+.summary-total .summary-value {
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.summary-cash {
+    background: rgba(255, 215, 0, 0.1);
+    border-radius: 4px;
+    padding: 10px !important;
+    margin-top: 8px;
+}
+
+.summary-cash .summary-value {
+    font-size: 14px;
+    color: var(--gold);
+}
+
+.day-summary .btn-ceremony {
+    margin-top: 10px;
+}
+
+/* On mobile: fullscreen modal */
+@media (max-width: 767px) {
+    .modal-fullscreen .modal-content {
+        width: 100%;
+        height: 100%;
+        max-width: none;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+}
+
+/* ========================================
    PANELS
    ======================================== */
 .panel {
@@ -682,7 +964,7 @@ body::before {
 }
 
 /* ========================================
-   MAIN LAYOUT - Horizontal 3-Column
+   MAIN LAYOUT - Responsive 3-Column
    ======================================== */
 .game-main {
     display: flex;
@@ -697,18 +979,20 @@ body::before {
     gap: 12px;
 }
 
-.column-left {
-    flex: 1;
-    min-width: 280px;
-}
-
-.column-center {
-    flex: 0 0 260px;
-}
-
+/* Mobile-first: Stack everything */
+.column-left,
+.column-center,
 .column-right {
-    flex: 1;
-    min-width: 280px;
+    width: 100%;
+}
+
+/* Hide Markets and Forecast on mobile (use header/modals instead) */
+.column-left {
+    display: none;
+}
+
+.column-right .forecast-panel {
+    display: none;
 }
 
 /* Remove margin on panels inside columns */
@@ -716,9 +1000,9 @@ body::before {
     margin-bottom: 0;
 }
 
-/* Center column action bar styling */
+/* Center column action bar - hidden on mobile (uses sticky button) */
 .column-center .action-bar {
-    margin: 0;
+    display: none;
 }
 
 /* Log panel full width */
@@ -726,59 +1010,204 @@ body::before {
     margin-bottom: 0;
 }
 
-@media (max-width: 1000px) {
+/* Tablet: 2 columns */
+@media (min-width: 768px) {
     .game-main {
         flex-wrap: wrap;
-    }
-
-    .column-left,
-    .column-right {
-        flex: 1 1 45%;
-        min-width: 280px;
     }
 
     .column-center {
         flex: 1 1 100%;
         order: -1;
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: center;
     }
 
-    .column-center .tank-panel {
-        flex: 1;
-        min-width: 200px;
-    }
-
-    .column-center .action-bar {
-        flex: 0 0 auto;
-    }
-
-    .column-center .rivals-panel {
-        flex: 1;
-        min-width: 200px;
+    .column-right {
+        flex: 1 1 100%;
     }
 }
 
-@media (max-width: 650px) {
+/* Desktop: Full 3-column layout */
+@media (min-width: 1024px) {
     .game-main {
-        flex-direction: column;
+        flex-wrap: nowrap;
     }
 
-    .column {
-        width: 100%;
+    /* Show Markets panel on desktop */
+    .column-left {
+        display: flex;
+        flex: 0 0 260px;
+        order: 0;
     }
 
-    .column-left,
-    .column-center,
-    .column-right {
-        flex: 1 1 100%;
-        min-width: unset;
-    }
-
+    /* Center expands to fill space */
     .column-center {
-        flex-direction: column;
+        flex: 1;
+        min-width: 320px;
+        order: 1;
     }
+
+    /* Right column fixed width */
+    .column-right {
+        flex: 0 0 280px;
+        order: 2;
+    }
+
+    /* Show Forecast on desktop */
+    .column-right .forecast-panel {
+        display: block;
+    }
+
+    /* Show in-flow action bar on desktop */
+    .column-center .action-bar {
+        display: block;
+        margin: 0;
+    }
+}
+
+/* ========================================
+   MARKETS PANEL (Desktop Left Column)
+   ======================================== */
+.markets-panel {
+    background: linear-gradient(180deg, var(--ocean-light) 0%, var(--ocean-medium) 100%);
+}
+
+.current-location-card {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+}
+
+.location-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.location-header .location-icon {
+    font-size: 1.5rem;
+}
+
+.location-header .location-name {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--text-light);
+}
+
+.location-prices {
+    display: flex;
+    gap: 12px;
+}
+
+.price-tag {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+
+.price-tag.buy {
+    background: rgba(76, 175, 80, 0.3);
+    color: var(--positive);
+}
+
+.price-tag.sell {
+    background: rgba(255, 152, 0, 0.3);
+    color: var(--gold);
+}
+
+.markets-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.market-town {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.market-town:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.market-town.current {
+    background: rgba(255, 215, 0, 0.2);
+    border: 1px solid var(--gold);
+}
+
+.market-town-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+}
+
+.market-town-prices {
+    display: flex;
+    gap: 8px;
+    font-size: 0.75rem;
+}
+
+.market-town-prices .buy {
+    color: var(--positive);
+}
+
+.market-town-prices .sell {
+    color: var(--gold);
+}
+
+.markets-footer {
+    margin-top: 12px;
+    text-align: center;
+}
+
+/* ========================================
+   FORECAST PANEL (Desktop Right Column)
+   ======================================== */
+.forecast-panel {
+    background: linear-gradient(180deg, var(--ocean-medium) 0%, var(--ocean-dark) 100%);
+}
+
+.forecast-current,
+.forecast-tomorrow,
+.market-trend-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.market-trend-display {
+    border-bottom: none;
+}
+
+.forecast-label {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.forecast-weather {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 1rem;
+}
+
+.forecast-weather span:first-child {
+    font-size: 1.3rem;
 }
 
 /* ========================================
@@ -815,7 +1244,7 @@ body::before {
 
 .boat-card {
     background: linear-gradient(180deg, var(--ocean-dark) 0%, var(--ocean-deepest) 100%);
-    padding: 10px 12px;
+    padding: 14px 12px 10px 12px;
     margin-bottom: 8px;
     border: 3px solid var(--black);
     border-radius: 4px;
@@ -838,6 +1267,7 @@ body::before {
     height: 4px;
     background: linear-gradient(90deg, var(--ocean-light), var(--ocean-bright), var(--ocean-light));
     opacity: 0.5;
+    pointer-events: none;
 }
 
 .boat-header {
@@ -884,6 +1314,97 @@ body::before {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+    position: relative;
+    z-index: 10;
+}
+
+/* Boat Timer Bar */
+.boat-timer-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 4px 4px 0 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.boat-timer-bar .timer-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--positive), #7cb342);
+    transition: width 0.3s ease;
+}
+
+.boat-timer-bar .timer-text {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 7px;
+    color: white;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
+    font-weight: bold;
+}
+
+.boat-timer-bar.timer-warning .timer-fill {
+    background: linear-gradient(90deg, #ff9800, #ffc107);
+}
+
+.boat-timer-bar.timer-urgent .timer-fill {
+    background: linear-gradient(90deg, var(--danger), #ff5252);
+    animation: timerPulse 0.5s ease infinite;
+}
+
+@keyframes timerPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Boat Type Styling */
+.boat-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.boat-type-label {
+    font-size: 7px;
+    color: var(--ocean-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.boat-type-dory {
+    border-color: #8d6e63;
+}
+
+.boat-type-dory::before {
+    background: linear-gradient(90deg, #8d6e63, #a1887f, #8d6e63);
+}
+
+.boat-type-trawler {
+    border-color: #5c6bc0;
+}
+
+.boat-type-trawler::before {
+    background: linear-gradient(90deg, #5c6bc0, #7986cb, #5c6bc0);
+}
+
+.boat-type-trawler .boat-emoji {
+    font-size: 32px;
+}
+
+/* Incoming boats animation */
+.boat-incoming {
+    animation: incomingPulse 1.5s ease infinite;
+}
+
+@keyframes incomingPulse {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
 }
 
 .waiting {
@@ -2781,6 +3302,20 @@ body::before {
     font-style: italic;
 }
 
+/* Stats Credit */
+.stats-credit {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid var(--ocean-dark);
+    text-align: center;
+}
+
+.stats-credit p {
+    font-size: 8px;
+    color: rgba(255, 255, 255, 0.4);
+    letter-spacing: 1px;
+}
+
 /* ========================================
    SCENE ANIMATIONS
    ======================================== */
@@ -3034,6 +3569,7 @@ body::before {
         transparent 100%
     );
     animation: waterWave 4s ease-in-out infinite;
+    pointer-events: none;
 }
 
 @keyframes waterWave {
@@ -3353,5 +3889,47 @@ body::before {
 
     #buyers-list {
         grid-template-columns: 1fr;
+    }
+}
+
+/* ========================================
+   REDUCED MOTION ACCESSIBILITY
+   ======================================== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    /* Keep essential state changes visible */
+    .btn-sticky,
+    .btn-ceremony {
+        animation: none;
+    }
+
+    .hero-sky,
+    .hero-ocean,
+    .hero-sun,
+    .hero-lighthouse::after,
+    .hero-lobster-silhouette {
+        animation: none;
+    }
+
+    .floating,
+    .tank-fill,
+    .lobster-icons {
+        animation: none;
+    }
+
+    /* Preserve visual feedback without motion */
+    .btn:hover {
+        transform: none;
+    }
+
+    .modal-content {
+        animation: none;
     }
 }

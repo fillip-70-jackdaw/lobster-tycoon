@@ -59,6 +59,52 @@ const CONFIG = {
         "Blue Horizon", "Lobster Lady", "Captain's Pride", "Sea Breeze"
     ],
 
+    // Boat types - different vessels with different characteristics
+    boatTypes: {
+        dory: {
+            name: "Dory",
+            emoji: "🚣",
+            minCatch: 30,
+            maxCatch: 80,
+            timer: 25,  // Seconds before leaving
+            qualityBias: -0.1,  // Slightly lower quality
+            arrivalDelay: 0,  // Arrives immediately
+            description: "Small but fast"
+        },
+        lobsterBoat: {
+            name: "Lobster Boat",
+            emoji: "🚤",
+            minCatch: 80,
+            maxCatch: 200,
+            timer: 40,
+            qualityBias: 0,
+            arrivalDelay: 2,  // 2 second delay
+            description: "Standard vessel"
+        },
+        trawler: {
+            name: "Trawler",
+            emoji: "🚢",
+            minCatch: 150,
+            maxCatch: 400,
+            timer: 60,
+            qualityBias: 0.15,  // Higher quality catch
+            arrivalDelay: 4,  // 4 second delay
+            description: "Big haul, premium catch"
+        }
+    },
+
+    // Rival dealer who steals boats
+    rivalDealer: {
+        name: "Slick Rick",
+        taunt: [
+            "Too slow! Slick Rick takes the catch!",
+            "Slick Rick swoops in! Better luck next time!",
+            "Rick's been watching... and waiting!",
+            "That lobster's going to Rick's now!",
+            "Snooze you lose! Rick wins again!"
+        ]
+    },
+
     // Captain names
     captainNames: [
         "Cap'n Joe", "Old Pete", "Sarah Mae", "Big Mike", "Tommy Two-Traps",
@@ -1306,6 +1352,15 @@ let gameState = {
     dailyTravels: 0,    // Number of travels today (max 2 for round trip)
     visitedTownsToday: {}, // Towns visited today (no new boats on return)
 
+    // Missed opportunities (for day summary)
+    missedBoats: [],     // Boats that left (passed or timed out)
+    missedBuyers: [],    // Buyers not sold to
+    boatsLostToRival: 0, // Boats that timed out and went to Slick Rick
+    potentialEarnings: 0, // Money that could have been earned
+
+    // Boat timer system
+    boatTimers: {},      // boatId -> { timeLeft, intervalId }
+
     // Statistics tracking
     stats: {
         totalLobstersBought: 0,
@@ -1996,34 +2051,66 @@ function generateBoats() {
     const locationBoatBonus = getLocationBoatBonus();
     const maxBoats = Math.max(1, gameState.maxBoats + getEquipmentEffect('extraBoats', 0) + locationBoatBonus);
 
+    // Boat type distribution (weighted random)
+    const boatTypeWeights = [
+        { type: 'dory', weight: 40 },
+        { type: 'lobsterBoat', weight: 45 },
+        { type: 'trawler', weight: 15 }
+    ];
+
+    let boatIdCounter = Date.now();
+
     for (let i = 0; i < maxBoats; i++) {
         const boatChance = seasonData.boatChance * weatherData.boatMod;
         if (Math.random() > boatChance) continue;
 
+        // Select boat type based on weights
+        const boatTypeId = weightedRandom(boatTypeWeights);
+        const boatType = CONFIG.boatTypes[boatTypeId] || CONFIG.boatTypes.lobsterBoat;
+
         const captain = randomChoice(CONFIG.captainNames);
         const boatName = randomChoice(CONFIG.boatNames);
 
-        // Boats sell ungraded lobsters - YOU grade them after purchase
-        const catchAmount = randomInt(50, 300);
+        // Catch amount based on boat type
+        const catchAmount = randomInt(boatType.minCatch || 50, boatType.maxCatch || 200);
 
         // Get loyalty bonus
         const loyalty = gameState.fishermenRelations[captain] || 0;
         const loyaltyDiscount = loyalty * 0.001; // Up to 10% discount at max loyalty
 
-        // Base price affected by season, weather, market, and loyalty
+        // Base price affected by season, weather, market, loyalty, and boat quality bias
         let pricePerLb = calculateBuyPrice('B'); // Use B-grade as baseline
+        pricePerLb = pricePerLb * (1 + (boatType.qualityBias || 0) * 0.5); // Quality affects price
         pricePerLb = Math.round((pricePerLb * (1 - loyaltyDiscount)) * 100) / 100;
 
         boats.push({
+            id: `boat_${boatIdCounter}_${i}`,
             name: boatName,
             captain: captain,
             loyalty: loyalty,
             catchAmount: catchAmount,
-            pricePerLb: pricePerLb
+            pricePerLb: pricePerLb,
+            boatType: boatTypeId || 'lobsterBoat',
+            boatTypeData: boatType,
+            timeLeft: boatType.timer || 40,
+            arrived: true,
+            timerStarted: false
         });
     }
 
     return boats;
+}
+
+// Weighted random selection helper
+function weightedRandom(options) {
+    const totalWeight = options.reduce((sum, opt) => sum + opt.weight, 0);
+    let random = Math.random() * totalWeight;
+
+    for (const option of options) {
+        random -= option.weight;
+        if (random <= 0) return option.type;
+    }
+    return options[0].type;
 }
 
 // ============================================
@@ -2368,6 +2455,11 @@ function buyFromBoat(boatIndex, amount) {
 
     // Remove boat if empty
     if (boat.catchAmount <= 0) {
+        // Clear boat timer
+        if (boat.id && gameState.boatTimers && gameState.boatTimers[boat.id]) {
+            clearInterval(gameState.boatTimers[boat.id].intervalId);
+            delete gameState.boatTimers[boat.id];
+        }
         gameState.boats.splice(boatIndex, 1);
     }
 
@@ -2378,6 +2470,22 @@ function buyFromBoat(boatIndex, amount) {
 function passBoat(boatIndex) {
     const boat = gameState.boats[boatIndex];
     if (boat) {
+        // Clear boat's timer
+        if (boat.id && gameState.boatTimers && gameState.boatTimers[boat.id]) {
+            clearInterval(gameState.boatTimers[boat.id].intervalId);
+            delete gameState.boatTimers[boat.id];
+        }
+
+        // Track as missed opportunity
+        const potentialValue = Math.round(boat.catchAmount * boat.pricePerLb);
+        gameState.missedBoats.push({
+            name: boat.name,
+            captain: boat.captain,
+            catchAmount: boat.catchAmount,
+            value: potentialValue,
+            reason: 'passed'
+        });
+
         log(`${boat.name} sailed away.`);
         gameState.boats.splice(boatIndex, 1);
         updateUI();
@@ -2502,12 +2610,49 @@ function buyEquipment(id) {
 // DAY PROGRESSION
 // ============================================
 function nextDay() {
-    // Store current day for summary (before incrementing)
+    // Clear all boat timers first
+    clearAllBoatTimers();
+
+    // Track remaining boats as missed opportunities
+    gameState.boats.forEach(boat => {
+        const potentialValue = Math.round(boat.catchAmount * boat.pricePerLb);
+        gameState.missedBoats.push({
+            name: boat.name,
+            captain: boat.captain,
+            catchAmount: boat.catchAmount,
+            value: potentialValue,
+            reason: 'dayEnd'
+        });
+    });
+
+    // Track remaining buyers as missed opportunities
+    gameState.buyers.forEach(buyer => {
+        const total = getTotalInventory();
+        if (total > 0) {
+            const potentialSale = Math.min(total, buyer.wantAmount || 100);
+            const avgSellPrice = calculateSellPrice('B');
+            gameState.missedBuyers.push({
+                name: buyer.name,
+                type: buyer.type,
+                potentialLbs: potentialSale,
+                potentialValue: Math.round(potentialSale * avgSellPrice)
+            });
+        }
+    });
+
+    // Store current day's data for summary (before resetting)
     const previousDay = gameState.day;
+    const previousDayEarned = gameState.dailyEarned;
+    const previousDaySpent = gameState.dailySpent;
+    const hadActivity = previousDayEarned > 0 || previousDaySpent > 0 || gameState.missedBoats.length > 0;
+
+    // Calculate total missed value
+    const totalMissedValue = gameState.missedBoats.reduce((sum, b) => sum + b.value, 0) +
+                             gameState.missedBuyers.reduce((sum, b) => sum + (b.potentialValue || 0), 0);
 
     // Show daily profit/loss summary for the day that just ended
     const dailyProfit = gameState.dailyEarned - gameState.dailySpent;
-    if (gameState.dailyEarned > 0 || gameState.dailySpent > 0) {
+    if (hadActivity || gameState.missedBoats.length > 0) {
         const profitText = dailyProfit >= 0
             ? `+$${formatMoney(dailyProfit)}`
             : `-$${formatMoney(Math.abs(dailyProfit))}`;
@@ -2518,12 +2663,27 @@ function nextDay() {
         updateStats("dayEnd", { earned: gameState.dailyEarned, spent: gameState.dailySpent });
     }
 
+    // Store for summary modal (before reset)
+    gameState.previousDayData = {
+        day: previousDay,
+        earned: previousDayEarned,
+        spent: previousDaySpent,
+        hadActivity: hadActivity,
+        missedBoats: [...gameState.missedBoats],
+        missedBuyers: [...gameState.missedBuyers],
+        boatsLostToRival: gameState.boatsLostToRival,
+        totalMissedValue: totalMissedValue
+    };
+
     // Reset daily trackers for new day
     gameState.dailySpent = 0;
     gameState.dailyEarned = 0;
     gameState.dailyCosts = 0;
     gameState.dailyTravels = 0;
     gameState.visitedTownsToday = {};
+    gameState.missedBoats = [];
+    gameState.missedBuyers = [];
+    gameState.boatsLostToRival = 0;
 
     // Pay daily operating costs
     const operatingCost = 50 + Math.floor(getTotalInventory() * 0.05);
@@ -2555,6 +2715,11 @@ function nextDay() {
     // Generate new boats and buyers
     gameState.boats = generateBoats();
     gameState.buyers = generateBuyers();
+
+    // Start boat arrival processing (for staggered arrivals)
+    if (gameState.boats.length > 0) {
+        startBoatArrivalProcessing();
+    }
 
     // Rival dealers try to buy boats before you can!
     if (gameState.boats.length > 0) {
@@ -2618,6 +2783,11 @@ function nextDay() {
 
         // Occasional idle chatter
         maybeIdleChatter();
+    }
+
+    // Show day summary modal (for all users)
+    if (gameState.previousDayData && gameState.previousDayData.hadActivity) {
+        showDaySummary();
     }
 
     updateUI();
@@ -2773,6 +2943,13 @@ function resetGame() {
         dailyCosts: 0,
         dailyTravels: 0,
         visitedTownsToday: {},
+        // Missed opportunities (for day summary)
+        missedBoats: [],
+        missedBuyers: [],
+        boatsLostToRival: 0,
+        potentialEarnings: 0,
+        // Boat timer system
+        boatTimers: {},
         stats: {
             totalLobstersBought: 0,
             totalLobstersSold: 0,
@@ -2825,10 +3002,8 @@ function resetGame() {
     }
 
     // Initial generation
-    console.log("Generating boats and buyers...");
     gameState.boats = generateBoats();
     gameState.buyers = generateBuyers();
-    console.log("Boats:", gameState.boats.length, "Buyers:", gameState.buyers.length);
 
     // Fisherman welcome greeting
     fishermanSays(getRandomComment(CONFIG.dockworker.morning));
@@ -2837,9 +3012,7 @@ function resetGame() {
         log(`${gameState.boats[0].captain} has arrived with fresh lobsters!`);
     }
 
-    console.log("Calling updateUI...");
     updateUI();
-    console.log("Game initialized!");
 }
 
 // ============================================
@@ -2944,12 +3117,34 @@ function dismissToast(toast) {
 // UI UPDATES
 // ============================================
 function updateUI() {
-    // Header stats
+    // Header stats (Desktop)
     document.getElementById("cash").textContent = formatMoney(gameState.cash);
     document.getElementById("debt").textContent = formatMoney(gameState.debt);
     document.getElementById("day").textContent = gameState.day;
     // Season is always Summer for the 30-day challenge, no need to display
     document.getElementById("weather-icon").textContent = CONFIG.weather[gameState.weather].icon;
+
+    // Mobile Day Card updates
+    const dayMobile = document.getElementById("day-mobile");
+    if (dayMobile) dayMobile.textContent = gameState.day;
+
+    const cashMobile = document.getElementById("cash-mobile");
+    if (cashMobile) cashMobile.textContent = formatMoney(gameState.cash);
+
+    const locationMobile = document.getElementById("location-mobile");
+    if (locationMobile) {
+        const town = getCurrentTown();
+        locationMobile.textContent = town ? town.name : "Stonington";
+    }
+
+    const marketSignalMobile = document.getElementById("market-signal-mobile");
+    if (marketSignalMobile) {
+        let signal = "Stable";
+        if (gameState.marketTrend > 0) signal = "📈 Rising";
+        else if (gameState.marketTrend < 0) signal = "📉 Falling";
+        else signal = "➡️ Stable";
+        marketSignalMobile.textContent = signal;
+    }
     document.getElementById("weather-name").textContent = CONFIG.weather[gameState.weather].name;
     document.getElementById("tomorrow-weather").textContent = CONFIG.weather[gameState.tomorrowWeather].icon;
 
@@ -2965,6 +3160,30 @@ function updateUI() {
         trendEl.textContent = "➡️ Stable";
         trendEl.className = "trend-stable";
     }
+
+    // Forecast panel (Desktop right column)
+    const forecastTodayIcon = document.getElementById("forecast-today-icon");
+    if (forecastTodayIcon) {
+        forecastTodayIcon.textContent = CONFIG.weather[gameState.weather].icon;
+        document.getElementById("forecast-today-name").textContent = CONFIG.weather[gameState.weather].name;
+        document.getElementById("forecast-tomorrow-icon").textContent = CONFIG.weather[gameState.tomorrowWeather].icon;
+        document.getElementById("forecast-tomorrow-name").textContent = CONFIG.weather[gameState.tomorrowWeather].name;
+
+        const forecastTrend = document.getElementById("forecast-trend");
+        if (gameState.marketTrend > 0) {
+            forecastTrend.textContent = "📈 Rising";
+            forecastTrend.className = "trend-up";
+        } else if (gameState.marketTrend < 0) {
+            forecastTrend.textContent = "📉 Falling";
+            forecastTrend.className = "trend-down";
+        } else {
+            forecastTrend.textContent = "➡️ Stable";
+            forecastTrend.className = "trend-stable";
+        }
+    }
+
+    // Markets panel (Desktop left column)
+    updateMarketsPanel();
 
     // Daily tracker
     document.getElementById("daily-spent").textContent = formatMoney(gameState.dailySpent);
@@ -3036,7 +3255,6 @@ function updateUI() {
 
 function updateDockUI() {
     const container = document.getElementById("boats-container");
-    console.log("updateDockUI - container:", container, "boats:", gameState.boats.length);
     container.innerHTML = "";
 
     if (gameState.boats.length === 0) {
@@ -3048,13 +3266,27 @@ function updateDockUI() {
         const totalCost = Math.round(boat.catchAmount * boat.pricePerLb);
         const halfCost = Math.round((boat.catchAmount / 2) * boat.pricePerLb);
         const loyaltyStars = Math.floor(boat.loyalty / 25);
+        const boatEmoji = boat.boatTypeData ? boat.boatTypeData.emoji : '🚤';
+        const boatTypeName = boat.boatTypeData ? boat.boatTypeData.name : 'Boat';
+
+        // Timer urgency classes
+        const timerUrgent = boat.timeLeft <= 10 ? 'timer-urgent' : boat.timeLeft <= 20 ? 'timer-warning' : '';
 
         const div = document.createElement("div");
-        div.className = "boat-card";
+        div.className = `boat-card boat-type-${boat.boatType || 'lobsterBoat'}`;
+        div.dataset.boatId = boat.id;
+        div.dataset.boatIndex = index;
         div.innerHTML = `
+            <div class="boat-timer-bar ${timerUrgent}">
+                <div class="timer-fill" style="width: ${(boat.timeLeft / (boat.boatTypeData?.timer || 40)) * 100}%"></div>
+                <span class="timer-text">${boat.timeLeft}s</span>
+            </div>
             <div class="boat-header">
-                <span class="boat-emoji floating">🚤</span>
-                <span class="boat-name">${boat.name}</span>
+                <span class="boat-emoji floating">${boatEmoji}</span>
+                <div class="boat-info">
+                    <span class="boat-name">${boat.name}</span>
+                    <span class="boat-type-label">${boatTypeName}</span>
+                </div>
                 <span class="captain-name">${boat.captain} ${"★".repeat(loyaltyStars)}</span>
             </div>
             <div class="catch-info">
@@ -3062,32 +3294,134 @@ function updateDockUI() {
                 <p class="total-cost">Total: $${formatMoney(totalCost)}</p>
             </div>
             <div class="boat-actions">
-                <button class="btn btn-primary buy-all-btn" data-boat="${index}">Buy All</button>
-                <button class="btn buy-half-btn" data-boat="${index}">Buy Half ($${formatMoney(halfCost)})</button>
-                <button class="btn btn-secondary pass-btn" data-boat="${index}">Pass</button>
+                <button class="btn btn-primary buy-all-btn">Buy All</button>
+                <button class="btn buy-half-btn">Buy Half ($${formatMoney(halfCost)})</button>
+                <button class="btn btn-secondary pass-btn">Pass</button>
             </div>
         `;
         container.appendChild(div);
-    });
 
-    // Event listeners
-    container.querySelectorAll(".buy-all-btn").forEach(btn => {
-        btn.addEventListener("click", () => buyFromBoat(parseInt(btn.dataset.boat)));
+        // Event listeners handled via delegation in initEventHandlers()
+
+        // Start timer if not already started
+        if (!boat.timerStarted) {
+            boat.timerStarted = true;
+            startBoatTimer(boat);
+        }
     });
-    container.querySelectorAll(".buy-half-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const boat = gameState.boats[parseInt(btn.dataset.boat)];
-            if (boat) buyFromBoat(parseInt(btn.dataset.boat), Math.floor(boat.catchAmount / 2));
-        });
+}
+
+// Start countdown timer for a boat
+function startBoatTimer(boat) {
+    // Ensure boatTimers object exists
+    if (!gameState.boatTimers) gameState.boatTimers = {};
+    if (!boat.id) return; // No boat id
+    if (gameState.boatTimers[boat.id]) return; // Already has timer
+
+    const intervalId = setInterval(() => {
+        boat.timeLeft--;
+
+        // Update timer display
+        const boatCard = document.querySelector(`[data-boat-id="${boat.id}"]`);
+        if (boatCard) {
+            const timerBar = boatCard.querySelector('.boat-timer-bar');
+            const timerFill = boatCard.querySelector('.timer-fill');
+            const timerText = boatCard.querySelector('.timer-text');
+
+            if (timerFill) {
+                timerFill.style.width = `${(boat.timeLeft / (boat.boatTypeData?.timer || 40)) * 100}%`;
+            }
+            if (timerText) {
+                timerText.textContent = `${boat.timeLeft}s`;
+            }
+            if (timerBar) {
+                timerBar.classList.toggle('timer-urgent', boat.timeLeft <= 10);
+                timerBar.classList.toggle('timer-warning', boat.timeLeft > 10 && boat.timeLeft <= 20);
+            }
+        }
+
+        // Time's up - boat leaves to Slick Rick!
+        if (boat.timeLeft <= 0) {
+            clearInterval(intervalId);
+            delete gameState.boatTimers[boat.id];
+            boatLostToRival(boat);
+        }
+    }, 1000);
+
+    gameState.boatTimers[boat.id] = { intervalId, boat };
+}
+
+// Handle boat arrival delays
+function processBoatArrivals() {
+    gameState.boats.forEach(boat => {
+        if (!boat.arrived && boat.arrivalDelay > 0) {
+            boat.arrivalDelay--;
+            if (boat.arrivalDelay <= 0) {
+                boat.arrived = true;
+                // Announce arrival
+                const boatEmoji = boat.boatTypeData ? boat.boatTypeData.emoji : '🚤';
+                log(`${boatEmoji} ${boat.name} has arrived at the dock!`);
+                updateDockUI();
+            }
+        }
     });
-    container.querySelectorAll(".pass-btn").forEach(btn => {
-        btn.addEventListener("click", () => passBoat(parseInt(btn.dataset.boat)));
+}
+
+// Boat lost to rival dealer (timer expired)
+function boatLostToRival(boat) {
+    const boatIndex = gameState.boats.indexOf(boat);
+    if (boatIndex === -1) return;
+
+    // Track as missed opportunity
+    const potentialValue = Math.round(boat.catchAmount * boat.pricePerLb);
+    gameState.missedBoats.push({
+        name: boat.name,
+        captain: boat.captain,
+        catchAmount: boat.catchAmount,
+        value: potentialValue,
+        reason: 'timeout'
     });
+    gameState.boatsLostToRival++;
+    gameState.stats.lostToRivals++;
+
+    // Remove from active boats
+    gameState.boats.splice(boatIndex, 1);
+
+    // Taunt from Slick Rick!
+    const taunt = randomChoice(CONFIG.rivalDealer.taunt);
+    log(`⏰ ${taunt}`, "negative");
+
+    updateDockUI();
+}
+
+// Start boat arrival processing
+let boatArrivalInterval = null;
+
+function startBoatArrivalProcessing() {
+    if (boatArrivalInterval) clearInterval(boatArrivalInterval);
+    boatArrivalInterval = setInterval(processBoatArrivals, 1000);
+}
+
+function stopBoatArrivalProcessing() {
+    if (boatArrivalInterval) {
+        clearInterval(boatArrivalInterval);
+        boatArrivalInterval = null;
+    }
+}
+
+// Clear all boat timers (called on day change)
+function clearAllBoatTimers() {
+    if (gameState.boatTimers) {
+        for (const timerId in gameState.boatTimers) {
+            clearInterval(gameState.boatTimers[timerId].intervalId);
+        }
+    }
+    gameState.boatTimers = {};
+    stopBoatArrivalProcessing();
 }
 
 function updateBuyersUI() {
     const container = document.getElementById("buyers-list");
-    console.log("updateBuyersUI - container:", container, "buyers:", gameState.buyers.length);
     container.innerHTML = "";
 
     if (gameState.buyers.length === 0) {
@@ -3407,6 +3741,74 @@ function updateLocationUI() {
         buyModPercent >= 0 ? `+${buyModPercent}%` : `${buyModPercent}%`;
     document.getElementById("sell-mod").textContent =
         sellModPercent >= 0 ? `+${sellModPercent}%` : `${sellModPercent}%`;
+}
+
+// ============================================
+// MARKETS PANEL (Desktop Left Column)
+// ============================================
+function updateMarketsPanel() {
+    const marketsList = document.getElementById("markets-list");
+    if (!marketsList) return;
+
+    const currentTown = getCurrentTown();
+    if (!currentTown) return;
+
+    // Update current location card
+    const locIcon = document.getElementById("markets-location-icon");
+    if (locIcon) {
+        locIcon.textContent = currentTown.emoji;
+        document.getElementById("markets-location-name").textContent = currentTown.name;
+
+        const buyModPercent = Math.round((currentTown.buyMod - 1) * 100);
+        const sellModPercent = Math.round((currentTown.sellMod - 1) * 100);
+        document.getElementById("markets-buy-mod").textContent =
+            buyModPercent >= 0 ? `+${buyModPercent}%` : `${buyModPercent}%`;
+        document.getElementById("markets-sell-mod").textContent =
+            sellModPercent >= 0 ? `+${sellModPercent}%` : `${sellModPercent}%`;
+    }
+
+    // Build list of other towns
+    marketsList.innerHTML = "";
+
+    const hasVan = hasEquipment('deliveryVan');
+
+    for (const [townId, town] of Object.entries(TOWNS)) {
+        const isCurrent = townId === gameState.currentLocation;
+
+        const buyModPercent = Math.round((town.buyMod - 1) * 100);
+        const sellModPercent = Math.round((town.sellMod - 1) * 100);
+
+        const div = document.createElement("div");
+        div.className = `market-town${isCurrent ? ' current' : ''}`;
+        div.innerHTML = `
+            <span class="market-town-name">
+                <span>${town.emoji}</span>
+                <span>${town.name}</span>
+            </span>
+            <span class="market-town-prices">
+                <span class="buy">${buyModPercent >= 0 ? '+' : ''}${buyModPercent}%</span>
+                <span class="sell">${sellModPercent >= 0 ? '+' : ''}${sellModPercent}%</span>
+            </span>
+        `;
+
+        // Click to travel (if not current and has van)
+        if (!isCurrent && hasVan) {
+            div.style.cursor = "pointer";
+            div.addEventListener("click", () => {
+                if (canTravelTo(townId)) {
+                    travelTo(townId);
+                    updateMarketsPanel();
+                } else {
+                    log("Can't travel there right now.", "warning");
+                }
+            });
+        } else if (!isCurrent && !hasVan) {
+            div.style.opacity = "0.6";
+            div.title = "Need Delivery Van to travel";
+        }
+
+        marketsList.appendChild(div);
+    }
 }
 
 // ============================================
@@ -4269,6 +4671,10 @@ function skipTutorial() {
 function checkHelperTips() {
     if (tutorialActive) return; // Don't show tips during tutorial
 
+    // Don't show tips while welcome screen is visible
+    const welcomeScreen = document.getElementById("welcome-screen");
+    if (welcomeScreen && !welcomeScreen.classList.contains("hidden")) return;
+
     for (const [tipId, tip] of Object.entries(HELPER_TIPS)) {
         // Skip if already shown (for one-time tips)
         if (tip.once && shownHelperTips[tipId]) continue;
@@ -4377,6 +4783,112 @@ function updateGoalUI() {
     }
 }
 
+// ============================================
+// DAY SUMMARY MODAL (Mobile)
+// ============================================
+function showDaySummary() {
+    const modal = document.getElementById("day-summary-modal");
+    if (!modal) return;
+
+    // Use stored previous day data (saved before reset in nextDay)
+    const prevData = gameState.previousDayData;
+    if (!prevData) return;
+
+    const dailyProfit = prevData.earned - prevData.spent;
+
+    // Update summary content
+    document.getElementById("summary-day").textContent = prevData.day;
+    document.getElementById("summary-spent").textContent = `$${formatMoney(prevData.spent)}`;
+    document.getElementById("summary-earned").textContent = `$${formatMoney(prevData.earned)}`;
+
+    const netEl = document.getElementById("summary-net");
+    if (dailyProfit >= 0) {
+        netEl.textContent = `+$${formatMoney(dailyProfit)}`;
+        netEl.className = "summary-value positive";
+    } else {
+        netEl.textContent = `-$${formatMoney(Math.abs(dailyProfit))}`;
+        netEl.className = "summary-value negative";
+    }
+
+    document.getElementById("summary-cash").textContent = `$${formatMoney(gameState.cash)}`;
+    document.getElementById("summary-next-day").textContent = gameState.day;
+
+    // Missed opportunities section
+    const missedSection = document.getElementById("summary-missed-section");
+    const missedBoatsEl = document.getElementById("summary-missed-boats");
+    const rivalLossesEl = document.getElementById("summary-rival-losses");
+    const missedValueEl = document.getElementById("summary-missed-value");
+
+    const missedBoats = prevData.missedBoats || [];
+    const boatsLostToRival = prevData.boatsLostToRival || 0;
+    const totalMissedValue = prevData.totalMissedValue || 0;
+
+    if (missedBoats.length > 0 || boatsLostToRival > 0) {
+        missedSection.style.display = "block";
+
+        // Show missed boats summary
+        if (missedBoats.length > 0) {
+            const boatsByReason = {
+                passed: missedBoats.filter(b => b.reason === 'passed'),
+                timeout: missedBoats.filter(b => b.reason === 'timeout'),
+                dayEnd: missedBoats.filter(b => b.reason === 'dayEnd')
+            };
+
+            let boatsHtml = '';
+            if (boatsByReason.passed.length > 0) {
+                boatsHtml += `<p class="missed-item">👋 Passed on ${boatsByReason.passed.length} boat(s)</p>`;
+            }
+            if (boatsByReason.timeout.length > 0) {
+                boatsHtml += `<p class="missed-item">⏰ ${boatsByReason.timeout.length} boat(s) left (too slow!)</p>`;
+            }
+            if (boatsByReason.dayEnd.length > 0) {
+                boatsHtml += `<p class="missed-item">🌙 ${boatsByReason.dayEnd.length} boat(s) still at dock</p>`;
+            }
+            missedBoatsEl.innerHTML = boatsHtml;
+        } else {
+            missedBoatsEl.innerHTML = '';
+        }
+
+        // Show Slick Rick losses
+        if (boatsLostToRival > 0) {
+            rivalLossesEl.style.display = "flex";
+            document.getElementById("summary-rival-count").textContent = boatsLostToRival;
+        } else {
+            rivalLossesEl.style.display = "none";
+        }
+
+        // Show total missed value
+        missedValueEl.textContent = `$${formatMoney(totalMissedValue)}`;
+    } else {
+        missedSection.style.display = "none";
+    }
+
+    // Verdict emoji - now considers missed opportunities
+    const verdictEl = document.getElementById("summary-verdict");
+    if (dailyProfit > 500 && missedBoats.length === 0) {
+        verdictEl.textContent = "💰 Perfect day!";
+    } else if (dailyProfit > 500) {
+        verdictEl.textContent = "💰 Great day!";
+    } else if (dailyProfit > 0 && boatsLostToRival > 0) {
+        verdictEl.textContent = "😤 Rick got some...";
+    } else if (dailyProfit > 0) {
+        verdictEl.textContent = "👍 Profitable";
+    } else if (dailyProfit === 0) {
+        verdictEl.textContent = "😐 Break even";
+    } else if (dailyProfit > -200) {
+        verdictEl.textContent = "📉 Small loss";
+    } else {
+        verdictEl.textContent = "😰 Rough day";
+    }
+
+    modal.style.display = "flex";
+}
+
+function closeDaySummary() {
+    const modal = document.getElementById("day-summary-modal");
+    if (modal) modal.style.display = "none";
+}
+
 function checkSeasonEnd() {
     if (gameState.day > CONFIG.summerLength) {
         showSeasonEndScreen();
@@ -4450,9 +4962,6 @@ function startGame() {
         welcomeScreen.classList.add("hidden");
     }, 500);
 
-    // Add ambient seagulls
-    addAmbientSeagulls();
-
     // Initialize weather effects
     updateWeatherEffects();
 
@@ -4494,6 +5003,30 @@ function initEventHandlers() {
     document.getElementById("map-btn").addEventListener("click", openMap);
     document.getElementById("close-map-btn").addEventListener("click", closeMap);
 
+    // Markets panel "Open Full Map" button
+    const openMapBtn = document.getElementById("open-map-btn");
+    if (openMapBtn) openMapBtn.addEventListener("click", openMap);
+
+    // Mobile buttons
+    const nextDayMobile = document.getElementById("next-day-btn-mobile");
+    if (nextDayMobile) nextDayMobile.addEventListener("click", nextDay);
+
+    const mapBtnMobile = document.getElementById("map-btn-mobile");
+    if (mapBtnMobile) mapBtnMobile.addEventListener("click", openMap);
+
+    const shopBtnMobile = document.getElementById("shop-btn-mobile");
+    if (shopBtnMobile) shopBtnMobile.addEventListener("click", openShop);
+
+    const bankBtnMobile = document.getElementById("bank-btn-mobile");
+    if (bankBtnMobile) bankBtnMobile.addEventListener("click", openBank);
+
+    const statsBtnMobile = document.getElementById("stats-btn-mobile");
+    if (statsBtnMobile) statsBtnMobile.addEventListener("click", openStats);
+
+    // Day summary continue button
+    const summaryContinue = document.getElementById("summary-continue");
+    if (summaryContinue) summaryContinue.addEventListener("click", closeDaySummary);
+
     document.getElementById("loan-btn").addEventListener("click", () => {
         const amount = parseInt(document.getElementById("loan-amount").value) || 5000;
         takeLoan(amount);
@@ -4514,6 +5047,35 @@ function initEventHandlers() {
             }
         });
     });
+
+    // Boats container - use event delegation for dynamic buttons
+    const boatsContainer = document.getElementById("boats-container");
+    if (boatsContainer) {
+        boatsContainer.addEventListener("click", (e) => {
+            const btn = e.target.closest("button");
+            if (!btn) return;
+
+            const boatCard = btn.closest(".boat-card");
+            if (!boatCard) return;
+
+            const boatIndex = parseInt(boatCard.dataset.boatIndex);
+            if (isNaN(boatIndex)) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (btn.classList.contains("buy-all-btn")) {
+                buyFromBoat(boatIndex);
+            } else if (btn.classList.contains("buy-half-btn")) {
+                const boat = gameState.boats[boatIndex];
+                if (boat) {
+                    buyFromBoat(boatIndex, Math.floor(boat.catchAmount / 2));
+                }
+            } else if (btn.classList.contains("pass-btn")) {
+                passBoat(boatIndex);
+            }
+        });
+    }
 }
 
 // ============================================

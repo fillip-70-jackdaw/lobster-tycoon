@@ -7,45 +7,22 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <!-- Welcome Screen -->
+    <!-- Welcome Screen - Atmospheric Dawn Scene -->
     <div id="welcome-screen" class="welcome-screen">
+        <!-- Atmospheric Hero Background -->
+        <div class="welcome-hero">
+            <div class="hero-sky"></div>
+            <div class="hero-sun"></div>
+            <div class="hero-ocean"></div>
+            <div class="hero-dock-silhouette"></div>
+            <div class="hero-lighthouse"></div>
+            <div class="hero-lobster-silhouette">🦞</div>
+        </div>
+        <!-- Content Overlay -->
         <div class="welcome-content">
-            <div class="welcome-scene">
-                <div class="welcome-sky"></div>
-                <div class="welcome-ocean">
-                    <div class="welcome-wave wave1"></div>
-                    <div class="welcome-wave wave2"></div>
-                    <div class="welcome-wave wave3"></div>
-                </div>
-                <div class="welcome-dock"></div>
-                <div class="welcome-shack">
-                    <div class="shack-roof"></div>
-                    <div class="shack-body">
-                        <div class="shack-sign">LOBSTER</div>
-                        <div class="shack-door"></div>
-                    </div>
-                </div>
-                <div class="welcome-truck">
-                    <div class="truck-cab"></div>
-                    <div class="truck-bed"></div>
-                    <div class="truck-wheel wheel1"></div>
-                    <div class="truck-wheel wheel2"></div>
-                </div>
-                <div class="welcome-lobster">🦞</div>
-                <div class="welcome-lobster lobster2">🦞</div>
-                <div class="welcome-scale">⚖️</div>
-                <div class="welcome-bob">🧔</div>
-            </div>
             <h1 class="welcome-title">Maine Lobster<br>Dealer Tycoon</h1>
-            <p class="welcome-subtitle">Build your lobster empire on the Maine coast!</p>
-            <div class="welcome-tips">
-                <p>🦞 Buy low from fishermen in remote villages</p>
-                <p>💰 Sell high to tourists in wealthy towns</p>
-                <p>🚚 Upgrade your equipment to expand</p>
-                <p>📈 Watch the market and weather!</p>
-            </div>
-            <button id="start-game-btn" class="btn btn-large welcome-btn">Start Game</button>
-            <p class="welcome-credit">A tycoon game by Claude</p>
+            <p class="welcome-tagline">Buy low. Sell high. Build your empire.</p>
+            <button id="start-game-btn" class="btn-ceremony">Begin Your Run</button>
         </div>
     </div>
 
@@ -69,52 +46,73 @@
     <div class="game-container">
         <!-- Header -->
         <header class="game-header">
-            <h1>Maine Lobster Dealer Tycoon</h1>
-            <div class="status-bar">
-                <div class="status-row">
-                    <span class="cash">Cash: $<span id="cash">5,000</span></span>
-                    <span class="debt">Debt: $<span id="debt">0</span></span>
-                    <span class="date">Day <span id="day">1</span>/<span id="total-days">30</span></span>
-                    <span class="countdown" id="countdown">🏖️ <span id="days-left">30</span> days left</span>
+            <!-- Mobile: Compact Day Card -->
+            <div class="day-card">
+                <div class="day-card-main">
+                    <span class="day-card-day">Day <span id="day-mobile">1</span></span>
+                    <span class="day-card-location" id="location-mobile">Stonington</span>
                 </div>
-                <div class="status-row goal-row">
-                    <span class="goal-label">Goal Progress:</span>
-                    <span class="goal-progress">
-                        <span class="goal-bar-container">
-                            <span class="goal-bar" id="goal-bar"></span>
-                        </span>
-                        <span class="goal-tier" id="goal-tier">⭐ $10K</span>
-                    </span>
+                <div class="day-card-metrics">
+                    <span class="day-card-cash">$<span id="cash-mobile">5,000</span></span>
+                    <span class="day-card-signal" id="market-signal-mobile">Market: Stable</span>
                 </div>
-                <div class="status-row">
-                    <span class="weather">
-                        <span id="weather-icon">☀️</span> <span id="weather-name">Sunny</span>
-                        <span class="forecast">Tomorrow: <span id="tomorrow-weather">☀️</span></span>
-                    </span>
-                    <span id="market-trend" class="trend-stable">➡️ Stable</span>
-                </div>
-                <div class="status-row daily-tracker">
-                    <span class="daily-stat spent">Spent: $<span id="daily-spent">0</span></span>
-                    <span class="daily-stat earned">Earned: $<span id="daily-earned">0</span></span>
-                    <span class="daily-stat" id="daily-profit">Net: $0</span>
-                </div>
-                <div class="status-row location-row">
-                    <span class="location-info">
-                        <span id="location-emoji">🎣</span>
-                        <span id="location-name">Stonington</span>
-                        <span class="location-traits" id="location-traits">Fishing Hub</span>
-                    </span>
-                    <span class="price-mods">
-                        <span class="buy-mod" title="Buy price modifier">Buy: <span id="buy-mod">-20%</span></span>
-                        <span class="sell-mod" title="Sell price modifier">Sell: <span id="sell-mod">-15%</span></span>
-                    </span>
+                <div class="day-card-buttons">
+                    <button id="map-btn-mobile" class="btn btn-tiny">🗺️</button>
+                    <button id="shop-btn-mobile" class="btn btn-tiny">🛒</button>
+                    <button id="bank-btn-mobile" class="btn btn-tiny">🏦</button>
+                    <button id="stats-btn-mobile" class="btn btn-tiny">📊</button>
                 </div>
             </div>
-            <div class="header-buttons">
-                <button id="map-btn" class="btn btn-small">Map</button>
-                <button id="shop-btn" class="btn btn-small">Shop</button>
-                <button id="bank-btn" class="btn btn-small">Bank</button>
-                <button id="stats-btn" class="btn btn-small">Stats</button>
+
+            <!-- Desktop: Full Header -->
+            <div class="header-desktop">
+                <h1>Maine Lobster Dealer Tycoon</h1>
+                <div class="status-bar">
+                    <div class="status-row">
+                        <span class="cash">Cash: $<span id="cash">5,000</span></span>
+                        <span class="debt">Debt: $<span id="debt">0</span></span>
+                        <span class="date">Day <span id="day">1</span>/<span id="total-days">30</span></span>
+                        <span class="countdown" id="countdown">🏖️ <span id="days-left">30</span> days left</span>
+                    </div>
+                    <div class="status-row goal-row">
+                        <span class="goal-label">Goal Progress:</span>
+                        <span class="goal-progress">
+                            <span class="goal-bar-container">
+                                <span class="goal-bar" id="goal-bar"></span>
+                            </span>
+                            <span class="goal-tier" id="goal-tier">⭐ $10K</span>
+                        </span>
+                    </div>
+                    <div class="status-row">
+                        <span class="weather">
+                            <span id="weather-icon">☀️</span> <span id="weather-name">Sunny</span>
+                            <span class="forecast">Tomorrow: <span id="tomorrow-weather">☀️</span></span>
+                        </span>
+                        <span id="market-trend" class="trend-stable">➡️ Stable</span>
+                    </div>
+                    <div class="status-row daily-tracker">
+                        <span class="daily-stat spent">Spent: $<span id="daily-spent">0</span></span>
+                        <span class="daily-stat earned">Earned: $<span id="daily-earned">0</span></span>
+                        <span class="daily-stat" id="daily-profit">Net: $0</span>
+                    </div>
+                    <div class="status-row location-row">
+                        <span class="location-info">
+                            <span id="location-emoji">🎣</span>
+                            <span id="location-name">Stonington</span>
+                            <span class="location-traits" id="location-traits">Fishing Hub</span>
+                        </span>
+                        <span class="price-mods">
+                            <span class="buy-mod" title="Buy price modifier">Buy: <span id="buy-mod">-20%</span></span>
+                            <span class="sell-mod" title="Sell price modifier">Sell: <span id="sell-mod">-15%</span></span>
+                        </span>
+                    </div>
+                </div>
+                <div class="header-buttons">
+                    <button id="map-btn" class="btn btn-small">Map</button>
+                    <button id="shop-btn" class="btn btn-small">Shop</button>
+                    <button id="bank-btn" class="btn btn-small">Bank</button>
+                    <button id="stats-btn" class="btn btn-small">Stats</button>
+                </div>
             </div>
         </header>
 
@@ -134,20 +132,40 @@
             </div>
         </div>
 
-        <!-- Main Game Area - Horizontal Layout -->
+        <!-- Main Game Area - Responsive Layout -->
         <main class="game-main">
-            <!-- Left Column: Dock -->
+            <!-- Left Column: Markets (Desktop) -->
             <div class="column column-left">
+                <section class="panel markets-panel">
+                    <h2>Markets</h2>
+                    <div class="current-location-card">
+                        <div class="location-header">
+                            <span class="location-icon" id="markets-location-icon">🎣</span>
+                            <span class="location-name" id="markets-location-name">Stonington</span>
+                        </div>
+                        <div class="location-prices">
+                            <span class="price-tag buy">Buy <span id="markets-buy-mod">-20%</span></span>
+                            <span class="price-tag sell">Sell <span id="markets-sell-mod">-15%</span></span>
+                        </div>
+                    </div>
+                    <div class="markets-list" id="markets-list">
+                        <!-- Other towns populated by JS -->
+                    </div>
+                    <div class="markets-footer">
+                        <button id="open-map-btn" class="btn btn-small">Open Full Map</button>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Center Column: Today's Decision -->
+            <div class="column column-center">
                 <section class="panel dock-panel">
                     <h2>The Dock</h2>
                     <div id="boats-container">
                         <p class="waiting">Waiting for boats...</p>
                     </div>
                 </section>
-            </div>
 
-            <!-- Center Column: Tank + Controls -->
-            <div class="column column-center">
                 <section class="panel tank-panel">
                     <h2>Your Tanks</h2>
                     <div class="tank-display">
@@ -168,30 +186,40 @@
                     </div>
                 </section>
 
-                <!-- Action Bar in Center -->
-                <div class="action-bar">
-                    <button id="next-day-btn" class="btn btn-large">Next Day</button>
-                </div>
-
-                <!-- Leaderboard Panel (includes rivals) -->
-                <section class="panel leaderboard-panel">
-                    <h2>Leaderboard</h2>
-                    <div id="leaderboard-list">
-                        <p class="waiting">Loading...</p>
-                    </div>
-                    <div class="prestige-display" id="prestige-display">
-                        <span class="prestige-title" id="prestige-title">Newcomer</span>
-                        <span class="prestige-stars">⭐ <span id="prestige-points">0</span></span>
-                    </div>
-                </section>
-            </div>
-
-            <!-- Right Column: Buyers + Contracts -->
-            <div class="column column-right">
                 <section class="panel buyers-panel">
                     <h2>Buyers</h2>
                     <div id="buyers-list">
                         <p class="waiting">No buyers today...</p>
+                    </div>
+                </section>
+
+                <!-- Action Bar (Desktop - in flow) -->
+                <div class="action-bar">
+                    <button id="next-day-btn" class="btn btn-large">Next Day</button>
+                </div>
+            </div>
+
+            <!-- Right Column: Context/Consequences -->
+            <div class="column column-right">
+                <section class="panel forecast-panel">
+                    <h2>Forecast</h2>
+                    <div class="forecast-current">
+                        <span class="forecast-label">Today</span>
+                        <span class="forecast-weather">
+                            <span id="forecast-today-icon">☀️</span>
+                            <span id="forecast-today-name">Sunny</span>
+                        </span>
+                    </div>
+                    <div class="forecast-tomorrow">
+                        <span class="forecast-label">Tomorrow</span>
+                        <span class="forecast-weather">
+                            <span id="forecast-tomorrow-icon">☀️</span>
+                            <span id="forecast-tomorrow-name">Sunny</span>
+                        </span>
+                    </div>
+                    <div class="market-trend-display">
+                        <span class="forecast-label">Market</span>
+                        <span id="forecast-trend" class="trend-stable">➡️ Stable</span>
                     </div>
                 </section>
 
@@ -208,6 +236,17 @@
                         <div id="available-contracts">
                             <p class="waiting">Need Delivery Van</p>
                         </div>
+                    </div>
+                </section>
+
+                <section class="panel leaderboard-panel">
+                    <h2>Leaderboard</h2>
+                    <div id="leaderboard-list">
+                        <p class="waiting">Loading...</p>
+                    </div>
+                    <div class="prestige-display" id="prestige-display">
+                        <span class="prestige-title" id="prestige-title">Newcomer</span>
+                        <span class="prestige-stars">⭐ <span id="prestige-points">0</span></span>
                     </div>
                 </section>
             </div>
@@ -347,6 +386,9 @@
                             <!-- Populated by JS -->
                         </div>
                     </div>
+                    <div class="stats-credit">
+                        <p>A tycoon game by Claude</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -384,6 +426,62 @@
                 <button id="restart-btn" class="btn btn-primary">Play Again</button>
             </div>
         </div>
+
+        <!-- Day Summary Modal -->
+        <div id="day-summary-modal" class="modal modal-fullscreen" style="display: none;">
+            <div class="modal-content day-summary">
+                <h2>Day <span id="summary-day">1</span> Complete</h2>
+                <div class="summary-verdict" id="summary-verdict"></div>
+
+                <!-- What You Achieved -->
+                <div class="summary-section summary-achieved">
+                    <h3>What You Achieved</h3>
+                    <div class="summary-stats">
+                        <div class="summary-row">
+                            <span class="summary-label">Spent Today</span>
+                            <span class="summary-value negative" id="summary-spent">$0</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Earned Today</span>
+                            <span class="summary-value positive" id="summary-earned">$0</span>
+                        </div>
+                        <div class="summary-row summary-total">
+                            <span class="summary-label">Net Profit</span>
+                            <span class="summary-value" id="summary-net">$0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- What You Missed -->
+                <div class="summary-section summary-missed" id="summary-missed-section" style="display: none;">
+                    <h3>What You Missed</h3>
+                    <div class="summary-missed-content">
+                        <div class="missed-boats" id="summary-missed-boats"></div>
+                        <div class="missed-rival" id="summary-rival-losses" style="display: none;">
+                            <span class="rival-icon">😈</span>
+                            <span class="rival-text">Slick Rick stole <span id="summary-rival-count">0</span> boat(s)!</span>
+                        </div>
+                        <div class="missed-total">
+                            <span class="summary-label">Potential Lost</span>
+                            <span class="summary-value warning" id="summary-missed-value">$0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Cash -->
+                <div class="summary-row summary-cash">
+                    <span class="summary-label">Total Cash</span>
+                    <span class="summary-value" id="summary-cash">$5,000</span>
+                </div>
+
+                <button class="btn btn-large btn-ceremony" id="summary-continue">Start Day <span id="summary-next-day">2</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile: Sticky Next Day Button -->
+    <div class="sticky-action" id="sticky-action">
+        <button id="next-day-btn-mobile" class="btn btn-large btn-sticky">Next Day</button>
     </div>
 
     <script src="js/main.js"></script>
