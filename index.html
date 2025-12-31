@@ -116,6 +116,26 @@
             </div>
         </header>
 
+        <!-- Persistent Summary Bar -->
+        <div class="summary-bar">
+            <div class="summary-item">
+                <span class="summary-label">Cash</span>
+                <span class="summary-value" id="summary-cash">$5,000</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Inventory</span>
+                <span class="summary-value" id="summary-inventory">0 lbs</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Freshness</span>
+                <span class="summary-value" id="summary-freshness">100%</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Reputation</span>
+                <span class="summary-value" id="summary-reputation">Dock Nobody</span>
+            </div>
+        </div>
+
         <!-- Animated Scene Overlay -->
         <div class="scene-overlay" id="scene-overlay">
             <!-- Weather effects container -->
@@ -223,22 +243,6 @@
                     </div>
                 </section>
 
-                <section class="panel contracts-panel">
-                    <h2>Contracts</h2>
-                    <div class="contracts-section">
-                        <h3>Active Contracts</h3>
-                        <div id="active-contracts">
-                            <p class="waiting">No active contracts</p>
-                        </div>
-                    </div>
-                    <div class="contracts-section">
-                        <h3>Available</h3>
-                        <div id="available-contracts">
-                            <p class="waiting">Need Delivery Van</p>
-                        </div>
-                    </div>
-                </section>
-
                 <section class="panel leaderboard-panel">
                     <h2>Leaderboard</h2>
                     <div id="leaderboard-list">
@@ -342,14 +346,6 @@
                             <div class="stat-item">
                                 <span class="stat-label">Worst Day Loss</span>
                                 <span class="stat-value negative" id="stat-worst-day">$0</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">Contracts Completed</span>
-                                <span class="stat-value" id="stat-contracts-done">0</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">Contracts Failed</span>
-                                <span class="stat-value" id="stat-contracts-fail">0</span>
                             </div>
                         </div>
                     </div>
@@ -468,10 +464,40 @@
                     </div>
                 </div>
 
+                <!-- Inventory Status -->
+                <div class="summary-section summary-inventory" id="summary-inventory-section">
+                    <h3>Inventory Status</h3>
+                    <div class="summary-inventory-content">
+                        <div class="summary-row">
+                            <span class="summary-label">Stock</span>
+                            <span class="summary-value" id="summary-stock">0 lbs</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Freshness</span>
+                            <span class="summary-value" id="summary-stock-freshness">100%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tomorrow's Forecast -->
+                <div class="summary-section summary-forecast">
+                    <h3>Tomorrow's Forecast</h3>
+                    <div class="summary-forecast-content">
+                        <div class="summary-row">
+                            <span class="summary-label">Weather</span>
+                            <span class="summary-value" id="summary-weather">Sunny</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Market</span>
+                            <span class="summary-value" id="summary-market">Stable</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Total Cash -->
                 <div class="summary-row summary-cash">
                     <span class="summary-label">Total Cash</span>
-                    <span class="summary-value" id="summary-cash">$5,000</span>
+                    <span class="summary-value" id="summary-total-cash">$5,000</span>
                 </div>
 
                 <button class="btn btn-large btn-ceremony" id="summary-continue">Start Day <span id="summary-next-day">2</span></button>

@@ -1,7 +1,7 @@
 /**
  * Maine Lobster Dealer Tycoon
  * A tycoon-style game about the lobster dealer industry in Maine
- * Phase 2: Dynamic pricing, equipment, contracts, relationships, finance
+ * Phase 2: Dynamic pricing, equipment, relationships, finance
  */
 
 // ============================================
@@ -110,7 +110,19 @@ const CONFIG = {
         ]
     },
 
-    // Captain names
+    // Captains with personality traits
+    captains: {
+        "Cap'n Joe": { trait: "reliable", priceVar: 0.95, catchMod: 1.0, flavorText: "Always arrives on time" },
+        "Old Pete": { trait: "generous", priceVar: 0.85, catchMod: 0.9, flavorText: "Gives good prices to regulars" },
+        "Sarah Mae": { trait: "ambitious", priceVar: 1.05, catchMod: 1.2, flavorText: "Big hauls, premium prices" },
+        "Big Mike": { trait: "steady", priceVar: 1.0, catchMod: 1.1, flavorText: "Consistent quality every time" },
+        "Tommy Two-Traps": { trait: "haggler", priceVar: 0.9, catchMod: 0.85, flavorText: "Will deal if you're loyal" },
+        "Weathered Walt": { trait: "grumpy", priceVar: 1.1, catchMod: 1.05, flavorText: "Pricey but experienced" },
+        "Lucky Lucy": { trait: "lucky", priceVar: 1.0, catchMod: 1.15, flavorText: "Her traps always produce" },
+        "Salty Sam": { trait: "storyteller", priceVar: 0.95, catchMod: 0.95, flavorText: "Great tales, fair prices" },
+        "Iron Jim": { trait: "tough", priceVar: 1.05, catchMod: 1.25, flavorText: "Works all weather conditions" },
+        "Young Ben": { trait: "eager", priceVar: 0.9, catchMod: 0.8, flavorText: "New to the trade, keen to sell" }
+    },
     captainNames: [
         "Cap'n Joe", "Old Pete", "Sarah Mae", "Big Mike", "Tommy Two-Traps",
         "Weathered Walt", "Lucky Lucy", "Salty Sam", "Iron Jim", "Young Ben"
@@ -279,7 +291,103 @@ const CONFIG = {
             "Trust your gut - it knows the lobstah business.",
             "Maine's the only place to be, I always say."
         ]
+    },
+
+    // Daily flavor events (one-liners, no popups)
+    dailyFlavor: [
+        "A pod of harbor seals passes by the dock.",
+        "The coffee pot at the bait shop is finally fixed.",
+        "Someone left a half-eaten lobster roll on the dock.",
+        "A tourist asks if the lobsters bite.",
+        "The lighthouse horn sounds twice.",
+        "A gull steals a fisherman's sandwich.",
+        "Old Pete is humming a sea shanty.",
+        "The tide is unusually high today.",
+        "A fishing cat watches from the pier.",
+        "Someone's truck won't start in the parking lot.",
+        "The church bells ring noon.",
+        "A whale spout spotted in the distance.",
+        "Kids are crabbing off the end of the dock.",
+        "The harbormaster is arguing with a yacht owner.",
+        "Fresh donuts at the bait shop today.",
+        "A pelican lands on a mooring post.",
+        "The wind shifted north overnight.",
+        "A local band is setting up at the pier restaurant.",
+        "First cruise ship of the season docked this morning.",
+        "The fishermen are talking about 'the big one'."
+    ]
+};
+
+// ============================================
+// REPUTATION & TRUST SYSTEM
+// ============================================
+const REPUTATION_TIERS = {
+    "Dock Nobody": { min: 0, max: 99 },
+    "Local Regular": { min: 100, max: 249 },
+    "Known Dealer": { min: 250, max: 499 },
+    "Regional Player": { min: 500, max: 899 },
+    "Statewide Power": { min: 900, max: Infinity }
+};
+
+const TRUST_THRESHOLDS = {
+    cold: { min: -100, max: -30 },
+    neutral: { min: -29, max: 29 },
+    warm: { min: 30, max: 69 },
+    preferred: { min: 70, max: 100 }
+};
+
+// Trust effects on prices
+const TRUST_PRICE_EFFECTS = {
+    cold: { buyMod: 1.08, sellMod: 0.94 },      // +8% buy, -6% sell
+    neutral: { buyMod: 1.0, sellMod: 1.0 },     // No effect
+    warm: { buyMod: 0.97, sellMod: 1.03 },      // -3% buy, +3% sell
+    preferred: { buyMod: 0.94, sellMod: 1.05 }  // -6% buy, +5% sell
+};
+
+// Reputation-gated unlocks
+const REPUTATION_UNLOCKS = {
+    "Dock Nobody": {
+        maxSellers: 2,
+        maxBuyers: 2,
+        features: []
+    },
+    "Local Regular": {
+        maxSellers: 3,
+        maxBuyers: 3,
+        features: ["premium_buyers"]
+    },
+    "Known Dealer": {
+        maxSellers: 4,
+        maxBuyers: 4,
+        features: ["premium_buyers", "bulk_orders"]
+    },
+    "Regional Player": {
+        maxSellers: 5,
+        maxBuyers: 5,
+        features: ["premium_buyers", "bulk_orders", "exclusive_suppliers"]
+    },
+    "Statewide Power": {
+        maxSellers: 6,
+        maxBuyers: 6,
+        features: ["premium_buyers", "bulk_orders", "exclusive_suppliers", "price_negotiation"]
     }
+};
+
+// Seller NPC archetypes
+const SELLER_ARCHETYPES = {
+    reliable: { priceVar: 0.95, supplyMod: 1.0, description: "Consistent prices, steady supply" },
+    generous: { priceVar: 0.85, supplyMod: 0.9, description: "Great prices, smaller catches" },
+    ambitious: { priceVar: 1.05, supplyMod: 1.3, description: "Premium prices, big hauls" },
+    grumpy: { priceVar: 1.0, supplyMod: 1.0, description: "Fair but hard to impress" },
+    newcomer: { priceVar: 0.90, supplyMod: 0.8, description: "Eager to build relationships" }
+};
+
+// Buyer NPC types
+const BUYER_TYPES = {
+    restaurant: { priceMod: 1.1, minFreshness: 80, volumeRange: [20, 80], description: "Pays premium for fresh" },
+    wholesaler: { priceMod: 0.95, minFreshness: 50, volumeRange: [100, 300], description: "Bulk orders, lower prices" },
+    tourist: { priceMod: 1.05, minFreshness: 70, volumeRange: [5, 30], description: "Small orders, decent prices" },
+    exporter: { priceMod: 1.0, minFreshness: 90, volumeRange: [150, 400], description: "Huge orders, needs top quality" }
 };
 
 // Equipment definitions
@@ -309,18 +417,18 @@ const EQUIPMENT = {
     // Vehicles
     deliveryVan: {
         id: "deliveryVan", name: "Delivery Van", category: "vehicles",
-        cost: 5000, description: "Unlock contracts, +15% delivery sales",
-        effect: { contractsEnabled: true, deliveryBonus: 0.15 }
+        cost: 5000, description: "Access premium buyers, +15% sell prices",
+        effect: { premiumBuyers: true, deliveryBonus: 0.15 }
     },
     refrigeratedTruck: {
         id: "refrigeratedTruck", name: "Refrigerated Truck", category: "vehicles",
-        cost: 12000, description: "Premium contracts, +25% delivery sales",
-        effect: { premiumContracts: true, deliveryBonus: 0.25 }, requires: "deliveryVan"
+        cost: 12000, description: "-20% decay rate, +25% sell prices",
+        effect: { decayReduction: 0.2, deliveryBonus: 0.25 }, requires: "deliveryVan"
     },
     dockRunner: {
         id: "dockRunner", name: "Dock Runner", category: "vehicles",
-        cost: 3500, description: "Visit 2 boats per day",
-        effect: { extraBoats: 1 }
+        cost: 3500, description: "See 2 extra boats per day",
+        effect: { extraBoats: 2 }
     },
 
     // Processing
@@ -331,7 +439,7 @@ const EQUIPMENT = {
     },
     gradingTable: {
         id: "gradingTable", name: "Grading Table", category: "processing",
-        cost: 1500, description: "See inventory breakdown by A/B/C grade",
+        cost: 1500, description: "Grade lobsters into Sel/Qtr/Chx for premium sales",
         effect: { gradingEnabled: true }
     },
     bandingStation: {
@@ -339,10 +447,10 @@ const EQUIPMENT = {
         cost: 600, description: "Required for restaurant sales",
         effect: { restaurantEnabled: true }
     },
-    packingEquipment: {
-        id: "packingEquipment", name: "Packing Equipment", category: "processing",
-        cost: 2500, description: "Unlock export contracts",
-        effect: { exportEnabled: true }
+    marketIntel: {
+        id: "marketIntel", name: "Market Intel", category: "processing",
+        cost: 2500, description: "Preview tomorrow's buyer demand range",
+        effect: { demandForecast: true }
     }
 };
 
@@ -495,26 +603,6 @@ const ACHIEVEMENTS = {
         description: "Sell 1,000 lbs of selects",
         emoji: "💎",
         condition: (state) => (state.stats.selectsSold || 0) >= 1000,
-        reward: { type: "prestige", amount: 1 },
-        tier: "gold"
-    },
-
-    // Contract achievements
-    firstContract: {
-        id: "firstContract",
-        name: "Handshake Deal",
-        description: "Complete your first contract",
-        emoji: "🤝",
-        condition: (state) => state.stats.contractsCompleted >= 1,
-        reward: { type: "reputation", amount: 10 },
-        tier: "bronze"
-    },
-    contractKing: {
-        id: "contractKing",
-        name: "Contract King",
-        description: "Complete 20 contracts",
-        emoji: "📋",
-        condition: (state) => state.stats.contractsCompleted >= 20,
         reward: { type: "prestige", amount: 1 },
         tier: "gold"
     },
@@ -1005,17 +1093,15 @@ const RANDOM_EVENTS = {
         minInventory: 50,
         effect: (state) => {
             const lostPercent = randomFloat(0.05, 0.15);
-            const totalInv = getTotalInventory();
-            const lost = Math.floor(totalInv * lostPercent);
-            // Lose proportionally from each grade
+            // Lose proportionally from each grade using lot system
             const lostSelect = Math.floor(state.inventory.select * lostPercent);
             const lostQuarter = Math.floor(state.inventory.quarter * lostPercent);
             const lostChix = Math.floor(state.inventory.chix * lostPercent);
             const lostRun = Math.floor(state.inventory.run * lostPercent);
-            state.inventory.select -= lostSelect;
-            state.inventory.quarter -= lostQuarter;
-            state.inventory.chix -= lostChix;
-            state.inventory.run -= lostRun;
+            if (lostSelect > 0) removeLotAmount('select', lostSelect);
+            if (lostQuarter > 0) removeLotAmount('quarter', lostQuarter);
+            if (lostChix > 0) removeLotAmount('chix', lostChix);
+            if (lostRun > 0) removeLotAmount('run', lostRun);
             return { lost: lostSelect + lostQuarter + lostChix + lostRun };
         },
         message: (data) => `Tank sprung a leak! Lost ${data.lost} lbs of lobster.`,
@@ -1072,15 +1158,14 @@ const RANDOM_EVENTS = {
         chance: 0.04,
         minInventory: 30,
         effect: (state) => {
-            // Downgrade some selects to quarters and quarters to chix
-            const downgradeSelect = Math.floor(state.inventory.select * randomFloat(0.1, 0.25));
-            const downgradeQuarter = Math.floor(state.inventory.quarter * randomFloat(0.1, 0.25));
-            state.inventory.select -= downgradeSelect;
-            state.inventory.quarter += downgradeSelect - downgradeQuarter;
-            state.inventory.chix += downgradeQuarter;
-            return { downgraded: downgradeSelect + downgradeQuarter };
+            // Reduce freshness of all lots
+            const freshnessLoss = randomInt(15, 30);
+            for (const lot of state.lots) {
+                lot.freshness = Math.max(0, lot.freshness - freshnessLoss);
+            }
+            return { freshnessLoss: freshnessLoss };
         },
-        message: (data) => `Temperature fluctuation! ${data.downgraded} lbs dropped in quality.`,
+        message: (data) => `Temperature fluctuation! All stock lost ${data.freshnessLoss}% freshness.`,
         bobComment: [
             "Gotta keep them tanks cold!",
             "Quality control's important in this business.",
@@ -1099,9 +1184,9 @@ const RANDOM_EVENTS = {
             const amount = randomInt(20, 50);
             // Add as run (ungraded) - or quarters if you have grading table
             if (hasEquipment('gradingTable')) {
-                state.inventory.quarter += amount;
+                addLot('quarter', amount, 100);
             } else {
-                state.inventory.run += amount;
+                addLot('run', amount, 100);
             }
             return { amount: amount };
         },
@@ -1330,9 +1415,12 @@ let gameState = {
 
     // Inventory by grade (run = ungraded, others = graded)
     inventory: { select: 0, quarter: 0, chix: 0, run: 0 },
+    // Lot-based tracking for freshness/decay system
+    lots: [], // Each lot: { id, grade, amount, freshness, decayRate, dayBought }
     tankCapacity: 500,
     baseMortalityRate: 0.05,
     qualityDecayRate: 0.1, // 10% chance per day to drop a grade
+    nextLotId: 1,
 
     // Equipment owned
     equipment: {},
@@ -1344,13 +1432,26 @@ let gameState = {
     // Buyers available today
     buyers: [],
 
-    // Contracts
-    contracts: [],
-    availableContracts: [],
-
-    // Relationships
+    // Relationships (legacy - being replaced by trust system)
     fishermenRelations: {}, // captainName -> loyalty (0-100)
     buyerRelations: {}, // buyerName -> trust (0-100)
+
+    // NEW: Reputation & Trust System
+    reputation: 0, // Player reputation [0, 1000+]
+    repTier: "Dock Nobody", // Derived tier
+
+    // Persistent Seller NPCs with trust
+    sellerNPCs: {}, // sellerId -> { name, trust, consecutiveDaysBought, daysSinceInteraction, archetype }
+
+    // Persistent Buyer NPCs with trust
+    buyerNPCs: {}, // buyerId -> { name, trust, consecutiveDaysSold, daysSinceInteraction, type }
+
+    // Daily tracking for rep/trust calculations
+    dailyLbsBought: {}, // sellerId -> lbs bought today
+    dailyLbsSold: {}, // buyerId -> lbs sold today
+    dailyFreshnessSold: {}, // buyerId -> { totalFreshness, totalLbs }
+    dailySpoilage: 0, // lbs lost to spoilage today
+    dailyInventoryStart: 0, // inventory at start of day (for spoilage %)
 
     // Finance
     loanAvailable: true,
@@ -1363,6 +1464,7 @@ let gameState = {
     dailyCosts: 0,      // Operating costs
     dailyTravels: 0,    // Number of travels today (max 2 for round trip)
     visitedTownsToday: {}, // Towns visited today (no new boats on return)
+    yesterdayNet: 0,    // Yesterday's profit/loss for summary bar
 
     // Missed opportunities (for day summary)
     missedBoats: [],     // Boats that left (passed or timed out)
@@ -1381,8 +1483,6 @@ let gameState = {
         totalMoneySpent: 0,
         bestDayProfit: 0,
         worstDayLoss: 0,
-        contractsCompleted: 0,
-        contractsFailed: 0,
         dealsWithCaptains: {},  // captainName -> count
         salesToBuyers: {},      // buyerName -> count
         loansTotal: 0,
@@ -1407,9 +1507,6 @@ let gameState = {
     prestige: 0,             // Total prestige points earned
     lifetimeEarnings: 0,     // Total money earned across all games
     gamesCompleted: 0,
-
-    // Reputation (affects prices and relationships)
-    reputation: 50,          // 0-100, starts at neutral
 
     // Market supply tracking
     marketSupply: {},        // townId -> current supply
@@ -1460,6 +1557,268 @@ function isMobile() {
     return window.innerWidth < 768;
 }
 
+// Flash an element to indicate a change
+function flashElement(elementId) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    el.classList.add('flash');
+    setTimeout(() => el.classList.remove('flash'), 500);
+}
+
+// ============================================
+// REPUTATION & TRUST HELPER FUNCTIONS
+// ============================================
+
+// Get reputation tier name from reputation value
+function getReputationTier(rep) {
+    for (const [tier, range] of Object.entries(REPUTATION_TIERS)) {
+        if (rep >= range.min && rep <= range.max) {
+            return tier;
+        }
+    }
+    return "Dock Nobody";
+}
+
+// Get trust tier from trust value
+function getTrustTier(trust) {
+    if (trust <= -30) return "cold";
+    if (trust >= 70) return "preferred";
+    if (trust >= 30) return "warm";
+    return "neutral";
+}
+
+// Get trust-based price modifier for buying (from seller)
+function getTrustBuyMod(sellerId) {
+    const npc = gameState.sellerNPCs[sellerId];
+    if (!npc) return 1.0;
+    const tier = getTrustTier(npc.trust);
+    return TRUST_PRICE_EFFECTS[tier].buyMod;
+}
+
+// Get trust-based price modifier for selling (to buyer)
+function getTrustSellMod(buyerId) {
+    const npc = gameState.buyerNPCs[buyerId];
+    if (!npc) return 1.0;
+    const tier = getTrustTier(npc.trust);
+    return TRUST_PRICE_EFFECTS[tier].sellMod;
+}
+
+// Update player reputation and tier
+function updateReputation(delta) {
+    gameState.reputation = Math.max(0, gameState.reputation + delta);
+    gameState.repTier = getReputationTier(gameState.reputation);
+}
+
+// Update NPC trust (clamped to -100, +100)
+function updateSellerTrust(sellerId, delta) {
+    const npc = gameState.sellerNPCs[sellerId];
+    if (!npc) return;
+    npc.trust = Math.max(-100, Math.min(100, npc.trust + delta));
+}
+
+function updateBuyerTrust(buyerId, delta) {
+    const npc = gameState.buyerNPCs[buyerId];
+    if (!npc) return;
+    npc.trust = Math.max(-100, Math.min(100, npc.trust + delta));
+}
+
+// Get unlocked features for current reputation tier
+function getReputationUnlocks() {
+    return REPUTATION_UNLOCKS[gameState.repTier] || REPUTATION_UNLOCKS["Dock Nobody"];
+}
+
+// Check if a feature is unlocked
+function isFeatureUnlocked(feature) {
+    const unlocks = getReputationUnlocks();
+    return unlocks.features.includes(feature);
+}
+
+// Generate a unique NPC ID
+function generateNPCId(type, name) {
+    return `${type}_${name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${Date.now()}`;
+}
+
+// Create a new seller NPC
+function createSellerNPC(name, archetype = null) {
+    const archetypeKey = archetype || randomChoice(Object.keys(SELLER_ARCHETYPES));
+    const archetypeData = SELLER_ARCHETYPES[archetypeKey];
+    const id = generateNPCId('seller', name);
+
+    gameState.sellerNPCs[id] = {
+        id: id,
+        name: name,
+        trust: 0,
+        consecutiveDaysBought: 0,
+        daysSinceInteraction: 0,
+        archetype: archetypeKey,
+        priceVar: archetypeData.priceVar,
+        supplyMod: archetypeData.supplyMod
+    };
+
+    return id;
+}
+
+// Create a new buyer NPC
+function createBuyerNPC(name, type = null) {
+    const typeKey = type || randomChoice(Object.keys(BUYER_TYPES));
+    const typeData = BUYER_TYPES[typeKey];
+    const id = generateNPCId('buyer', name);
+
+    gameState.buyerNPCs[id] = {
+        id: id,
+        name: name,
+        trust: 0,
+        consecutiveDaysSold: 0,
+        daysSinceInteraction: 0,
+        type: typeKey,
+        priceMod: typeData.priceMod,
+        minFreshness: typeData.minFreshness,
+        volumeRange: typeData.volumeRange
+    };
+
+    return id;
+}
+
+// Get or create a seller NPC by name
+function getOrCreateSeller(name, archetype = null) {
+    // Check if seller already exists
+    for (const [id, npc] of Object.entries(gameState.sellerNPCs)) {
+        if (npc.name === name) return id;
+    }
+    // Create new seller
+    return createSellerNPC(name, archetype);
+}
+
+// Get or create a buyer NPC by name
+function getOrCreateBuyer(name, type = null) {
+    // Check if buyer already exists
+    for (const [id, npc] of Object.entries(gameState.buyerNPCs)) {
+        if (npc.name === name) return id;
+    }
+    // Create new buyer
+    return createBuyerNPC(name, type);
+}
+
+// Process end-of-day trust and reputation changes
+function processEndOfDayTrust() {
+    const interactedSellers = new Set(Object.keys(gameState.dailyLbsBought));
+    const interactedBuyers = new Set(Object.keys(gameState.dailyLbsSold));
+
+    let totalRepGain = 0;
+    let totalLbsBought = 0;
+    let totalLbsSold = 0;
+
+    // Process seller trust changes
+    for (const [sellerId, npc] of Object.entries(gameState.sellerNPCs)) {
+        const lbsBought = gameState.dailyLbsBought[sellerId] || 0;
+
+        if (lbsBought > 0) {
+            // Bought from this seller: +2 base + 1 per 50 lbs
+            const trustGain = 2 + Math.floor(lbsBought / 50);
+            updateSellerTrust(sellerId, trustGain);
+            npc.consecutiveDaysBought++;
+            npc.daysSinceInteraction = 0;
+            totalLbsBought += lbsBought;
+
+            // Consecutive day bonus: extra +1 trust if 3+ days
+            if (npc.consecutiveDaysBought >= 3) {
+                updateSellerTrust(sellerId, 1);
+            }
+        } else {
+            // Didn't buy from this seller
+            npc.daysSinceInteraction++;
+            npc.consecutiveDaysBought = 0;
+
+            // Trust decay: -1 per day without interaction
+            if (npc.daysSinceInteraction > 0) {
+                updateSellerTrust(sellerId, -1);
+            }
+        }
+    }
+
+    // Process buyer trust changes
+    for (const [buyerId, npc] of Object.entries(gameState.buyerNPCs)) {
+        const lbsSold = gameState.dailyLbsSold[buyerId] || 0;
+        const freshnessData = gameState.dailyFreshnessSold[buyerId];
+
+        if (lbsSold > 0) {
+            // Sold to this buyer: +1 base + 1 per 100 lbs
+            let trustGain = 1 + Math.floor(lbsSold / 100);
+
+            // Freshness bonus: +1 if average freshness > 80
+            if (freshnessData && freshnessData.totalLbs > 0) {
+                const avgFreshness = freshnessData.totalFreshness / freshnessData.totalLbs;
+                if (avgFreshness >= 80) {
+                    trustGain += 1;
+                }
+                // Penalty for selling low freshness
+                if (avgFreshness < 50) {
+                    trustGain -= 2;
+                }
+            }
+
+            updateBuyerTrust(buyerId, trustGain);
+            npc.consecutiveDaysSold++;
+            npc.daysSinceInteraction = 0;
+            totalLbsSold += lbsSold;
+
+            // Consecutive day bonus
+            if (npc.consecutiveDaysSold >= 3) {
+                updateBuyerTrust(buyerId, 1);
+            }
+        } else {
+            // Didn't sell to this buyer
+            npc.daysSinceInteraction++;
+            npc.consecutiveDaysSold = 0;
+
+            // Trust decay
+            if (npc.daysSinceInteraction > 0) {
+                updateBuyerTrust(buyerId, -1);
+            }
+        }
+    }
+
+    // Calculate reputation gain for the day
+    // Base: 5 rep for any activity
+    if (totalLbsBought > 0 || totalLbsSold > 0) {
+        totalRepGain += 5;
+    }
+
+    // Volume bonuses: +1 rep per 100 lbs bought, +1 per 100 lbs sold
+    totalRepGain += Math.floor(totalLbsBought / 100);
+    totalRepGain += Math.floor(totalLbsSold / 100);
+
+    // Spoilage penalty: lose rep if >10% of inventory spoiled
+    if (gameState.dailyInventoryStart > 0 && gameState.dailySpoilage > 0) {
+        const spoilageRate = gameState.dailySpoilage / gameState.dailyInventoryStart;
+        if (spoilageRate > 0.1) {
+            totalRepGain -= Math.floor(spoilageRate * 10);
+        }
+    }
+
+    // Apply reputation change
+    if (totalRepGain !== 0) {
+        const oldTier = gameState.repTier;
+        updateReputation(totalRepGain);
+
+        // Notify on tier change
+        if (gameState.repTier !== oldTier) {
+            log(`Your reputation has grown! You are now: ${gameState.repTier}`, "positive");
+        }
+    }
+
+    // Reset daily tracking
+    gameState.dailyLbsBought = {};
+    gameState.dailyLbsSold = {};
+    gameState.dailyFreshnessSold = {};
+    gameState.dailySpoilage = 0;
+}
+
+// Track the start of day inventory for spoilage calculations
+function trackDayStartInventory() {
+    gameState.dailyInventoryStart = getTotalInventory();
+}
+
 function getTotalInventory() {
     return gameState.inventory.select + gameState.inventory.quarter +
            gameState.inventory.chix + gameState.inventory.run;
@@ -1468,6 +1827,57 @@ function getTotalInventory() {
 // Get total graded inventory (excludes run)
 function getGradedInventory() {
     return gameState.inventory.select + gameState.inventory.quarter + gameState.inventory.chix;
+}
+
+// Lot management functions
+function addLot(grade, amount, freshness = 100) {
+    const lot = {
+        id: gameState.nextLotId++,
+        grade: grade,
+        amount: amount,
+        freshness: freshness,
+        decayRate: 10 + randomInt(0, 5), // 10-15% freshness loss per day
+        dayBought: gameState.day
+    };
+    gameState.lots.push(lot);
+    gameState.inventory[grade] += amount;
+    return lot;
+}
+
+function removeLotAmount(grade, amountToRemove) {
+    // Remove from oldest lots first (FIFO)
+    let remaining = amountToRemove;
+    const lotsOfGrade = gameState.lots.filter(l => l.grade === grade).sort((a, b) => a.dayBought - b.dayBought);
+
+    for (const lot of lotsOfGrade) {
+        if (remaining <= 0) break;
+        const removeFromLot = Math.min(lot.amount, remaining);
+        lot.amount -= removeFromLot;
+        remaining -= removeFromLot;
+    }
+
+    // Remove empty lots
+    gameState.lots = gameState.lots.filter(l => l.amount > 0);
+
+    // Update inventory
+    gameState.inventory[grade] = Math.max(0, gameState.inventory[grade] - amountToRemove);
+}
+
+function getAverageFreshness(grade) {
+    const lotsOfGrade = gameState.lots.filter(l => l.grade === grade);
+    if (lotsOfGrade.length === 0) return 100;
+    const totalWeight = lotsOfGrade.reduce((sum, l) => sum + l.amount, 0);
+    if (totalWeight === 0) return 100;
+    const weightedFreshness = lotsOfGrade.reduce((sum, l) => sum + (l.freshness * l.amount), 0);
+    return Math.round(weightedFreshness / totalWeight);
+}
+
+function getOverallFreshness() {
+    if (gameState.lots.length === 0) return 100;
+    const totalWeight = gameState.lots.reduce((sum, l) => sum + l.amount, 0);
+    if (totalWeight === 0) return 100;
+    const weightedFreshness = gameState.lots.reduce((sum, l) => sum + (l.freshness * l.amount), 0);
+    return Math.round(weightedFreshness / totalWeight);
 }
 
 function getSeason(day) {
@@ -1635,6 +2045,13 @@ function fishermanSays(message) {
 
     // Also show as popup on desktop
     showBobPopup(message);
+}
+
+// Show daily flavor event as one-liner (no popup)
+function showDailyFlavorEvent() {
+    const flavors = CONFIG.dailyFlavor;
+    const event = randomChoice(flavors);
+    log(`🌊 ${event}`, "flavor");
 }
 
 // Show Barnacle Bob popup on screen
@@ -1890,14 +2307,6 @@ function updateStats(type, data) {
             }
             break;
 
-        case "contractComplete":
-            stats.contractsCompleted++;
-            break;
-
-        case "contractFail":
-            stats.contractsFailed++;
-            break;
-
         case "loan":
             stats.loansTotal += data.amount;
             break;
@@ -2035,7 +2444,7 @@ function calculateBuyPrice(grade) {
     return Math.round(price * 100) / 100;
 }
 
-function calculateSellPrice(grade, isContract = false) {
+function calculateSellPrice(grade) {
     let price = CONFIG.baseLobsterPrice;
 
     // Season modifier
@@ -2055,12 +2464,6 @@ function calculateSellPrice(grade, isContract = false) {
     const transactionBonus = getEquipmentEffect('transactionBonus', 0);
     price *= (1 + transactionBonus);
 
-    // Contract bonus
-    if (isContract) {
-        const deliveryBonus = getEquipmentEffect('deliveryBonus', 0);
-        price *= (1 + deliveryBonus);
-    }
-
     // Random variation
     price += randomFloat(-0.30, 0.50);
 
@@ -2068,9 +2471,147 @@ function calculateSellPrice(grade, isContract = false) {
 }
 
 // ============================================
+// ONBOARDING BOATS (First 3 Days)
+// ============================================
+function generateOnboardingBoats() {
+    const boats = [];
+    const boatIdCounter = Date.now();
+
+    // Day 1: Single reliable captain, easy deal
+    if (gameState.day === 1) {
+        const captain = "Cap'n Joe";
+        const captainData = CONFIG.captains[captain] || { priceVar: 0.95, catchMod: 1.0, trait: "reliable" };
+        const sellerId = getOrCreateSeller(captain, "reliable");
+        const sellerNPC = gameState.sellerNPCs[sellerId];
+
+        boats.push({
+            id: `boat_${boatIdCounter}_0`,
+            name: "Mary Lou",
+            captain: captain,
+            sellerId: sellerId,
+            captainTrait: "reliable",
+            captainFlavor: "First day? I'll give you a fair deal.",
+            loyalty: 0,
+            sellerTrust: sellerNPC ? sellerNPC.trust : 0,
+            catchAmount: 80, // Manageable amount
+            pricePerLb: 4.00, // Good starting price
+            boatType: 'lobsterBoat',
+            boatTypeData: CONFIG.boatTypes.lobsterBoat,
+            timeLeft: 60, // Generous timer
+            arrived: true,
+            timerStarted: false
+        });
+    }
+
+    // Day 2: Two boats - reliable and newcomer
+    if (gameState.day === 2) {
+        const captain1 = "Cap'n Joe";
+        const captainData1 = CONFIG.captains[captain1] || { priceVar: 0.95, catchMod: 1.0, trait: "reliable" };
+        const sellerId1 = getOrCreateSeller(captain1, "reliable");
+        const sellerNPC1 = gameState.sellerNPCs[sellerId1];
+
+        boats.push({
+            id: `boat_${boatIdCounter}_0`,
+            name: "Mary Lou",
+            captain: captain1,
+            sellerId: sellerId1,
+            captainTrait: "reliable",
+            captainFlavor: "Good to see you back! Building trust.",
+            loyalty: 1,
+            sellerTrust: sellerNPC1 ? sellerNPC1.trust : 0,
+            catchAmount: 100,
+            pricePerLb: 3.90, // Slight loyalty discount
+            boatType: 'lobsterBoat',
+            boatTypeData: CONFIG.boatTypes.lobsterBoat,
+            timeLeft: 50,
+            arrived: true,
+            timerStarted: false
+        });
+
+        const captain2 = "Young Davey";
+        const sellerId2 = getOrCreateSeller(captain2, "newcomer");
+        const sellerNPC2 = gameState.sellerNPCs[sellerId2];
+
+        boats.push({
+            id: `boat_${boatIdCounter}_1`,
+            name: "Sea Spray",
+            captain: captain2,
+            sellerId: sellerId2,
+            captainTrait: "newcomer",
+            captainFlavor: "New to selling - eager to make a deal!",
+            loyalty: 0,
+            sellerTrust: sellerNPC2 ? sellerNPC2.trust : 0,
+            catchAmount: 60,
+            pricePerLb: 3.75, // Newcomer discount
+            boatType: 'dory',
+            boatTypeData: CONFIG.boatTypes.dory,
+            timeLeft: 40,
+            arrived: true,
+            timerStarted: false
+        });
+    }
+
+    // Day 3: Transition - mix of known captains and new one
+    if (gameState.day === 3) {
+        const captain1 = "Cap'n Joe";
+        const sellerId1 = getOrCreateSeller(captain1, "reliable");
+        const sellerNPC1 = gameState.sellerNPCs[sellerId1];
+
+        boats.push({
+            id: `boat_${boatIdCounter}_0`,
+            name: "Mary Lou",
+            captain: captain1,
+            sellerId: sellerId1,
+            captainTrait: "reliable",
+            captainFlavor: "Three days in a row! You're becoming a regular.",
+            loyalty: 2,
+            sellerTrust: sellerNPC1 ? sellerNPC1.trust : 0,
+            catchAmount: 120,
+            pricePerLb: 3.85,
+            boatType: 'lobsterBoat',
+            boatTypeData: CONFIG.boatTypes.lobsterBoat,
+            timeLeft: 45,
+            arrived: true,
+            timerStarted: false
+        });
+
+        // Random second boat
+        const captain2 = randomChoice(["Sarah Mae", "Old Pete", "Young Davey"]);
+        const captainData2 = CONFIG.captains[captain2] || { priceVar: 1.0, catchMod: 1.0, trait: "regular" };
+        const sellerId2 = getOrCreateSeller(captain2, captainData2.trait);
+        const sellerNPC2 = gameState.sellerNPCs[sellerId2];
+
+        boats.push({
+            id: `boat_${boatIdCounter}_1`,
+            name: randomChoice(CONFIG.boatNames),
+            captain: captain2,
+            sellerId: sellerId2,
+            captainTrait: captainData2.trait || "regular",
+            captainFlavor: captainData2.flavorText || "Good morning!",
+            loyalty: 0,
+            sellerTrust: sellerNPC2 ? sellerNPC2.trust : 0,
+            catchAmount: randomInt(50, 100),
+            pricePerLb: calculateBuyPrice('B') * (captainData2.priceVar || 1.0),
+            boatType: 'lobsterBoat',
+            boatTypeData: CONFIG.boatTypes.lobsterBoat,
+            timeLeft: 40,
+            arrived: true,
+            timerStarted: false
+        });
+    }
+
+    return boats;
+}
+
+// ============================================
 // BOAT GENERATION
 // ============================================
 function generateBoats() {
+    // Scripted onboarding for first 3 days
+    if (gameState.day <= 3) {
+        return generateOnboardingBoats();
+    }
+
     const boats = [];
     const seasonData = CONFIG.seasons[gameState.season];
     const weatherData = CONFIG.weather[gameState.weather];
@@ -2097,25 +2638,40 @@ function generateBoats() {
         const boatType = CONFIG.boatTypes[boatTypeId] || CONFIG.boatTypes.lobsterBoat;
 
         const captain = randomChoice(CONFIG.captainNames);
+        const captainData = CONFIG.captains[captain] || { priceVar: 1.0, catchMod: 1.0, trait: "regular" };
         const boatName = randomChoice(CONFIG.boatNames);
 
-        // Catch amount based on boat type
-        const catchAmount = randomInt(boatType.minCatch || 50, boatType.maxCatch || 200);
+        // Get or create seller NPC for this captain
+        const sellerId = getOrCreateSeller(captain, captainData.trait);
+        const sellerNPC = gameState.sellerNPCs[sellerId];
 
-        // Get loyalty bonus
+        // Catch amount based on boat type and captain trait
+        let catchAmount = randomInt(boatType.minCatch || 50, boatType.maxCatch || 200);
+        catchAmount = Math.round(catchAmount * captainData.catchMod);
+
+        // Get loyalty bonus (legacy)
         const loyalty = gameState.fishermenRelations[captain] || 0;
         const loyaltyDiscount = loyalty * 0.001; // Up to 10% discount at max loyalty
 
-        // Base price affected by season, weather, market, loyalty, and boat quality bias
+        // NEW: Get trust-based price modifier
+        const trustMod = getTrustBuyMod(sellerId);
+
+        // Base price affected by season, weather, market, loyalty, boat quality, captain trait, and trust
         let pricePerLb = calculateBuyPrice('B'); // Use B-grade as baseline
         pricePerLb = pricePerLb * (1 + (boatType.qualityBias || 0) * 0.5); // Quality affects price
+        pricePerLb = pricePerLb * captainData.priceVar; // Captain personality affects price
+        pricePerLb = pricePerLb * trustMod; // Trust affects price
         pricePerLb = Math.round((pricePerLb * (1 - loyaltyDiscount)) * 100) / 100;
 
         boats.push({
             id: `boat_${boatIdCounter}_${i}`,
             name: boatName,
             captain: captain,
+            sellerId: sellerId, // NEW: Link to seller NPC
+            captainTrait: captainData.trait,
+            captainFlavor: captainData.flavorText,
             loyalty: loyalty,
+            sellerTrust: sellerNPC ? sellerNPC.trust : 0, // NEW: Trust level
             catchAmount: catchAmount,
             pricePerLb: pricePerLb,
             boatType: boatTypeId || 'lobsterBoat',
@@ -2142,9 +2698,114 @@ function weightedRandom(options) {
 }
 
 // ============================================
+// ONBOARDING BUYERS (First 3 Days)
+// ============================================
+function generateOnboardingBuyers() {
+    const buyers = [];
+
+    // Day 1: Single wholesaler - will buy anything (run)
+    if (gameState.day === 1) {
+        const buyerName = "Portland Seafood Co.";
+        const buyerId = getOrCreateBuyer(buyerName, "wholesaler");
+
+        buyers.push({
+            name: buyerName,
+            buyerId: buyerId,
+            emoji: "🏭",
+            type: "wholesaler",
+            wantsAmount: 100, // Will buy everything you have
+            acceptsRun: true,
+            acceptsGrades: ['select', 'quarter', 'chix'],
+            pricePerLb: 5.50, // Good starting sell price
+            trust: 0,
+            buyerTrust: 0
+        });
+    }
+
+    // Day 2: Wholesaler + budget buyer
+    if (gameState.day === 2) {
+        const buyerName1 = "Portland Seafood Co.";
+        const buyerId1 = getOrCreateBuyer(buyerName1, "wholesaler");
+
+        buyers.push({
+            name: buyerName1,
+            buyerId: buyerId1,
+            emoji: "🏭",
+            type: "wholesaler",
+            wantsAmount: 120,
+            acceptsRun: true,
+            acceptsGrades: ['select', 'quarter', 'chix'],
+            pricePerLb: 5.60, // Slight trust bump
+            trust: 1,
+            buyerTrust: gameState.buyerNPCs[buyerId1]?.trust || 0
+        });
+
+        const buyerName2 = "Lobster Roll Stand";
+        const buyerId2 = getOrCreateBuyer(buyerName2, "restaurant");
+
+        buyers.push({
+            name: buyerName2,
+            buyerId: buyerId2,
+            emoji: "🦞",
+            type: "budget",
+            wantsAmount: 50,
+            acceptsRun: true,
+            acceptsGrades: ['chix', 'quarter'],
+            pricePerLb: 5.25,
+            trust: 0,
+            buyerTrust: 0
+        });
+    }
+
+    // Day 3: Mix of buyers - transition to normal
+    if (gameState.day === 3) {
+        const buyerName1 = "Portland Seafood Co.";
+        const buyerId1 = getOrCreateBuyer(buyerName1, "wholesaler");
+
+        buyers.push({
+            name: buyerName1,
+            buyerId: buyerId1,
+            emoji: "🏭",
+            type: "wholesaler",
+            wantsAmount: 150,
+            acceptsRun: true,
+            acceptsGrades: ['select', 'quarter', 'chix'],
+            pricePerLb: 5.70,
+            trust: 2,
+            buyerTrust: gameState.buyerNPCs[buyerId1]?.trust || 0
+        });
+
+        // Random additional buyer
+        const extraBuyers = ["Harbor Bistro", "The Clam Shack", "Lobster Roll Stand"];
+        const buyerName2 = randomChoice(extraBuyers);
+        const buyerId2 = getOrCreateBuyer(buyerName2, "restaurant");
+
+        buyers.push({
+            name: buyerName2,
+            buyerId: buyerId2,
+            emoji: "🍽️",
+            type: "restaurant",
+            wantsAmount: randomInt(30, 60),
+            acceptsRun: false,
+            acceptsGrades: ['select', 'quarter'],
+            pricePerLb: 6.00,
+            trust: 0,
+            buyerTrust: 0
+        });
+    }
+
+    return buyers;
+}
+
+// ============================================
 // BUYER GENERATION
 // ============================================
 function generateBuyers() {
+    // Scripted onboarding for first 3 days
+    if (gameState.day <= 3) {
+        return generateOnboardingBuyers();
+    }
+
     const buyers = [];
     const weatherData = CONFIG.weather[gameState.weather];
     const locationBuyerBonus = getLocationBuyerBonus(); // Positive = more buyers
@@ -2155,16 +2816,20 @@ function generateBuyers() {
     const wholesalerNames = ["Portland Seafood Co.", "Maine Coast Dist.", "Atlantic Fresh", "NE Wholesale"];
     const wName = randomChoice(wholesalerNames);
     const wTrust = gameState.buyerRelations[wName] || 0;
+    const wBuyerId = getOrCreateBuyer(wName, "wholesaler");
+    const wTrustMod = getTrustSellMod(wBuyerId);
 
     buyers.push({
         name: wName,
+        buyerId: wBuyerId, // NEW: Link to buyer NPC
         emoji: "🏭",
         type: "wholesaler",
         wantsAmount: randomInt(80, 200) + Math.floor(wTrust / 5),
         acceptsRun: true,  // Will buy ungraded lobsters
         acceptsGrades: ['select', 'quarter', 'chix'],  // Will also buy graded
-        pricePerLb: calculateSellPrice('quarter'),  // Base price for run/mixed
-        trust: wTrust
+        pricePerLb: calculateSellPrice('quarter') * wTrustMod,  // Base price with trust mod
+        trust: wTrust,
+        buyerTrust: gameState.buyerNPCs[wBuyerId]?.trust || 0 // NEW: Trust level
     });
 
     // Restaurant buyer - wants quarters or selects (graded only)
@@ -2173,19 +2838,23 @@ function generateBuyers() {
         const restaurantNames = ["Harbor Bistro", "The Clam Shack", "Oceanview Grill", "Pier 7", "Captain's Table"];
         const name = randomChoice(restaurantNames);
         const trust = gameState.buyerRelations[name] || 0;
+        const rBuyerId = getOrCreateBuyer(name, "restaurant");
+        const rTrustMod = getTrustSellMod(rBuyerId);
 
         if (Math.random() < weatherData.buyerMod) {
             // Restaurants prefer specific sizes - randomly want selects or quarters
             const wantsSelects = Math.random() > 0.6;
             buyers.push({
                 name: name,
+                buyerId: rBuyerId, // NEW: Link to buyer NPC
                 emoji: "🍽️",
                 type: "restaurant",
                 wantsAmount: randomInt(15, 40) + Math.floor(trust / 10) + (locationBuyerBonus * 5),
                 acceptsRun: false,  // Won't buy ungraded
                 acceptsGrades: wantsSelects ? ['select'] : ['select', 'quarter'],
-                pricePerLb: calculateSellPrice(wantsSelects ? 'select' : 'quarter'),
-                trust: trust
+                pricePerLb: calculateSellPrice(wantsSelects ? 'select' : 'quarter') * rTrustMod,
+                trust: trust,
+                buyerTrust: gameState.buyerNPCs[rBuyerId]?.trust || 0 // NEW: Trust level
             });
         }
     }
@@ -2194,45 +2863,60 @@ function generateBuyers() {
     const specialChance = town.traits.includes('tourist') ? 0.3 : town.traits.includes('wealthy') ? 0.4 : 0.5;
     if (Math.random() > specialChance && weatherData.buyerMod > 0.7) {
         const specialNames = ["Tourist Group", "Private Yacht", "Wedding Caterer", "Food Festival"];
+        const sName = randomChoice(specialNames);
+        const sBuyerId = getOrCreateBuyer(sName, "tourist");
+        const sTrustMod = getTrustSellMod(sBuyerId);
         buyers.push({
-            name: randomChoice(specialNames),
+            name: sName,
+            buyerId: sBuyerId, // NEW: Link to buyer NPC
             emoji: "⭐",
             type: "special",
             wantsAmount: randomInt(30, 80) + (locationBuyerBonus * 10),
             acceptsRun: false,
             acceptsGrades: ['select'],  // Only want the big ones
-            pricePerLb: calculateSellPrice('select'),
-            trust: 0
+            pricePerLb: calculateSellPrice('select') * sTrustMod,
+            trust: 0,
+            buyerTrust: gameState.buyerNPCs[sBuyerId]?.trust || 0 // NEW: Trust level
         });
     }
 
     // Chix buyer - specifically wants smaller lobsters (cheaper for them)
     if (Math.random() > 0.6) {
         const chixBuyerNames = ["Clam Bake Co.", "Beach Party Catering", "Lobster Roll Stand", "Food Truck Fleet"];
+        const cName = randomChoice(chixBuyerNames);
+        const cBuyerId = getOrCreateBuyer(cName, "restaurant");
+        const cTrustMod = getTrustSellMod(cBuyerId);
         buyers.push({
-            name: randomChoice(chixBuyerNames),
+            name: cName,
+            buyerId: cBuyerId, // NEW: Link to buyer NPC
             emoji: "🦞",
             type: "budget",
             wantsAmount: randomInt(40, 100),
             acceptsRun: false,
             acceptsGrades: ['chix', 'quarter'],  // Want smaller, cheaper lobsters
-            pricePerLb: calculateSellPrice('chix'),
-            trust: 0
+            pricePerLb: calculateSellPrice('chix') * cTrustMod,
+            trust: 0,
+            buyerTrust: gameState.buyerNPCs[cBuyerId]?.trust || 0 // NEW: Trust level
         });
     }
 
     // Extra buyer in high-volume towns (Portland, Bar Harbor) - accepts run
     if (locationBuyerBonus >= 1 && Math.random() > 0.5) {
         const extraNames = ["Local Market", "Cruise Ship Supply", "Hotel Chain", "Seafood Co-op"];
+        const eName = randomChoice(extraNames);
+        const eBuyerId = getOrCreateBuyer(eName, "wholesaler");
+        const eTrustMod = getTrustSellMod(eBuyerId);
         buyers.push({
-            name: randomChoice(extraNames),
+            name: eName,
+            buyerId: eBuyerId, // NEW: Link to buyer NPC
             emoji: "🏪",
             type: "bulk",
             wantsAmount: randomInt(50, 150),
             acceptsRun: true,  // Will take ungraded for bulk
             acceptsGrades: ['select', 'quarter', 'chix'],
-            pricePerLb: calculateSellPrice('quarter') * 0.95, // Slight discount for bulk
-            trust: 0
+            pricePerLb: calculateSellPrice('quarter') * 0.95 * eTrustMod, // Slight discount for bulk + trust
+            trust: 0,
+            buyerTrust: gameState.buyerNPCs[eBuyerId]?.trust || 0 // NEW: Trust level
         });
     }
 
@@ -2240,162 +2924,55 @@ function generateBuyers() {
 }
 
 // ============================================
-// CONTRACT SYSTEM
-// ============================================
-function generateContractOffers() {
-    if (!hasEquipment('deliveryVan')) return [];
-
-    const contracts = [];
-    const names = ["Oceanview Resort", "Blue Wave Restaurant", "Coastal Markets", "Harbor Inn"];
-
-    if (Math.random() > 0.5) {
-        const name = randomChoice(names);
-        contracts.push({
-            id: Date.now(),
-            buyer: name,
-            emoji: "📋",
-            amountPerWeek: randomInt(30, 80),
-            pricePerLb: calculateSellPrice('quarter', true) * 0.95, // Slight discount for guaranteed
-            weeksRemaining: randomInt(2, 4),
-            delivered: 0,
-            acceptsRun: true,  // Wholesaler contracts accept run
-            acceptsGrades: ['select', 'quarter', 'chix']
-        });
-    }
-
-    // Premium contract if has refrigerated truck - wants selects only
-    if (hasEquipment('refrigeratedTruck') && Math.random() > 0.6) {
-        contracts.push({
-            id: Date.now() + 1,
-            buyer: "Boston Premium Seafood",
-            emoji: "🌟",
-            amountPerWeek: randomInt(50, 120),
-            pricePerLb: calculateSellPrice('select', true),
-            weeksRemaining: randomInt(3, 6),
-            delivered: 0,
-            acceptsRun: false,
-            acceptsGrades: ['select']  // Premium only wants selects
-        });
-    }
-
-    return contracts;
-}
-
-function acceptContract(index) {
-    const contract = gameState.availableContracts[index];
-    if (!contract) return false;
-
-    gameState.contracts.push(contract);
-    gameState.availableContracts.splice(index, 1);
-    log(`Signed contract with ${contract.buyer}!`, "positive");
-    updateUI();
-    return true;
-}
-
-function deliverToContract(contractIndex) {
-    const contract = gameState.contracts[contractIndex];
-    if (!contract) return false;
-
-    const needed = contract.amountPerWeek - contract.delivered;
-    let delivered = 0;
-    let revenue = 0;
-    const hasGradingTable = hasEquipment('gradingTable');
-
-    // Deliver from inventory based on what contract accepts
-    if (!hasGradingTable) {
-        // Without grading table, can only deliver run to contracts that accept it
-        if (!contract.acceptsRun) {
-            log("This contract requires graded lobsters! Get a Grading Table.", "negative");
-            return false;
-        }
-        const amount = Math.min(gameState.inventory.run, needed);
-        if (amount > 0) {
-            gameState.inventory.run -= amount;
-            delivered = amount;
-            revenue = amount * contract.pricePerLb;
-        }
-    } else {
-        // With grading table, deliver graded inventory (prefer selects first)
-        for (const grade of ['select', 'quarter', 'chix']) {
-            if (!contract.acceptsGrades || !contract.acceptsGrades.includes(grade)) continue;
-            const amount = Math.min(gameState.inventory[grade], needed - delivered);
-            if (amount > 0) {
-                gameState.inventory[grade] -= amount;
-                delivered += amount;
-                revenue += amount * contract.pricePerLb;
-            }
-        }
-
-        // Also deliver from run if contract accepts it
-        if (contract.acceptsRun && delivered < needed && gameState.inventory.run > 0) {
-            const amount = Math.min(gameState.inventory.run, needed - delivered);
-            gameState.inventory.run -= amount;
-            delivered += amount;
-            revenue += amount * contract.pricePerLb * 0.9;
-        }
-    }
-
-    if (delivered > 0) {
-        contract.delivered += delivered;
-        const finalRevenue = Math.round(revenue);
-        gameState.cash += finalRevenue;
-        gameState.dailyEarned += finalRevenue;  // Track daily earnings
-        log(`Delivered ${delivered} lbs to ${contract.buyer} for $${formatMoney(finalRevenue)}`, "positive");
-
-        // Build relationship
-        const currentTrust = gameState.buyerRelations[contract.buyer] || 0;
-        gameState.buyerRelations[contract.buyer] = Math.min(100, currentTrust + 2);
-    } else {
-        log("No suitable inventory for this contract!", "negative");
-    }
-
-    updateUI();
-    return delivered > 0;
-}
-
-// ============================================
 // TANK MANAGEMENT
 // ============================================
 function processTankDaily() {
-    const mortalityRate = getEquipmentEffect('mortalityRate', gameState.baseMortalityRate);
+    const baseMortalityRate = getEquipmentEffect('mortalityRate', gameState.baseMortalityRate);
     const qualityDecayMod = getEquipmentEffect('qualityDecayMod', 1);
 
     let totalLost = 0;
-    let qualityDropped = 0;
+    let lotsRotted = 0;
 
-    // Process mortality for all grades including run
-    for (const grade of ['select', 'quarter', 'chix', 'run']) {
-        const amount = gameState.inventory[grade];
-        const lost = Math.floor(amount * mortalityRate);
+    // Process each lot
+    for (const lot of gameState.lots) {
+        // Decay freshness
+        const decayAmount = lot.decayRate * qualityDecayMod;
+        lot.freshness = Math.max(0, lot.freshness - decayAmount);
+
+        // Mortality increases as freshness drops
+        // At 100% freshness: base mortality rate
+        // At 0% freshness: 3x mortality rate
+        const freshnessPenalty = 1 + (2 * (1 - lot.freshness / 100));
+        const effectiveMortality = baseMortalityRate * freshnessPenalty;
+
+        // Apply mortality
+        const lost = Math.floor(lot.amount * effectiveMortality);
         if (lost > 0) {
-            gameState.inventory[grade] -= lost;
+            lot.amount -= lost;
+            gameState.inventory[lot.grade] = Math.max(0, gameState.inventory[lot.grade] - lost);
             totalLost += lost;
+        }
+
+        // Very low freshness lots rot completely
+        if (lot.freshness <= 10 && lot.amount > 0) {
+            const rotAmount = Math.ceil(lot.amount * 0.3); // 30% of remaining rots
+            lot.amount -= rotAmount;
+            gameState.inventory[lot.grade] = Math.max(0, gameState.inventory[lot.grade] - rotAmount);
+            lotsRotted += rotAmount;
         }
     }
 
-    // Process quality decay (select->quarter, quarter->chix)
-    // Only applies to graded lobsters
-    const decayChance = gameState.qualityDecayRate * qualityDecayMod;
+    // Remove empty lots
+    gameState.lots = gameState.lots.filter(l => l.amount > 0);
 
-    const selectDecay = Math.floor(gameState.inventory.select * decayChance);
-    if (selectDecay > 0) {
-        gameState.inventory.select -= selectDecay;
-        gameState.inventory.quarter += selectDecay;
-        qualityDropped += selectDecay;
-    }
-
-    const quarterDecay = Math.floor(gameState.inventory.quarter * decayChance);
-    if (quarterDecay > 0) {
-        gameState.inventory.quarter -= quarterDecay;
-        gameState.inventory.chix += quarterDecay;
-        qualityDropped += quarterDecay;
-    }
+    // Track spoilage for reputation calculations
+    gameState.dailySpoilage = totalLost + lotsRotted;
 
     if (totalLost > 0) {
         log(`Lost ${totalLost} lbs to mortality.`, "negative");
     }
-    if (qualityDropped > 0) {
-        log(`${qualityDropped} lbs dropped in quality.`, "warning");
+    if (lotsRotted > 0) {
+        log(`${lotsRotted} lbs rotted from old stock!`, "negative");
     }
 }
 
@@ -2508,21 +3085,33 @@ function buyFromBoat(boatIndex, amount) {
 
     // Grade the lobsters (dealer does the grading)
     const graded = gradeLobsters(buyAmount);
-    gameState.inventory.select += graded.select;
-    gameState.inventory.quarter += graded.quarter;
-    gameState.inventory.chix += graded.chix;
-    gameState.inventory.run += graded.run;
 
-    // Build relationship with captain
+    // Create lots for each grade with freshness tracking
+    if (graded.select > 0) addLot('select', graded.select, 100);
+    if (graded.quarter > 0) addLot('quarter', graded.quarter, 100);
+    if (graded.chix > 0) addLot('chix', graded.chix, 100);
+    if (graded.run > 0) addLot('run', graded.run, 100);
+
+    // Build relationship with captain (legacy)
     const currentLoyalty = gameState.fishermenRelations[boat.captain] || 0;
     gameState.fishermenRelations[boat.captain] = Math.min(100, currentLoyalty + 1);
 
-    // Log message - show grades if player has grading table
-    if (hasEquipment('gradingTable')) {
-        log(`Bought ${buyAmount} lbs for $${formatMoney(cost)} (Sel:${graded.select} Qtr:${graded.quarter} Chx:${graded.chix})`, "warning");
-    } else {
-        log(`Bought ${buyAmount} lbs (run) from ${boat.captain} for $${formatMoney(cost)}`, "warning");
+    // NEW: Track for trust system
+    if (boat.sellerId) {
+        // Track daily lbs bought from this seller
+        gameState.dailyLbsBought[boat.sellerId] = (gameState.dailyLbsBought[boat.sellerId] || 0) + buyAmount;
     }
+
+    // Log message - more informative feedback
+    const cashLeft = gameState.cash;
+    if (hasEquipment('gradingTable')) {
+        log(`Bought ${buyAmount} lbs @ $${boat.pricePerLb.toFixed(2)}/lb — $${formatMoney(cost)} spent, $${formatMoney(cashLeft)} left`, "positive");
+    } else {
+        log(`Bought ${buyAmount} lbs (run) @ $${boat.pricePerLb.toFixed(2)}/lb — $${formatMoney(cost)} spent, $${formatMoney(cashLeft)} left`, "positive");
+    }
+
+    // Flash cash display to show change
+    flashElement('summary-cash');
 
     // Fisherman commentary on the purchase
     if (Math.random() < 0.5) { // 50% chance of comment
@@ -2605,9 +3194,12 @@ function sellToBuyer(buyerIndex) {
         // Sell from run inventory
         const amount = Math.min(gameState.inventory.run, buyer.wantsAmount);
         if (amount > 0) {
-            gameState.inventory.run -= amount;
+            // Apply freshness modifier to price (old lobsters sell for less)
+            const freshness = getAverageFreshness('run');
+            const freshnessMod = 0.7 + (freshness / 100) * 0.3; // 70-100% of price based on freshness
+            removeLotAmount('run', amount);
             sold = amount;
-            revenue = amount * buyer.pricePerLb;
+            revenue = amount * buyer.pricePerLb * freshnessMod;
         }
     } else {
         // With grading table: sell graded inventory to buyers based on what they accept
@@ -2620,18 +3212,23 @@ function sellToBuyer(buyerIndex) {
             if (amount > 0) {
                 const gradeData = CONFIG.grades[grade];
                 const gradePrice = buyer.pricePerLb * (gradeData ? gradeData.sellMod / CONFIG.grades.quarter.sellMod : 1);
-                gameState.inventory[grade] -= amount;
+                // Apply freshness modifier
+                const freshness = getAverageFreshness(grade);
+                const freshnessMod = 0.7 + (freshness / 100) * 0.3;
+                removeLotAmount(grade, amount);
                 sold += amount;
-                revenue += amount * gradePrice;
+                revenue += amount * gradePrice * freshnessMod;
             }
         }
 
         // If buyer accepts run and still wants more, sell from run
         if (buyer.acceptsRun && sold < buyer.wantsAmount && gameState.inventory.run > 0) {
             const amount = Math.min(gameState.inventory.run, buyer.wantsAmount - sold);
-            gameState.inventory.run -= amount;
+            const freshness = getAverageFreshness('run');
+            const freshnessMod = 0.7 + (freshness / 100) * 0.3;
+            removeLotAmount('run', amount);
             sold += amount;
-            revenue += amount * buyer.pricePerLb * 0.9; // Run sells at 90% of base
+            revenue += amount * buyer.pricePerLb * 0.9 * freshnessMod;
         }
     }
 
@@ -2652,14 +3249,33 @@ function sellToBuyer(buyerIndex) {
     // Track statistics
     updateStats("sell", { amount: sold, revenue: finalRevenue, buyer: buyer.name });
 
-    // Build relationship
+    // Build relationship (legacy)
     if (buyer.name) {
         const currentTrust = gameState.buyerRelations[buyer.name] || 0;
         gameState.buyerRelations[buyer.name] = Math.min(100, currentTrust + 1);
     }
 
+    // NEW: Track for trust system
+    if (buyer.buyerId) {
+        // Track daily lbs sold to this buyer
+        gameState.dailyLbsSold[buyer.buyerId] = (gameState.dailyLbsSold[buyer.buyerId] || 0) + sold;
+
+        // Track freshness for this buyer (average freshness of what was sold)
+        // We use overall freshness as proxy since we've already removed lots
+        const overallFreshness = getOverallFreshness();
+        if (!gameState.dailyFreshnessSold[buyer.buyerId]) {
+            gameState.dailyFreshnessSold[buyer.buyerId] = { totalFreshness: 0, totalLbs: 0 };
+        }
+        gameState.dailyFreshnessSold[buyer.buyerId].totalFreshness += overallFreshness * sold;
+        gameState.dailyFreshnessSold[buyer.buyerId].totalLbs += sold;
+    }
+
     const gradeInfo = hasGradingTable ? "" : " (run)";
-    log(`Sold ${sold} lbs${gradeInfo} to ${buyer.name} for $${formatMoney(finalRevenue)}`, "positive");
+    const pricePerLb = (finalRevenue / sold).toFixed(2);
+    log(`Sold ${sold} lbs${gradeInfo} @ $${pricePerLb}/lb — +$${formatMoney(finalRevenue)}, now $${formatMoney(gameState.cash)}`, "positive");
+
+    // Flash cash display to show change
+    flashElement('summary-cash');
 
     // Fisherman commentary on the sale
     if (Math.random() < 0.5) { // 50% chance of comment
@@ -2791,6 +3407,12 @@ function nextDay() {
         totalMissedValue: totalMissedValue
     };
 
+    // Save yesterday's net before resetting
+    gameState.yesterdayNet = gameState.dailyEarned - gameState.dailySpent - gameState.dailyCosts;
+
+    // Process end-of-day trust and reputation changes
+    processEndOfDayTrust();
+
     // Reset daily trackers for new day
     gameState.dailySpent = 0;
     gameState.dailyEarned = 0;
@@ -2805,6 +3427,9 @@ function nextDay() {
     const operatingCost = 50 + Math.floor(getTotalInventory() * 0.05);
     gameState.cash -= operatingCost;
     log(`Operating costs: $${operatingCost}`, "warning");
+
+    // Track inventory at start of day for spoilage calculations
+    trackDayStartInventory();
 
     // Process tank (mortality, quality decay)
     processTankDaily();
@@ -2841,9 +3466,6 @@ function nextDay() {
     if (gameState.boats.length > 0) {
         processRivalActions();
     }
-
-    // Generate contract offers
-    gameState.availableContracts = generateContractOffers();
 
     // Process random events (after boats/buyers generated)
     processRandomEvents();
@@ -2897,6 +3519,11 @@ function nextDay() {
             fishermanSays(getRandomComment(CONFIG.dockworker.season[gameState.season]));
         }
 
+        // Daily flavor event (one-liner, no popup) - 50% chance
+        if (Math.random() < 0.5) {
+            showDailyFlavorEvent();
+        }
+
         // Occasional idle chatter
         maybeIdleChatter();
     }
@@ -2911,32 +3538,6 @@ function nextDay() {
 
 function processWeeklyEvents() {
     log(`=== Week ${gameState.week} ===`, "");
-
-    // Process contract deadlines
-    for (let i = gameState.contracts.length - 1; i >= 0; i--) {
-        const contract = gameState.contracts[i];
-        if (contract.delivered < contract.amountPerWeek) {
-            const penalty = Math.round((contract.amountPerWeek - contract.delivered) * contract.pricePerLb * 0.5);
-            gameState.cash -= penalty;
-            log(`Missed contract with ${contract.buyer}! Penalty: $${formatMoney(penalty)}`, "negative");
-
-            // Lose trust
-            const currentTrust = gameState.buyerRelations[contract.buyer] || 0;
-            gameState.buyerRelations[contract.buyer] = Math.max(0, currentTrust - 20);
-
-            // Track failed contract
-            updateStats("contractFail", {});
-        }
-
-        contract.weeksRemaining--;
-        contract.delivered = 0;
-
-        if (contract.weeksRemaining <= 0) {
-            log(`Contract with ${contract.buyer} completed!`, "positive");
-            updateStats("contractComplete", {});
-            gameState.contracts.splice(i, 1);
-        }
-    }
 
     // Process loan interest
     processWeeklyInterest();
@@ -3040,17 +3641,27 @@ function resetGame() {
         currentLocation: "stonington", // Start in cheapest fishing village
         travelingTo: null,
         inventory: { select: 0, quarter: 0, chix: 0, run: 0 },
+        lots: [],
         tankCapacity: 500,
         baseMortalityRate: 0.05,
         qualityDecayRate: 0.1,
+        nextLotId: 1,
         equipment: {},
         boats: [],
         maxBoats: 1,
         buyers: [],
-        contracts: [],
-        availableContracts: [],
         fishermenRelations: {},
         buyerRelations: {},
+        // NEW: Reputation & Trust System
+        reputation: 0,
+        repTier: "Dock Nobody",
+        sellerNPCs: {},
+        buyerNPCs: {},
+        dailyLbsBought: {},
+        dailyLbsSold: {},
+        dailyFreshnessSold: {},
+        dailySpoilage: 0,
+        dailyInventoryStart: 0,
         loanAvailable: true,
         maxLoan: 10000,
         interestRate: 0.05,
@@ -3059,6 +3670,7 @@ function resetGame() {
         dailyCosts: 0,
         dailyTravels: 0,
         visitedTownsToday: {},
+        yesterdayNet: 0,
         // Missed opportunities (for day summary)
         missedBoats: [],
         missedBuyers: [],
@@ -3073,8 +3685,6 @@ function resetGame() {
             totalMoneySpent: 0,
             bestDayProfit: 0,
             worstDayLoss: 0,
-            contractsCompleted: 0,
-            contractsFailed: 0,
             dealsWithCaptains: {},
             salesToBuyers: {},
             loansTotal: 0,
@@ -3182,7 +3792,6 @@ function showToast(message, type = "") {
     else if (message.includes("boat") || message.includes("Boat")) icon = "🚤";
     else if (message.includes("Bought") || message.includes("bought")) icon = "🦞";
     else if (message.includes("Sold") || message.includes("sold")) icon = "💰";
-    else if (message.includes("contract") || message.includes("Contract")) icon = "📋";
     else if (message.includes("$")) icon = "💵";
 
     // Create toast element
@@ -3270,6 +3879,60 @@ function updateUI() {
         else signal = "➡️ Stable";
         marketSignalMobile.textContent = signal;
     }
+
+    // Persistent Summary Bar updates
+    const summaryCash = document.getElementById("summary-cash");
+    if (summaryCash) summaryCash.textContent = `$${formatMoney(gameState.cash)}`;
+
+    const summaryInventory = document.getElementById("summary-inventory");
+    if (summaryInventory) summaryInventory.textContent = `${getTotalInventory()} lbs`;
+
+    const summaryFreshness = document.getElementById("summary-freshness");
+    if (summaryFreshness) {
+        const freshness = getOverallFreshness();
+        summaryFreshness.textContent = `${freshness}%`;
+        if (freshness >= 70) {
+            summaryFreshness.className = "summary-value positive";
+        } else if (freshness >= 40) {
+            summaryFreshness.className = "summary-value";
+        } else {
+            summaryFreshness.className = "summary-value negative";
+        }
+    }
+
+    const summaryYesterday = document.getElementById("summary-yesterday");
+    if (summaryYesterday) {
+        const net = gameState.yesterdayNet;
+        if (net > 0) {
+            summaryYesterday.textContent = `+$${formatMoney(net)}`;
+            summaryYesterday.className = "summary-value positive";
+        } else if (net < 0) {
+            summaryYesterday.textContent = `-$${formatMoney(Math.abs(net))}`;
+            summaryYesterday.className = "summary-value negative";
+        } else {
+            summaryYesterday.textContent = "$0";
+            summaryYesterday.className = "summary-value";
+        }
+    }
+
+    // Reputation display
+    const summaryReputation = document.getElementById("summary-reputation");
+    if (summaryReputation) {
+        summaryReputation.textContent = gameState.repTier;
+        // Color code by tier
+        if (gameState.repTier === "Statewide Power") {
+            summaryReputation.className = "summary-value reputation-tier-5";
+        } else if (gameState.repTier === "Regional Player") {
+            summaryReputation.className = "summary-value reputation-tier-4";
+        } else if (gameState.repTier === "Known Dealer") {
+            summaryReputation.className = "summary-value reputation-tier-3";
+        } else if (gameState.repTier === "Local Regular") {
+            summaryReputation.className = "summary-value reputation-tier-2";
+        } else {
+            summaryReputation.className = "summary-value reputation-tier-1";
+        }
+    }
+
     document.getElementById("weather-name").textContent = CONFIG.weather[gameState.weather].name;
     document.getElementById("tomorrow-weather").textContent = CONFIG.weather[gameState.tomorrowWeather].icon;
 
@@ -3360,9 +4023,6 @@ function updateUI() {
     // Buyers
     updateBuyersUI();
 
-    // Contracts
-    updateContractsUI();
-
     // Equipment shop
     updateShopUI();
 
@@ -3385,6 +4045,33 @@ function updateUI() {
     checkHelperTips();
 }
 
+// Determine price tags for a boat offer
+function getBoatPriceTags(boat) {
+    const tags = [];
+    const avgPrice = CONFIG.baseLobsterPrice * CONFIG.seasons[gameState.season].buyMod;
+    const priceDiff = (boat.pricePerLb - avgPrice) / avgPrice;
+
+    // Price-based tags
+    if (priceDiff <= -0.15) {
+        tags.push({ label: "CHEAP", class: "tag-cheap" });
+    } else if (priceDiff >= 0.20) {
+        tags.push({ label: "PREMIUM", class: "tag-premium" });
+    }
+
+    // Risky indicators
+    if (boat.timeLeft <= 15) {
+        tags.push({ label: "URGENT", class: "tag-risky" });
+    }
+    if (boat.loyalty < 25) {
+        tags.push({ label: "NEW", class: "tag-neutral" });
+    }
+    if (boat.catchAmount >= 150) {
+        tags.push({ label: "BIG HAUL", class: "tag-info" });
+    }
+
+    return tags;
+}
+
 function updateDockUI() {
     const container = document.getElementById("boats-container");
     container.innerHTML = "";
@@ -3401,8 +4088,23 @@ function updateDockUI() {
         const boatEmoji = boat.boatTypeData ? boat.boatTypeData.emoji : '🚤';
         const boatTypeName = boat.boatTypeData ? boat.boatTypeData.name : 'Boat';
 
+        // Get price tags
+        const tags = getBoatPriceTags(boat);
+        const tagsHtml = tags.map(t => `<span class="price-tag ${t.class}">${t.label}</span>`).join('');
+
         // Timer urgency classes
         const timerUrgent = boat.timeLeft <= 10 ? 'timer-urgent' : boat.timeLeft <= 20 ? 'timer-warning' : '';
+
+        // Trust indicator
+        const sellerNPC = boat.sellerId ? gameState.sellerNPCs[boat.sellerId] : null;
+        const trustLevel = sellerNPC ? sellerNPC.trust : 0;
+        const trustTier = getTrustTier(trustLevel);
+        const trustIcon = trustTier === 'preferred' ? '💎' :
+                          trustTier === 'warm' ? '🤝' :
+                          trustTier === 'cold' ? '❄️' : '';
+        const trustClass = trustTier === 'preferred' ? 'trust-preferred' :
+                           trustTier === 'warm' ? 'trust-warm' :
+                           trustTier === 'cold' ? 'trust-cold' : '';
 
         const div = document.createElement("div");
         div.className = `boat-card boat-type-${boat.boatType || 'lobsterBoat'}`;
@@ -3419,15 +4121,21 @@ function updateDockUI() {
                     <span class="boat-name">${boat.name}</span>
                     <span class="boat-type-label">${boatTypeName}</span>
                 </div>
-                <span class="captain-name">${boat.captain} ${"★".repeat(loyaltyStars)}</span>
+                <div class="captain-info">
+                    <span class="captain-name ${trustClass}">${boat.captain} ${trustIcon} ${"★".repeat(loyaltyStars)}</span>
+                    <span class="captain-flavor">${boat.captainFlavor || ''}</span>
+                </div>
             </div>
             <div class="catch-info">
-                <p>${boat.catchAmount} lbs @ $${boat.pricePerLb.toFixed(2)}/lb</p>
-                <p class="total-cost">Total: $${formatMoney(totalCost)}</p>
+                <div class="price-highlight">
+                    <span class="price-per-lb">$${boat.pricePerLb.toFixed(2)}/lb</span>
+                    <div class="price-tags">${tagsHtml}</div>
+                </div>
+                <p class="catch-details">${boat.catchAmount} lbs • Total: $${formatMoney(totalCost)}</p>
             </div>
             <div class="boat-actions">
-                <button class="btn btn-primary buy-all-btn">Buy All</button>
-                <button class="btn buy-half-btn">Buy Half ($${formatMoney(halfCost)})</button>
+                <button class="btn btn-primary buy-all-btn">Buy All ($${formatMoney(totalCost)})</button>
+                <button class="btn buy-half-btn">Half ($${formatMoney(halfCost)})</button>
                 <button class="btn btn-secondary pass-btn">Pass</button>
             </div>
         `;
@@ -3612,74 +4320,6 @@ function updateBuyersUI() {
     });
 }
 
-function updateContractsUI() {
-    const activeContainer = document.getElementById("active-contracts");
-    const availableContainer = document.getElementById("available-contracts");
-
-    // Active contracts
-    if (gameState.contracts.length === 0) {
-        activeContainer.innerHTML = '<p class="waiting">No active contracts</p>';
-    } else {
-        activeContainer.innerHTML = "";
-        gameState.contracts.forEach((contract, index) => {
-            const progress = Math.round((contract.delivered / contract.amountPerWeek) * 100);
-            const div = document.createElement("div");
-            div.className = "contract-card";
-            div.innerHTML = `
-                <div class="contract-info">
-                    <span>${contract.emoji} ${contract.buyer}</span>
-                    <span>${contract.amountPerWeek} lbs/wk @ $${contract.pricePerLb.toFixed(2)}</span>
-                    <span>Progress: ${contract.delivered}/${contract.amountPerWeek} (${progress}%)</span>
-                    <span>${contract.weeksRemaining} weeks left</span>
-                </div>
-                <button class="btn btn-primary deliver-btn" data-contract="${index}">Deliver</button>
-            `;
-            activeContainer.appendChild(div);
-        });
-
-        activeContainer.querySelectorAll(".deliver-btn").forEach(btn => {
-            btn.addEventListener("click", () => deliverToContract(parseInt(btn.dataset.contract)));
-        });
-    }
-
-    // Available contracts
-    if (!hasEquipment('deliveryVan')) {
-        availableContainer.innerHTML = '<p class="waiting">Need Delivery Van for contracts</p>';
-    } else if (gameState.availableContracts.length === 0) {
-        availableContainer.innerHTML = '<p class="waiting">No contracts available today</p>';
-    } else {
-        availableContainer.innerHTML = "";
-        gameState.availableContracts.forEach((contract, index) => {
-            // Build grade acceptance text
-            let gradeText = contract.acceptsRun ? "run/any" : "";
-            if (contract.acceptsGrades) {
-                const gradeNames = contract.acceptsGrades.map(g => {
-                    const data = CONFIG.grades[g];
-                    return data ? data.shortName : g;
-                });
-                gradeText = gradeNames.join("/");
-            }
-
-            const div = document.createElement("div");
-            div.className = "contract-card available";
-            div.innerHTML = `
-                <div class="contract-info">
-                    <span>${contract.emoji} ${contract.buyer}</span>
-                    <span>${contract.amountPerWeek} lbs/wk @ $${contract.pricePerLb.toFixed(2)}</span>
-                    <span>Duration: ${contract.weeksRemaining} weeks</span>
-                    <span>Accepts: ${gradeText}</span>
-                </div>
-                <button class="btn btn-primary accept-btn" data-contract="${index}">Accept</button>
-            `;
-            availableContainer.appendChild(div);
-        });
-
-        availableContainer.querySelectorAll(".accept-btn").forEach(btn => {
-            btn.addEventListener("click", () => acceptContract(parseInt(btn.dataset.contract)));
-        });
-    }
-}
-
 function updateShopUI() {
     const container = document.getElementById("equipment-list");
     container.innerHTML = "";
@@ -3786,8 +4426,6 @@ function updateStatsUI() {
     document.getElementById("stat-worst-day").textContent = stats.worstDayLoss < 0
         ? `-$${formatMoney(Math.abs(stats.worstDayLoss))}`
         : `$${formatMoney(stats.worstDayLoss)}`;
-    document.getElementById("stat-contracts-done").textContent = stats.contractsCompleted;
-    document.getElementById("stat-contracts-fail").textContent = stats.contractsFailed;
 
     // Relationships
     const favCaptain = getFavoriteCaptain();
@@ -4975,8 +5613,46 @@ function showDaySummary() {
         netEl.className = "summary-value negative";
     }
 
-    document.getElementById("summary-cash").textContent = `$${formatMoney(gameState.cash)}`;
+    document.getElementById("summary-total-cash").textContent = `$${formatMoney(gameState.cash)}`;
     document.getElementById("summary-next-day").textContent = gameState.day;
+
+    // Inventory status
+    const stockEl = document.getElementById("summary-stock");
+    const freshnessEl = document.getElementById("summary-stock-freshness");
+    const totalStock = getTotalInventory();
+    if (stockEl) stockEl.textContent = `${totalStock} lbs`;
+    if (freshnessEl) {
+        const freshness = getOverallFreshness();
+        freshnessEl.textContent = `${freshness}%`;
+        if (freshness >= 70) {
+            freshnessEl.className = "summary-value positive";
+        } else if (freshness >= 40) {
+            freshnessEl.className = "summary-value";
+        } else {
+            freshnessEl.className = "summary-value negative";
+        }
+    }
+
+    // Tomorrow's forecast
+    const weatherEl = document.getElementById("summary-weather");
+    const marketEl = document.getElementById("summary-market");
+    if (weatherEl) {
+        const weatherData = CONFIG.weather[gameState.weather];
+        weatherEl.textContent = `${weatherData.icon} ${weatherData.name}`;
+    }
+    if (marketEl) {
+        let marketText = "➡️ Stable";
+        if (gameState.marketTrend > 0) {
+            marketText = "📈 Rising - good for selling!";
+            marketEl.className = "summary-value positive";
+        } else if (gameState.marketTrend < 0) {
+            marketText = "📉 Falling - good for buying";
+            marketEl.className = "summary-value";
+        } else {
+            marketEl.className = "summary-value";
+        }
+        marketEl.textContent = marketText;
+    }
 
     // Missed opportunities section
     const missedSection = document.getElementById("summary-missed-section");
@@ -5055,11 +5731,57 @@ function closeDaySummary() {
 }
 
 function checkSeasonEnd() {
+    // Check if player reached Statewide Power (early victory)
+    if (gameState.repTier === "Statewide Power" && !gameState.gameOver) {
+        showStatewideVictory();
+        return true;
+    }
+
     if (gameState.day > CONFIG.summerLength) {
         showSeasonEndScreen();
         return true;
     }
     return false;
+}
+
+// Special victory screen for reaching Statewide Power tier
+function showStatewideVictory() {
+    gameState.gameOver = true;
+
+    const modal = document.getElementById("game-over-modal");
+    const title = document.getElementById("game-over-title");
+    const msg = document.getElementById("game-over-message");
+
+    title.textContent = "👑 STATEWIDE POWER!";
+    title.style.color = "var(--gold)";
+
+    // Calculate prestige bonus for early victory
+    const daysRemaining = CONFIG.summerLength - gameState.day + 1;
+    const prestigeBonus = 5 + Math.floor(daysRemaining / 5);
+
+    gameState.prestige = (gameState.prestige || 0) + prestigeBonus;
+    savePrestige();
+
+    msg.innerHTML = `
+        <div class="season-end-results victory-screen">
+            <div class="season-end-stars">👑 ⭐⭐⭐⭐⭐ 👑</div>
+            <div class="season-end-rank">LOBSTER TYCOON</div>
+            <p>You've built an empire! The entire Maine coast knows your name.</p>
+            <div class="season-end-stats">
+                <p>Reputation: ${gameState.reputation} (${gameState.repTier})</p>
+                <p>Final Cash: $${formatMoney(gameState.cash)}</p>
+                <p>Days to Victory: ${gameState.day}</p>
+                <p>Days Remaining: ${daysRemaining}</p>
+                <p>Sellers Known: ${Object.keys(gameState.sellerNPCs).length}</p>
+                <p>Buyers Known: ${Object.keys(gameState.buyerNPCs).length}</p>
+                <p style="color: var(--gold);">Prestige Earned: +${prestigeBonus} ⭐</p>
+            </div>
+            <p class="victory-message">Your journey from "Dock Nobody" to "Statewide Power" is complete!</p>
+        </div>
+    `;
+
+    modal.style.display = "flex";
+    createCelebrationEffect();
 }
 
 function showSeasonEndScreen() {
@@ -5100,8 +5822,11 @@ function showSeasonEndScreen() {
             <p>${rankDesc}</p>
             <div class="season-end-stats">
                 <p>Final Cash: $${formatMoney(gameState.cash)}</p>
+                <p>Reputation: ${gameState.reputation} (${gameState.repTier})</p>
                 <p>Days Played: ${gameState.day - 1}</p>
                 <p>Lobsters Traded: ${formatMoney(gameState.stats.totalLobstersBought)} lbs</p>
+                <p>Sellers Known: ${Object.keys(gameState.sellerNPCs).length}</p>
+                <p>Buyers Known: ${Object.keys(gameState.buyerNPCs).length}</p>
                 <p>Total Earned: $${formatMoney(gameState.stats.totalMoneyEarned)}</p>
                 ${prestigeEarned > 0 ? `<p style="color: var(--gold);">Prestige Earned: +${prestigeEarned} ⭐</p>` : ''}
             </div>
