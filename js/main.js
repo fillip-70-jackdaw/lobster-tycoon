@@ -45,10 +45,15 @@ const CONFIG = {
     },
 
     // Quality grades
+    // Lobster grades (authentic Maine system)
+    // Selects: 2+ lbs, premium price
+    // Quarters: 1.25-2 lbs, good price
+    // Chix: 1-1.25 lbs (chicken lobsters), lower price
+    // Run: ungraded mix, sold as-is before grading table
     grades: {
-        A: { name: "Premium", buyMod: 1.2, sellMod: 1.4, color: "#ffd700" },
-        B: { name: "Standard", buyMod: 1.0, sellMod: 1.0, color: "#c0c0c0" },
-        C: { name: "Budget", buyMod: 0.85, sellMod: 0.7, color: "#cd7f32" }
+        select: { name: "Selects", shortName: "Sel", buyMod: 1.25, sellMod: 1.5, color: "#ffd700", weight: "2+ lbs" },
+        quarter: { name: "Quarters", shortName: "Qtr", buyMod: 1.0, sellMod: 1.15, color: "#c0c0c0", weight: "1.25-2 lbs" },
+        chix: { name: "Chix", shortName: "Chx", buyMod: 0.85, sellMod: 0.85, color: "#cd7f32", weight: "1-1.25 lbs" }
     },
 
     // Boat names
@@ -478,18 +483,18 @@ const ACHIEVEMENTS = {
     qualityDealer: {
         id: "qualityDealer",
         name: "Quality Dealer",
-        description: "Sell 200 lbs of A-grade",
+        description: "Sell 200 lbs of selects",
         emoji: "⭐",
-        condition: (state) => (state.stats.gradeASold || 0) >= 200,
+        condition: (state) => (state.stats.selectsSold || 0) >= 200,
         reward: { type: "reputation", amount: 10 },
         tier: "silver"
     },
     premiumOnly: {
         id: "premiumOnly",
         name: "Premium Only",
-        description: "Sell 1,000 lbs of A-grade",
+        description: "Sell 1,000 lbs of selects",
         emoji: "💎",
-        condition: (state) => (state.stats.gradeASold || 0) >= 1000,
+        condition: (state) => (state.stats.selectsSold || 0) >= 1000,
         reward: { type: "prestige", amount: 1 },
         tier: "gold"
     },
@@ -906,7 +911,7 @@ const HELPER_TIPS = {
     tankGettingFull: {
         id: "tankGettingFull",
         condition: (state) => {
-            const total = state.inventory.A + state.inventory.B + state.inventory.C;
+            const total = state.inventory.select + state.inventory.quarter + state.inventory.chix + state.inventory.run;
             const cap = state.tankCapacity;
             return total > cap * 0.8 && total < cap;
         },
@@ -916,7 +921,7 @@ const HELPER_TIPS = {
     haveLobstersNoBuyers: {
         id: "haveLobstersNoBuyers",
         condition: (state) => {
-            const total = state.inventory.A + state.inventory.B + state.inventory.C;
+            const total = state.inventory.select + state.inventory.quarter + state.inventory.chix + state.inventory.run;
             return total > 0 && state.buyers.length === 0;
         },
         message: "💡 Tip: No buyers today, but you have lobsters. They'll keep until tomorrow (though quality may drop).",
@@ -924,7 +929,7 @@ const HELPER_TIPS = {
     },
     goodSellPrice: {
         id: "goodSellPrice",
-        condition: (state) => state.marketTrend > 0 && state.inventory.A + state.inventory.B + state.inventory.C > 50,
+        condition: (state) => state.marketTrend > 0 && (state.inventory.select + state.inventory.quarter + state.inventory.chix + state.inventory.run) > 50,
         message: "💡 Tip: Market prices are rising! Now might be a good time to sell.",
         once: true
     },
@@ -1003,13 +1008,15 @@ const RANDOM_EVENTS = {
             const totalInv = getTotalInventory();
             const lost = Math.floor(totalInv * lostPercent);
             // Lose proportionally from each grade
-            const lostA = Math.floor(state.inventory.A * lostPercent);
-            const lostB = Math.floor(state.inventory.B * lostPercent);
-            const lostC = Math.floor(state.inventory.C * lostPercent);
-            state.inventory.A -= lostA;
-            state.inventory.B -= lostB;
-            state.inventory.C -= lostC;
-            return { lost: lostA + lostB + lostC };
+            const lostSelect = Math.floor(state.inventory.select * lostPercent);
+            const lostQuarter = Math.floor(state.inventory.quarter * lostPercent);
+            const lostChix = Math.floor(state.inventory.chix * lostPercent);
+            const lostRun = Math.floor(state.inventory.run * lostPercent);
+            state.inventory.select -= lostSelect;
+            state.inventory.quarter -= lostQuarter;
+            state.inventory.chix -= lostChix;
+            state.inventory.run -= lostRun;
+            return { lost: lostSelect + lostQuarter + lostChix + lostRun };
         },
         message: (data) => `Tank sprung a leak! Lost ${data.lost} lbs of lobster.`,
         bobComment: [
@@ -1065,13 +1072,13 @@ const RANDOM_EVENTS = {
         chance: 0.04,
         minInventory: 30,
         effect: (state) => {
-            // Downgrade some A to B and B to C
-            const downgradeA = Math.floor(state.inventory.A * randomFloat(0.1, 0.25));
-            const downgradeB = Math.floor(state.inventory.B * randomFloat(0.1, 0.25));
-            state.inventory.A -= downgradeA;
-            state.inventory.B += downgradeA - downgradeB;
-            state.inventory.C += downgradeB;
-            return { downgraded: downgradeA + downgradeB };
+            // Downgrade some selects to quarters and quarters to chix
+            const downgradeSelect = Math.floor(state.inventory.select * randomFloat(0.1, 0.25));
+            const downgradeQuarter = Math.floor(state.inventory.quarter * randomFloat(0.1, 0.25));
+            state.inventory.select -= downgradeSelect;
+            state.inventory.quarter += downgradeSelect - downgradeQuarter;
+            state.inventory.chix += downgradeQuarter;
+            return { downgraded: downgradeSelect + downgradeQuarter };
         },
         message: (data) => `Temperature fluctuation! ${data.downgraded} lbs dropped in quality.`,
         bobComment: [
@@ -1090,8 +1097,12 @@ const RANDOM_EVENTS = {
         chance: 0.05,
         effect: (state) => {
             const amount = randomInt(20, 50);
-            // Add as B grade
-            state.inventory.B += amount;
+            // Add as run (ungraded) - or quarters if you have grading table
+            if (hasEquipment('gradingTable')) {
+                state.inventory.quarter += amount;
+            } else {
+                state.inventory.run += amount;
+            }
             return { amount: amount };
         },
         message: (data) => `A fisherman dropped off ${data.amount} lbs for free - said you've been good to him!`,
@@ -1116,8 +1127,9 @@ const RANDOM_EVENTS = {
                 emoji: "🌟",
                 type: "special",
                 wantsAmount: randomInt(30, 80),
-                minGrade: "B",
-                pricePerLb: calculateSellPrice('A') * premium,
+                acceptsRun: false,
+                acceptsGrades: ['select', 'quarter'],
+                pricePerLb: calculateSellPrice('select') * premium,
                 trust: 0,
                 isEvent: true
             };
@@ -1316,8 +1328,8 @@ let gameState = {
     currentLocation: "stonington", // Starting town
     travelingTo: null,  // Town being traveled to (if any)
 
-    // Inventory by quality
-    inventory: { A: 0, B: 0, C: 0 },
+    // Inventory by grade (run = ungraded, others = graded)
+    inventory: { select: 0, quarter: 0, chix: 0, run: 0 },
     tankCapacity: 500,
     baseMortalityRate: 0.05,
     qualityDecayRate: 0.1, // 10% chance per day to drop a grade
@@ -1377,9 +1389,10 @@ let gameState = {
         interestPaid: 0,
         rivalsOutbid: 0,        // Times you beat a rival
         lostToRivals: 0,        // Times rival beat you
-        gradeASold: 0,          // Premium lobster sold
-        gradeBSold: 0,
-        gradeCSold: 0,
+        selectsSold: 0,         // Premium lobster sold
+        quartersSold: 0,
+        chixSold: 0,
+        runSold: 0,
         daysAtTop: 0,           // Days as #1 on leaderboard
         loansPaidOff: 0,
         recoveredFromDebt: false,
@@ -1443,8 +1456,18 @@ function formatMoney(amount) {
     return amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
+function isMobile() {
+    return window.innerWidth < 768;
+}
+
 function getTotalInventory() {
-    return gameState.inventory.A + gameState.inventory.B + gameState.inventory.C;
+    return gameState.inventory.select + gameState.inventory.quarter +
+           gameState.inventory.chix + gameState.inventory.run;
+}
+
+// Get total graded inventory (excludes run)
+function getGradedInventory() {
+    return gameState.inventory.select + gameState.inventory.quarter + gameState.inventory.chix;
 }
 
 function getSeason(day) {
@@ -1607,7 +1630,10 @@ function fishermanSays(message) {
     const bob = CONFIG.dockworker;
     log(`${bob.emoji} ${bob.name}: "${message}"`, "fisherman");
 
-    // Also show as popup
+    // Skip popup on mobile to reduce clutter
+    if (isMobile()) return;
+
+    // Also show as popup on desktop
     showBobPopup(message);
 }
 
@@ -1993,8 +2019,9 @@ function calculateBuyPrice(grade) {
     // Weather modifier
     price *= CONFIG.weather[gameState.weather].priceMod;
 
-    // Grade modifier
-    price *= CONFIG.grades[grade].buyMod;
+    // Grade modifier (run uses quarter pricing as baseline)
+    const gradeData = CONFIG.grades[grade] || CONFIG.grades.quarter;
+    price *= gradeData.buyMod;
 
     // Location modifier - fishing hubs are cheaper!
     price *= getLocationPriceModifier('buy');
@@ -2014,8 +2041,9 @@ function calculateSellPrice(grade, isContract = false) {
     // Season modifier
     price *= CONFIG.seasons[gameState.season].sellMod;
 
-    // Grade modifier
-    price *= CONFIG.grades[grade].sellMod;
+    // Grade modifier (run uses quarter pricing as baseline, slightly lower)
+    const gradeData = CONFIG.grades[grade] || { sellMod: 0.95 }; // run sells at 95% of quarter
+    price *= gradeData.sellMod;
 
     // Location modifier - tourist towns pay more!
     price *= getLocationPriceModifier('sell');
@@ -2122,27 +2150,8 @@ function generateBuyers() {
     const locationBuyerBonus = getLocationBuyerBonus(); // Positive = more buyers
     const town = getCurrentTown();
 
-    // Restaurant buyer - more common in tourist/wealthy towns
-    const restaurantChance = town.traits.includes('tourist') || town.traits.includes('wealthy') ? 0.2 : 0.3;
-    if (hasEquipment('bandingStation') || Math.random() > restaurantChance) {
-        const restaurantNames = ["Harbor Bistro", "The Clam Shack", "Oceanview Grill", "Pier 7", "Captain's Table"];
-        const name = randomChoice(restaurantNames);
-        const trust = gameState.buyerRelations[name] || 0;
-
-        if (Math.random() < weatherData.buyerMod) {
-            buyers.push({
-                name: name,
-                emoji: "🍽️",
-                type: "restaurant",
-                wantsAmount: randomInt(15, 40) + Math.floor(trust / 10) + (locationBuyerBonus * 5),
-                minGrade: "B",
-                pricePerLb: calculateSellPrice('B'),
-                trust: trust
-            });
-        }
-    }
-
-    // Wholesaler buyer - always present
+    // Wholesaler buyer - always present, accepts run or any grade
+    // This is the primary buyer before you have a grading table
     const wholesalerNames = ["Portland Seafood Co.", "Maine Coast Dist.", "Atlantic Fresh", "NE Wholesale"];
     const wName = randomChoice(wholesalerNames);
     const wTrust = gameState.buyerRelations[wName] || 0;
@@ -2152,12 +2161,36 @@ function generateBuyers() {
         emoji: "🏭",
         type: "wholesaler",
         wantsAmount: randomInt(80, 200) + Math.floor(wTrust / 5),
-        minGrade: "C",
-        pricePerLb: calculateSellPrice('C'),
+        acceptsRun: true,  // Will buy ungraded lobsters
+        acceptsGrades: ['select', 'quarter', 'chix'],  // Will also buy graded
+        pricePerLb: calculateSellPrice('quarter'),  // Base price for run/mixed
         trust: wTrust
     });
 
-    // Special buyer (tourists, events) - more common in tourist towns
+    // Restaurant buyer - wants quarters or selects (graded only)
+    const restaurantChance = town.traits.includes('tourist') || town.traits.includes('wealthy') ? 0.2 : 0.3;
+    if (hasEquipment('bandingStation') || Math.random() > restaurantChance) {
+        const restaurantNames = ["Harbor Bistro", "The Clam Shack", "Oceanview Grill", "Pier 7", "Captain's Table"];
+        const name = randomChoice(restaurantNames);
+        const trust = gameState.buyerRelations[name] || 0;
+
+        if (Math.random() < weatherData.buyerMod) {
+            // Restaurants prefer specific sizes - randomly want selects or quarters
+            const wantsSelects = Math.random() > 0.6;
+            buyers.push({
+                name: name,
+                emoji: "🍽️",
+                type: "restaurant",
+                wantsAmount: randomInt(15, 40) + Math.floor(trust / 10) + (locationBuyerBonus * 5),
+                acceptsRun: false,  // Won't buy ungraded
+                acceptsGrades: wantsSelects ? ['select'] : ['select', 'quarter'],
+                pricePerLb: calculateSellPrice(wantsSelects ? 'select' : 'quarter'),
+                trust: trust
+            });
+        }
+    }
+
+    // Special buyer (tourists, events) - wants selects only (premium)
     const specialChance = town.traits.includes('tourist') ? 0.3 : town.traits.includes('wealthy') ? 0.4 : 0.5;
     if (Math.random() > specialChance && weatherData.buyerMod > 0.7) {
         const specialNames = ["Tourist Group", "Private Yacht", "Wedding Caterer", "Food Festival"];
@@ -2166,13 +2199,29 @@ function generateBuyers() {
             emoji: "⭐",
             type: "special",
             wantsAmount: randomInt(30, 80) + (locationBuyerBonus * 10),
-            minGrade: "A",
-            pricePerLb: calculateSellPrice('A'),
+            acceptsRun: false,
+            acceptsGrades: ['select'],  // Only want the big ones
+            pricePerLb: calculateSellPrice('select'),
             trust: 0
         });
     }
 
-    // Extra buyer in high-volume towns (Portland, Bar Harbor)
+    // Chix buyer - specifically wants smaller lobsters (cheaper for them)
+    if (Math.random() > 0.6) {
+        const chixBuyerNames = ["Clam Bake Co.", "Beach Party Catering", "Lobster Roll Stand", "Food Truck Fleet"];
+        buyers.push({
+            name: randomChoice(chixBuyerNames),
+            emoji: "🦞",
+            type: "budget",
+            wantsAmount: randomInt(40, 100),
+            acceptsRun: false,
+            acceptsGrades: ['chix', 'quarter'],  // Want smaller, cheaper lobsters
+            pricePerLb: calculateSellPrice('chix'),
+            trust: 0
+        });
+    }
+
+    // Extra buyer in high-volume towns (Portland, Bar Harbor) - accepts run
     if (locationBuyerBonus >= 1 && Math.random() > 0.5) {
         const extraNames = ["Local Market", "Cruise Ship Supply", "Hotel Chain", "Seafood Co-op"];
         buyers.push({
@@ -2180,8 +2229,9 @@ function generateBuyers() {
             emoji: "🏪",
             type: "bulk",
             wantsAmount: randomInt(50, 150),
-            minGrade: "B",
-            pricePerLb: calculateSellPrice('B') * 0.95, // Slight discount for bulk
+            acceptsRun: true,  // Will take ungraded for bulk
+            acceptsGrades: ['select', 'quarter', 'chix'],
+            pricePerLb: calculateSellPrice('quarter') * 0.95, // Slight discount for bulk
             trust: 0
         });
     }
@@ -2205,24 +2255,26 @@ function generateContractOffers() {
             buyer: name,
             emoji: "📋",
             amountPerWeek: randomInt(30, 80),
-            pricePerLb: calculateSellPrice('B', true) * 0.95, // Slight discount for guaranteed
+            pricePerLb: calculateSellPrice('quarter', true) * 0.95, // Slight discount for guaranteed
             weeksRemaining: randomInt(2, 4),
             delivered: 0,
-            minGrade: "B"
+            acceptsRun: true,  // Wholesaler contracts accept run
+            acceptsGrades: ['select', 'quarter', 'chix']
         });
     }
 
-    // Premium contract if has refrigerated truck
+    // Premium contract if has refrigerated truck - wants selects only
     if (hasEquipment('refrigeratedTruck') && Math.random() > 0.6) {
         contracts.push({
             id: Date.now() + 1,
             buyer: "Boston Premium Seafood",
             emoji: "🌟",
             amountPerWeek: randomInt(50, 120),
-            pricePerLb: calculateSellPrice('A', true),
+            pricePerLb: calculateSellPrice('select', true),
             weeksRemaining: randomInt(3, 6),
             delivered: 0,
-            minGrade: "A"
+            acceptsRun: false,
+            acceptsGrades: ['select']  // Premium only wants selects
         });
     }
 
@@ -2247,16 +2299,39 @@ function deliverToContract(contractIndex) {
     const needed = contract.amountPerWeek - contract.delivered;
     let delivered = 0;
     let revenue = 0;
+    const hasGradingTable = hasEquipment('gradingTable');
 
-    // Deliver from inventory, preferring the minimum grade
-    const grades = contract.minGrade === 'A' ? ['A'] : contract.minGrade === 'B' ? ['B', 'A'] : ['C', 'B', 'A'];
-
-    for (const grade of grades) {
-        const amount = Math.min(gameState.inventory[grade], needed - delivered);
+    // Deliver from inventory based on what contract accepts
+    if (!hasGradingTable) {
+        // Without grading table, can only deliver run to contracts that accept it
+        if (!contract.acceptsRun) {
+            log("This contract requires graded lobsters! Get a Grading Table.", "negative");
+            return false;
+        }
+        const amount = Math.min(gameState.inventory.run, needed);
         if (amount > 0) {
-            gameState.inventory[grade] -= amount;
+            gameState.inventory.run -= amount;
+            delivered = amount;
+            revenue = amount * contract.pricePerLb;
+        }
+    } else {
+        // With grading table, deliver graded inventory (prefer selects first)
+        for (const grade of ['select', 'quarter', 'chix']) {
+            if (!contract.acceptsGrades || !contract.acceptsGrades.includes(grade)) continue;
+            const amount = Math.min(gameState.inventory[grade], needed - delivered);
+            if (amount > 0) {
+                gameState.inventory[grade] -= amount;
+                delivered += amount;
+                revenue += amount * contract.pricePerLb;
+            }
+        }
+
+        // Also deliver from run if contract accepts it
+        if (contract.acceptsRun && delivered < needed && gameState.inventory.run > 0) {
+            const amount = Math.min(gameState.inventory.run, needed - delivered);
+            gameState.inventory.run -= amount;
             delivered += amount;
-            revenue += amount * contract.pricePerLb;
+            revenue += amount * contract.pricePerLb * 0.9;
         }
     }
 
@@ -2288,8 +2363,8 @@ function processTankDaily() {
     let totalLost = 0;
     let qualityDropped = 0;
 
-    // Process mortality
-    for (const grade of ['A', 'B', 'C']) {
+    // Process mortality for all grades including run
+    for (const grade of ['select', 'quarter', 'chix', 'run']) {
         const amount = gameState.inventory[grade];
         const lost = Math.floor(amount * mortalityRate);
         if (lost > 0) {
@@ -2298,21 +2373,22 @@ function processTankDaily() {
         }
     }
 
-    // Process quality decay (A->B, B->C)
+    // Process quality decay (select->quarter, quarter->chix)
+    // Only applies to graded lobsters
     const decayChance = gameState.qualityDecayRate * qualityDecayMod;
 
-    const aDecay = Math.floor(gameState.inventory.A * decayChance);
-    if (aDecay > 0) {
-        gameState.inventory.A -= aDecay;
-        gameState.inventory.B += aDecay;
-        qualityDropped += aDecay;
+    const selectDecay = Math.floor(gameState.inventory.select * decayChance);
+    if (selectDecay > 0) {
+        gameState.inventory.select -= selectDecay;
+        gameState.inventory.quarter += selectDecay;
+        qualityDropped += selectDecay;
     }
 
-    const bDecay = Math.floor(gameState.inventory.B * decayChance);
-    if (bDecay > 0) {
-        gameState.inventory.B -= bDecay;
-        gameState.inventory.C += bDecay;
-        qualityDropped += bDecay;
+    const quarterDecay = Math.floor(gameState.inventory.quarter * decayChance);
+    if (quarterDecay > 0) {
+        gameState.inventory.quarter -= quarterDecay;
+        gameState.inventory.chix += quarterDecay;
+        qualityDropped += quarterDecay;
     }
 
     if (totalLost > 0) {
@@ -2369,19 +2445,32 @@ function processWeeklyInterest() {
 
 // Grade lobsters when purchased - the dealer does the grading, not the fisherman
 function gradeLobsters(amount) {
-    // Random distribution: ~20-30% A, ~45-55% B, remainder is C
-    const aPercent = randomFloat(0.20, 0.30);
-    const bPercent = randomFloat(0.45, 0.55);
+    // Without grading table, all lobsters are "run" (ungraded)
+    if (!hasEquipment('gradingTable')) {
+        return {
+            select: 0,
+            quarter: 0,
+            chix: 0,
+            run: amount
+        };
+    }
 
-    const gradeA = Math.round(amount * aPercent);
-    const gradeB = Math.round(amount * bPercent);
-    // C is the remainder to ensure total adds up exactly
-    const gradeC = amount - gradeA - gradeB;
+    // With grading table: grade into selects, quarters, chix
+    // Selects (2+ lbs): ~15-25% of catch
+    // Quarters (1.25-2 lbs): ~40-50% of catch
+    // Chix (1-1.25 lbs): remainder
+    const selectPercent = randomFloat(0.15, 0.25);
+    const quarterPercent = randomFloat(0.40, 0.50);
+
+    const selects = Math.round(amount * selectPercent);
+    const quarters = Math.round(amount * quarterPercent);
+    const chix = amount - selects - quarters;
 
     return {
-        A: gradeA,
-        B: gradeB,
-        C: Math.max(0, gradeC) // Ensure non-negative
+        select: selects,
+        quarter: quarters,
+        chix: Math.max(0, chix),
+        run: 0
     };
 }
 
@@ -2419,9 +2508,10 @@ function buyFromBoat(boatIndex, amount) {
 
     // Grade the lobsters (dealer does the grading)
     const graded = gradeLobsters(buyAmount);
-    gameState.inventory.A += graded.A;
-    gameState.inventory.B += graded.B;
-    gameState.inventory.C += graded.C;
+    gameState.inventory.select += graded.select;
+    gameState.inventory.quarter += graded.quarter;
+    gameState.inventory.chix += graded.chix;
+    gameState.inventory.run += graded.run;
 
     // Build relationship with captain
     const currentLoyalty = gameState.fishermenRelations[boat.captain] || 0;
@@ -2429,9 +2519,9 @@ function buyFromBoat(boatIndex, amount) {
 
     // Log message - show grades if player has grading table
     if (hasEquipment('gradingTable')) {
-        log(`Bought ${buyAmount} lbs for $${formatMoney(cost)} (A:${graded.A} B:${graded.B} C:${graded.C})`, "warning");
+        log(`Bought ${buyAmount} lbs for $${formatMoney(cost)} (Sel:${graded.select} Qtr:${graded.quarter} Chx:${graded.chix})`, "warning");
     } else {
-        log(`Bought ${buyAmount} lbs from ${boat.captain} for $${formatMoney(cost)}`, "warning");
+        log(`Bought ${buyAmount} lbs (run) from ${boat.captain} for $${formatMoney(cost)}`, "warning");
     }
 
     // Fisherman commentary on the purchase
@@ -2504,19 +2594,44 @@ function sellToBuyer(buyerIndex) {
 
     let sold = 0;
     let revenue = 0;
+    const hasGradingTable = hasEquipment('gradingTable');
 
-    // Sell from inventory, respecting minimum grade
-    const grades = buyer.minGrade === 'A' ? ['A'] :
-                   buyer.minGrade === 'B' ? ['A', 'B'] : ['A', 'B', 'C'];
-
-    for (const grade of grades) {
-        const amount = Math.min(gameState.inventory[grade], buyer.wantsAmount - sold);
+    // Without grading table: can only sell "run" (ungraded) to buyers who accept it
+    if (!hasGradingTable) {
+        if (!buyer.acceptsRun) {
+            log(`${buyer.name} only wants graded lobsters! Get a Grading Table.`, "negative");
+            return false;
+        }
+        // Sell from run inventory
+        const amount = Math.min(gameState.inventory.run, buyer.wantsAmount);
         if (amount > 0) {
-            // Price adjusted by grade
-            const gradePrice = buyer.pricePerLb * CONFIG.grades[grade].sellMod;
-            gameState.inventory[grade] -= amount;
+            gameState.inventory.run -= amount;
+            sold = amount;
+            revenue = amount * buyer.pricePerLb;
+        }
+    } else {
+        // With grading table: sell graded inventory to buyers based on what they accept
+        // Also can sell run to buyers who accept it
+
+        // First, sell graded lobsters (priority: select > quarter > chix)
+        for (const grade of ['select', 'quarter', 'chix']) {
+            if (!buyer.acceptsGrades.includes(grade)) continue;
+            const amount = Math.min(gameState.inventory[grade], buyer.wantsAmount - sold);
+            if (amount > 0) {
+                const gradeData = CONFIG.grades[grade];
+                const gradePrice = buyer.pricePerLb * (gradeData ? gradeData.sellMod / CONFIG.grades.quarter.sellMod : 1);
+                gameState.inventory[grade] -= amount;
+                sold += amount;
+                revenue += amount * gradePrice;
+            }
+        }
+
+        // If buyer accepts run and still wants more, sell from run
+        if (buyer.acceptsRun && sold < buyer.wantsAmount && gameState.inventory.run > 0) {
+            const amount = Math.min(gameState.inventory.run, buyer.wantsAmount - sold);
+            gameState.inventory.run -= amount;
             sold += amount;
-            revenue += amount * gradePrice;
+            revenue += amount * buyer.pricePerLb * 0.9; // Run sells at 90% of base
         }
     }
 
@@ -2543,7 +2658,8 @@ function sellToBuyer(buyerIndex) {
         gameState.buyerRelations[buyer.name] = Math.min(100, currentTrust + 1);
     }
 
-    log(`Sold ${sold} lbs to ${buyer.name} for $${formatMoney(finalRevenue)}`, "positive");
+    const gradeInfo = hasGradingTable ? "" : " (run)";
+    log(`Sold ${sold} lbs${gradeInfo} to ${buyer.name} for $${formatMoney(finalRevenue)}`, "positive");
 
     // Fisherman commentary on the sale
     if (Math.random() < 0.5) { // 50% chance of comment
@@ -2923,7 +3039,7 @@ function resetGame() {
         marketTrend: 0,
         currentLocation: "stonington", // Start in cheapest fishing village
         travelingTo: null,
-        inventory: { A: 0, B: 0, C: 0 },
+        inventory: { select: 0, quarter: 0, chix: 0, run: 0 },
         tankCapacity: 500,
         baseMortalityRate: 0.05,
         qualityDecayRate: 0.1,
@@ -2965,7 +3081,10 @@ function resetGame() {
             interestPaid: 0,
             rivalsOutbid: 0,
             lostToRivals: 0,
-            gradeASold: 0,
+            selectsSold: 0,
+            quartersSold: 0,
+            chixSold: 0,
+            runSold: 0,
             daysAtTop: 0,
             loansPaidOff: 0,
             recoveredFromDebt: false,
@@ -3040,6 +3159,12 @@ function log(message, type = "") {
 }
 
 function showToast(message, type = "") {
+    // On mobile, only show important toasts (positive/negative events, warnings)
+    if (isMobile()) {
+        const importantTypes = ['positive', 'negative', 'event-positive', 'event-negative', 'warning'];
+        if (!importantTypes.includes(type)) return;
+    }
+
     // Create toast container if it doesn't exist
     let container = document.getElementById("toast-container");
     if (!container) {
@@ -3206,9 +3331,16 @@ function updateUI() {
     const breakdownEl = document.getElementById("inventory-breakdown");
     if (hasEquipment('gradingTable')) {
         breakdownEl.style.display = "flex";
-        document.getElementById("inventory-a").textContent = gameState.inventory.A;
-        document.getElementById("inventory-b").textContent = gameState.inventory.B;
-        document.getElementById("inventory-c").textContent = gameState.inventory.C;
+        document.getElementById("inventory-a").textContent = gameState.inventory.select;
+        document.getElementById("inventory-b").textContent = gameState.inventory.quarter;
+        document.getElementById("inventory-c").textContent = gameState.inventory.chix;
+        // Update labels if needed
+        const labelA = document.getElementById("label-a");
+        const labelB = document.getElementById("label-b");
+        const labelC = document.getElementById("label-c");
+        if (labelA) labelA.textContent = "Sel:";
+        if (labelB) labelB.textContent = "Qtr:";
+        if (labelC) labelC.textContent = "Chx:";
     } else {
         breakdownEl.style.display = "none";
     }
@@ -3429,10 +3561,35 @@ function updateBuyersUI() {
         return;
     }
 
+    const hasGradingTable = hasEquipment('gradingTable');
+
     gameState.buyers.forEach((buyer, index) => {
         const total = getTotalInventory();
         const canSell = total > 0;
         const trustStars = Math.floor((buyer.trust || 0) / 25);
+
+        // Build grade requirement text
+        let gradeText;
+        if (buyer.acceptsRun && !hasGradingTable) {
+            gradeText = "run";  // Will buy ungraded
+        } else if (buyer.acceptsRun) {
+            gradeText = "any";  // Will buy anything
+        } else if (buyer.acceptsGrades) {
+            // Map grade keys to short names
+            const gradeNames = buyer.acceptsGrades.map(g => {
+                const data = CONFIG.grades[g];
+                return data ? data.shortName : g;
+            });
+            gradeText = gradeNames.join("/");
+        } else {
+            gradeText = "graded";
+        }
+
+        // Check if this buyer can be sold to (has matching inventory)
+        let canSellToThisBuyer = canSell;
+        if (!hasGradingTable && !buyer.acceptsRun) {
+            canSellToThisBuyer = false;
+        }
 
         const div = document.createElement("div");
         div.className = "buyer-card";
@@ -3443,9 +3600,9 @@ function updateBuyersUI() {
                 <span class="buyer-type">(${buyer.type})</span>
             </div>
             <div class="buyer-offer">
-                Wants ${buyer.wantsAmount} lbs (${buyer.minGrade}+ grade) @ $${buyer.pricePerLb.toFixed(2)}/lb
+                Wants ${buyer.wantsAmount} lbs (${gradeText}) @ $${buyer.pricePerLb.toFixed(2)}/lb
             </div>
-            <button class="btn btn-primary sell-btn" data-buyer="${index}" ${canSell ? '' : 'disabled'}>Sell</button>
+            <button class="btn btn-primary sell-btn" data-buyer="${index}" ${canSellToThisBuyer ? '' : 'disabled'}>Sell</button>
         `;
         container.appendChild(div);
     });
@@ -3493,6 +3650,16 @@ function updateContractsUI() {
     } else {
         availableContainer.innerHTML = "";
         gameState.availableContracts.forEach((contract, index) => {
+            // Build grade acceptance text
+            let gradeText = contract.acceptsRun ? "run/any" : "";
+            if (contract.acceptsGrades) {
+                const gradeNames = contract.acceptsGrades.map(g => {
+                    const data = CONFIG.grades[g];
+                    return data ? data.shortName : g;
+                });
+                gradeText = gradeNames.join("/");
+            }
+
             const div = document.createElement("div");
             div.className = "contract-card available";
             div.innerHTML = `
@@ -3500,7 +3667,7 @@ function updateContractsUI() {
                     <span>${contract.emoji} ${contract.buyer}</span>
                     <span>${contract.amountPerWeek} lbs/wk @ $${contract.pricePerLb.toFixed(2)}</span>
                     <span>Duration: ${contract.weeksRemaining} weeks</span>
-                    <span>Min grade: ${contract.minGrade}</span>
+                    <span>Accepts: ${gradeText}</span>
                 </div>
                 <button class="btn btn-primary accept-btn" data-contract="${index}">Accept</button>
             `;
@@ -4056,17 +4223,15 @@ function unlockAchievement(achievementId, achievement) {
         }
     }
 
-    // Show achievement popup
-    showAchievementPopup(achievement);
-
-    // Log it
+    // Log it (this will show a toast on mobile)
     log(`🏆 Achievement Unlocked: ${achievement.name}!`, "positive");
 
-    // Bob comments
-    fishermanSays(getAchievementComment(achievement.tier));
-
-    // Play celebration effect
-    createCelebrationEffect();
+    // On mobile, skip the big popup and celebration to reduce clutter
+    if (!isMobile()) {
+        showAchievementPopup(achievement);
+        fishermanSays(getAchievementComment(achievement.tier));
+        createCelebrationEffect();
+    }
 }
 
 function showAchievementPopup(achievement) {
