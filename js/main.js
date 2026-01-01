@@ -315,7 +315,63 @@ const CONFIG = {
         "A local band is setting up at the pier restaurant.",
         "First cruise ship of the season docked this morning.",
         "The fishermen are talking about 'the big one'."
-    ]
+    ],
+
+    // Old Pete's Fortune Cookie Tips (shown once per day)
+    fortuneTips: [
+        "A wise dealer knows when to hold and when to fold.",
+        "The early bird gets the lobster, but the patient bird gets the best price.",
+        "Trust is earned one pound at a time.",
+        "A full tank and empty wallet is better than the reverse.",
+        "The sea provides, but only to those who show up.",
+        "Your reputation arrives before you do.",
+        "Bad weather makes for good stories and empty docks.",
+        "The best deals come to those who wait... but not too long.",
+        "A captain who trusts you will save you money in the long run.",
+        "Fresh lobster sells itself. Old lobster sits and stinks.",
+        "Today's loss is tomorrow's lesson.",
+        "The coast has a long memory. Trade fairly.",
+        "When the tourists arrive, so do the profits.",
+        "A streak of luck is just hard work in disguise.",
+        "The dock never forgets who was there on the slow days.",
+        "Buy from friends, sell to strangers.",
+        "A penny saved on buying is a penny earned on selling.",
+        "The fog lifts, the boats come in, and life goes on.",
+        "Fortune favors the prepared dealer.",
+        "Every captain was once a newcomer too.",
+        "The best time to buy was yesterday. The second best is now.",
+        "A good name is worth more than a full wallet.",
+        "When others fear the storm, opportunity awaits.",
+        "Small margins, many trades - that's the Maine way.",
+        "The lobster doesn't care who catches it. You should care who sells it.",
+        "Consistency builds empires. Panic destroys them.",
+        "A loyal buyer is worth ten tourists.",
+        "The sea gives and the sea takes. Balance your books accordingly.",
+        "When Cap'n Joe smiles, buy everything he's got.",
+        "The secret to success? Show up every day."
+    ],
+
+    // Nickname components based on playstyle
+    nicknames: {
+        prefixes: {
+            highVolume: ["The", "Big", "Mighty", "Legendary"],
+            cautious: ["Careful", "Steady", "Wise", "Patient"],
+            risky: ["Wild", "Reckless", "Lucky", "Bold"],
+            consistent: ["Reliable", "Iron", "Steady", "Old"],
+            newbie: ["Young", "Fresh", "New", "Eager"]
+        },
+        locations: ["Stonington", "Portland", "Bar Harbor", "Rockland", "Camden", "Boothbay", "Kennebunk", "Maine"],
+        suffixes: {
+            highProfit: ["Shark", "Tycoon", "Baron", "King", "Master"],
+            trader: ["Trader", "Dealer", "Merchant", "Handler"],
+            survivor: ["Survivor", "Fighter", "Scrapper", "Hustler"],
+            legendary: ["Legend", "Icon", "Pioneer", "Champion"],
+            animal: ["Lobster", "Crab", "Seal", "Whale", "Gull"]
+        }
+    },
+
+    // Speed run milestones
+    speedRunTargets: [10000, 25000, 50000, 75000, 100000]
 };
 
 // ============================================
@@ -1466,6 +1522,20 @@ let gameState = {
     visitedTownsToday: {}, // Towns visited today (no new boats on return)
     yesterdayNet: 0,    // Yesterday's profit/loss for summary bar
 
+    // Streak & Speed Run Tracking
+    profitStreak: 0,        // Consecutive profitable days
+    bestStreak: 0,          // Best streak this run
+    lossStreak: 0,          // Consecutive loss days (for nickname)
+    speedRunMilestones: {}, // { "10000": dayReached, "25000": dayReached, etc. }
+    todayFortune: null,     // Today's fortune cookie tip
+
+    // Playstyle tracking (for nickname)
+    biggestSingleBuy: 0,    // Largest single purchase
+    biggestSingleSale: 0,   // Largest single sale
+    totalDaysTraded: 0,     // Days with any activity
+    perfectDays: 0,         // Days with no spoilage and profit
+    riskyDeals: 0,          // Deals made with <$500 remaining
+
     // Missed opportunities (for day summary)
     missedBoats: [],     // Boats that left (passed or timed out)
     missedBuyers: [],    // Buyers not sold to
@@ -1817,6 +1887,182 @@ function processEndOfDayTrust() {
 // Track the start of day inventory for spoilage calculations
 function trackDayStartInventory() {
     gameState.dailyInventoryStart = getTotalInventory();
+}
+
+// ============================================
+// STREAK, NICKNAME, FORTUNE & SPEED RUN
+// ============================================
+
+// Update streak at end of day
+function updateStreaks(dailyProfit) {
+    if (dailyProfit > 0) {
+        gameState.profitStreak++;
+        gameState.lossStreak = 0;
+        if (gameState.profitStreak > gameState.bestStreak) {
+            gameState.bestStreak = gameState.profitStreak;
+        }
+        // Check for perfect day (profit + no spoilage)
+        if (gameState.dailySpoilage === 0) {
+            gameState.perfectDays++;
+        }
+    } else if (dailyProfit < 0) {
+        gameState.lossStreak++;
+        gameState.profitStreak = 0;
+    }
+    // Track if any trading happened
+    if (gameState.dailySpent > 0 || gameState.dailyEarned > 0) {
+        gameState.totalDaysTraded++;
+    }
+}
+
+// Check and record speed run milestones
+function checkSpeedRunMilestones() {
+    for (const target of CONFIG.speedRunTargets) {
+        const key = target.toString();
+        if (!gameState.speedRunMilestones[key] && gameState.cash >= target) {
+            gameState.speedRunMilestones[key] = gameState.day;
+            log(`🏆 MILESTONE: Reached $${formatMoney(target)} on Day ${gameState.day}!`, "positive");
+        }
+    }
+}
+
+// Generate nickname based on playstyle
+function generateNickname() {
+    const nn = CONFIG.nicknames;
+    let prefixPool, suffixPool;
+
+    // Determine prefix based on playstyle
+    if (gameState.riskyDeals > 5) {
+        prefixPool = nn.prefixes.risky;
+    } else if (gameState.bestStreak >= 7) {
+        prefixPool = nn.prefixes.consistent;
+    } else if (gameState.stats.totalMoneySpent > 50000) {
+        prefixPool = nn.prefixes.highVolume;
+    } else if (gameState.day < 10) {
+        prefixPool = nn.prefixes.newbie;
+    } else {
+        prefixPool = nn.prefixes.cautious;
+    }
+
+    // Determine suffix based on performance
+    if (gameState.cash >= 100000) {
+        suffixPool = nn.suffixes.legendary;
+    } else if (gameState.cash >= 50000) {
+        suffixPool = nn.suffixes.highProfit;
+    } else if (gameState.lossStreak >= 3) {
+        suffixPool = nn.suffixes.survivor;
+    } else if (gameState.perfectDays >= 5) {
+        suffixPool = nn.suffixes.animal;
+    } else {
+        suffixPool = nn.suffixes.trader;
+    }
+
+    const prefix = randomChoice(prefixPool);
+    const location = randomChoice(nn.locations);
+    const suffix = randomChoice(suffixPool);
+
+    return `${prefix} ${location} ${suffix}`;
+}
+
+// Get today's fortune tip (consistent for the day)
+function getTodayFortune() {
+    if (!gameState.todayFortune) {
+        // Use day as seed for consistent fortune
+        const index = (gameState.day - 1) % CONFIG.fortuneTips.length;
+        gameState.todayFortune = CONFIG.fortuneTips[index];
+    }
+    return gameState.todayFortune;
+}
+
+// Show fortune toast at start of day
+function showFortuneTip() {
+    const fortune = getTodayFortune();
+    showToast(`🥠 Old Pete says: "${fortune}"`, 5000);
+}
+
+// Show toast notification
+function showToast(message, duration = 3000) {
+    // Remove existing toast if any
+    const existing = document.querySelector('.fortune-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'fortune-toast';
+    toast.innerHTML = message;
+    document.body.appendChild(toast);
+
+    // Animate in
+    setTimeout(() => toast.classList.add('show'), 10);
+
+    // Remove after duration
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
+}
+
+// Photo mode - freeze and style the dock scene
+function enterPhotoMode() {
+    const gameContainer = document.querySelector('.game-container');
+    const photoOverlay = document.createElement('div');
+    photoOverlay.className = 'photo-mode-overlay';
+    photoOverlay.innerHTML = `
+        <div class="photo-frame">
+            <div class="photo-header">
+                <span class="photo-title">📸 ${getCurrentTown().name} Docks</span>
+                <span class="photo-date">Day ${gameState.day} • ${CONFIG.weather[gameState.weather].name}</span>
+            </div>
+            <div class="photo-stats">
+                <div class="photo-stat">💰 $${formatMoney(gameState.cash)}</div>
+                <div class="photo-stat">🦞 ${getTotalInventory()} lbs</div>
+                <div class="photo-stat">🔥 ${gameState.profitStreak} day streak</div>
+                <div class="photo-stat">⭐ ${gameState.repTier}</div>
+            </div>
+            <div class="photo-nickname">"${generateNickname()}"</div>
+            <div class="photo-fortune">${getTodayFortune()}</div>
+            <div class="photo-watermark">Maine Lobster Dealer Tycoon</div>
+        </div>
+        <div class="photo-controls">
+            <button class="btn btn-primary" id="exit-photo-mode">Exit Photo Mode</button>
+        </div>
+    `;
+
+    document.body.appendChild(photoOverlay);
+    document.body.classList.add('photo-mode-active');
+
+    // Animate in
+    setTimeout(() => photoOverlay.classList.add('show'), 10);
+
+    // Exit handler
+    document.getElementById('exit-photo-mode').addEventListener('click', exitPhotoMode);
+    photoOverlay.addEventListener('click', (e) => {
+        if (e.target === photoOverlay) exitPhotoMode();
+    });
+}
+
+function exitPhotoMode() {
+    const overlay = document.querySelector('.photo-mode-overlay');
+    if (overlay) {
+        overlay.classList.remove('show');
+        setTimeout(() => overlay.remove(), 300);
+    }
+    document.body.classList.remove('photo-mode-active');
+}
+
+// Get streak display text
+function getStreakDisplay() {
+    if (gameState.profitStreak >= 7) {
+        return `🔥🔥🔥 ${gameState.profitStreak}-day streak!`;
+    } else if (gameState.profitStreak >= 5) {
+        return `🔥🔥 ${gameState.profitStreak}-day streak!`;
+    } else if (gameState.profitStreak >= 3) {
+        return `🔥 ${gameState.profitStreak}-day streak`;
+    } else if (gameState.profitStreak > 0) {
+        return `${gameState.profitStreak}-day streak`;
+    } else if (gameState.lossStreak >= 3) {
+        return `📉 ${gameState.lossStreak} rough days`;
+    }
+    return '';
 }
 
 function getTotalInventory() {
@@ -3113,6 +3359,17 @@ function buyFromBoat(boatIndex, amount) {
     // Flash cash display to show change
     flashElement('summary-cash');
 
+    // Track playstyle stats
+    if (cost > gameState.biggestSingleBuy) {
+        gameState.biggestSingleBuy = cost;
+    }
+    if (gameState.cash < 500) {
+        gameState.riskyDeals++;
+    }
+
+    // Check speed run milestones
+    checkSpeedRunMilestones();
+
     // Fisherman commentary on the purchase
     if (Math.random() < 0.5) { // 50% chance of comment
         const bob = CONFIG.dockworker;
@@ -3277,6 +3534,14 @@ function sellToBuyer(buyerIndex) {
     // Flash cash display to show change
     flashElement('summary-cash');
 
+    // Track playstyle stats
+    if (finalRevenue > gameState.biggestSingleSale) {
+        gameState.biggestSingleSale = finalRevenue;
+    }
+
+    // Check speed run milestones
+    checkSpeedRunMilestones();
+
     // Fisherman commentary on the sale
     if (Math.random() < 0.5) { // 50% chance of comment
         const bob = CONFIG.dockworker;
@@ -3410,8 +3675,14 @@ function nextDay() {
     // Save yesterday's net before resetting
     gameState.yesterdayNet = gameState.dailyEarned - gameState.dailySpent - gameState.dailyCosts;
 
+    // Update streaks based on daily profit
+    updateStreaks(gameState.yesterdayNet);
+
     // Process end-of-day trust and reputation changes
     processEndOfDayTrust();
+
+    // Clear today's fortune for new day
+    gameState.todayFortune = null;
 
     // Reset daily trackers for new day
     gameState.dailySpent = 0;
@@ -3522,6 +3793,15 @@ function nextDay() {
         // Daily flavor event (one-liner, no popup) - 50% chance
         if (Math.random() < 0.5) {
             showDailyFlavorEvent();
+        }
+
+        // Fortune cookie tip from Old Pete (every day)
+        setTimeout(() => showFortuneTip(), 1500);
+
+        // Display streak if active
+        const streakText = getStreakDisplay();
+        if (streakText) {
+            log(`${streakText}`, "positive");
         }
 
         // Occasional idle chatter
@@ -3671,6 +3951,18 @@ function resetGame() {
         dailyTravels: 0,
         visitedTownsToday: {},
         yesterdayNet: 0,
+        // Streak & Speed Run Tracking
+        profitStreak: 0,
+        bestStreak: 0,
+        lossStreak: 0,
+        speedRunMilestones: {},
+        todayFortune: null,
+        // Playstyle tracking
+        biggestSingleBuy: 0,
+        biggestSingleSale: 0,
+        totalDaysTraded: 0,
+        perfectDays: 0,
+        riskyDeals: 0,
         // Missed opportunities (for day summary)
         missedBoats: [],
         missedBuyers: [],
@@ -5815,19 +6107,26 @@ function showSeasonEndScreen() {
         savePrestige();
     }
 
+    // Generate speed run summary
+    const milestones = Object.entries(gameState.speedRunMilestones)
+        .map(([amount, day]) => `$${formatMoney(parseInt(amount))} on Day ${day}`)
+        .join(' • ');
+
     msg.innerHTML = `
         <div class="season-end-results">
             <div class="season-end-stars">${stars}</div>
             <div class="season-end-rank">${rankTitle}</div>
+            <div class="season-end-nickname">"${generateNickname()}"</div>
             <p>${rankDesc}</p>
             <div class="season-end-stats">
                 <p>Final Cash: $${formatMoney(gameState.cash)}</p>
                 <p>Reputation: ${gameState.reputation} (${gameState.repTier})</p>
+                <p>Best Streak: 🔥 ${gameState.bestStreak} days</p>
+                <p>Perfect Days: ⭐ ${gameState.perfectDays}</p>
                 <p>Days Played: ${gameState.day - 1}</p>
                 <p>Lobsters Traded: ${formatMoney(gameState.stats.totalLobstersBought)} lbs</p>
-                <p>Sellers Known: ${Object.keys(gameState.sellerNPCs).length}</p>
-                <p>Buyers Known: ${Object.keys(gameState.buyerNPCs).length}</p>
                 <p>Total Earned: $${formatMoney(gameState.stats.totalMoneyEarned)}</p>
+                ${milestones ? `<p class="speed-run-milestones">Speed Run: ${milestones}</p>` : ''}
                 ${prestigeEarned > 0 ? `<p style="color: var(--gold);">Prestige Earned: +${prestigeEarned} ⭐</p>` : ''}
             </div>
         </div>
@@ -5912,6 +6211,10 @@ function initEventHandlers() {
 
     const statsBtnMobile = document.getElementById("stats-btn-mobile");
     if (statsBtnMobile) statsBtnMobile.addEventListener("click", openStats);
+
+    // Photo mode button
+    const photoBtnMobile = document.getElementById("photo-btn-mobile");
+    if (photoBtnMobile) photoBtnMobile.addEventListener("click", enterPhotoMode);
 
     // Day summary continue button
     const summaryContinue = document.getElementById("summary-continue");

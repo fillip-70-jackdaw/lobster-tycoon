@@ -3988,6 +3988,22 @@ body::before {
     font-weight: bold;
 }
 
+.season-end-nickname {
+    color: var(--ocean-foam);
+    font-size: 1.1em;
+    font-style: italic;
+    margin: 10px 0;
+}
+
+.speed-run-milestones {
+    color: var(--gold);
+    font-size: 0.9em;
+    background: rgba(255, 215, 0, 0.1);
+    padding: 8px;
+    border-radius: 6px;
+    margin-top: 10px;
+}
+
 /* Victory Screen (Statewide Power) */
 .victory-screen {
     background: linear-gradient(180deg, rgba(255, 215, 0, 0.1), transparent);
@@ -4011,6 +4027,137 @@ body::before {
 @keyframes pulse-glow {
     0%, 100% { text-shadow: 0 0 10px var(--gold); }
     50% { text-shadow: 0 0 25px var(--gold), 0 0 35px var(--gold); }
+}
+
+/* ========================================
+   FORTUNE TOAST
+   ======================================== */
+.fortune-toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: linear-gradient(135deg, var(--ocean-dark), var(--ocean-deep));
+    border: 2px solid var(--gold);
+    border-radius: 12px;
+    padding: 15px 25px;
+    color: var(--cream);
+    font-size: 14px;
+    font-style: italic;
+    max-width: 90%;
+    text-align: center;
+    z-index: 9999;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+    opacity: 0;
+}
+
+.fortune-toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+/* ========================================
+   PHOTO MODE
+   ======================================== */
+.photo-mode-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.photo-mode-overlay.show {
+    opacity: 1;
+}
+
+.photo-mode-active .game-container {
+    filter: blur(3px);
+}
+
+.photo-frame {
+    background: linear-gradient(180deg, #1a3a5c, #0a1628);
+    border: 4px solid var(--gold);
+    border-radius: 16px;
+    padding: 30px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 0 60px rgba(255, 215, 0, 0.3);
+}
+
+.photo-header {
+    margin-bottom: 20px;
+}
+
+.photo-title {
+    display: block;
+    font-size: 24px;
+    color: var(--gold);
+    margin-bottom: 5px;
+}
+
+.photo-date {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.photo-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.photo-stat {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--cream);
+}
+
+.photo-nickname {
+    font-size: 20px;
+    color: var(--gold);
+    margin: 20px 0;
+    font-weight: bold;
+    text-shadow: 0 0 10px var(--gold);
+}
+
+.photo-fortune {
+    font-size: 12px;
+    color: var(--ocean-foam);
+    font-style: italic;
+    margin: 15px 0;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+}
+
+.photo-watermark {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 20px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.photo-controls {
+    margin-top: 20px;
+}
+
+.photo-controls .btn {
+    padding: 12px 30px;
 }
 
 /* ========================================
