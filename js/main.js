@@ -10,8 +10,15 @@
 const CONFIG = {
     startingCash: 5000,
     winCondition: 100000,
-    bankruptcyThreshold: -5000,  // More forgiving threshold
-    daysUntilBankruptcy: 3,      // Days of negative net worth before game over
+    bankruptcyThreshold: -10000, // Very forgiving - only end if deeply in debt
+    daysUntilBankruptcy: 7,      // Full week to recover before game over
+
+    // Daily operating expenses (auto-deducted each day)
+    dailyExpenses: {
+        base: 50,           // Basic dock fees, insurance
+        perLbInventory: 1,  // Tank maintenance per lb stored
+        debtPayment: 0.05   // 5% of debt auto-paid daily (if you have cash)
+    },
 
     // Season goal - summer challenge
     summerLength: 30,  // Days of summer (the challenge period)
@@ -696,9 +703,9 @@ const ACHIEVEMENTS = {
     topDog: {
         id: "topDog",
         name: "Top Dog",
-        description: "Be #1 on leaderboard for 7 days",
+        description: "Have a 7-day profit streak",
         emoji: "🥇",
-        condition: (state) => (state.stats.daysAtTop || 0) >= 7,
+        condition: (state) => (state.bestStreak || 0) >= 7,
         reward: { type: "prestige", amount: 2 },
         tier: "gold"
     },
@@ -1563,7 +1570,6 @@ let gameState = {
         quartersSold: 0,
         chixSold: 0,
         runSold: 0,
-        daysAtTop: 0,           // Days as #1 on leaderboard
         loansPaidOff: 0,
         recoveredFromDebt: false,
         marketsCornered: 0,
@@ -1593,8 +1599,6 @@ let gameState = {
     pendingSpecialDelivery: null,
     captainLostToRival: [],
 
-    // Leaderboard tracking
-    lastLeaderboardPosition: 0,
 
     // Rival dealers
     rivals: {},
@@ -3046,6 +3050,52 @@ function generateOnboardingBuyers() {
 // ============================================
 // BUYER GENERATION
 // ============================================
+// Location-specific buyer names
+const LOCATION_BUYERS = {
+    stonington: {
+        wholesalers: ["Stonington Fish Pier", "Island Seafood Co.", "Deer Isle Dist."],
+        restaurants: ["Fisherman's Friend", "The Granite Inn", "Isle au Haut Diner"],
+        special: ["Quarry Workers Union", "Fishing Derby", "Island Wedding"],
+        budget: ["Lobster Roll Shack", "Harbor Takeout", "Pier Side Stand"]
+    },
+    rockland: {
+        wholesalers: ["Rockland Seafood", "Midcoast Lobster", "Atlantic Fish House"],
+        restaurants: ["Primo Restaurant", "Archer's on the Pier", "The Pearl"],
+        special: ["Schooner Festival", "Art Museum Gala", "Lighthouse Tours"],
+        budget: ["Red's Eats", "Rock City Cafe", "Breakwater Grill"]
+    },
+    camden: {
+        wholesalers: ["Camden Harbor Co.", "Penobscot Bay Seafood", "Yacht Club Supply"],
+        restaurants: ["Natalie's at Camden", "The Waterfront", "Hartstone Inn"],
+        special: ["Regatta Catering", "Estate Wedding", "Private Yacht Party"],
+        budget: ["Camden Deli", "Cappy's Chowder", "Sea Dog Brewing"]
+    },
+    portland: {
+        wholesalers: ["Portland Seafood Co.", "Harbor Fish Market", "Maine Coast Dist."],
+        restaurants: ["Fore Street", "Eventide Oyster", "Street & Co."],
+        special: ["Old Port Festival", "Cruise Ship Galley", "Convention Center"],
+        budget: ["J's Oyster", "Gilbert's Chowder", "Flatbread Company"]
+    },
+    boothbay: {
+        wholesalers: ["Boothbay Lobster Wharf", "Linekin Bay Seafood", "Coastal Maine Co."],
+        restaurants: ["Ports of Italy", "McSeagull's", "Lobsterman's Wharf"],
+        special: ["Windjammer Days", "Harbor Wedding", "Kayak Tours BBQ"],
+        budget: ["Chowder House", "Tugboat Inn", "Blue Moon Cafe"]
+    },
+    barHarbor: {
+        wholesalers: ["Bar Harbor Lobster", "Acadia Seafood", "Frenchman Bay Dist."],
+        restaurants: ["Havana", "Mache Bistro", "Reading Room"],
+        special: ["Acadia Tour Group", "Cruise Ship VIP", "Park Lodge Event"],
+        budget: ["Geddy's", "Side Street Cafe", "Jordan's Restaurant"]
+    },
+    kennebunkport: {
+        wholesalers: ["Cape Porpoise Lobster", "Kennebunk Seafood", "Southern Maine Dist."],
+        restaurants: ["White Barn Inn", "The Tides", "Old Vines"],
+        special: ["Bush Compound Staff", "Estate Party", "Yacht Club Gala"],
+        budget: ["The Clam Shack", "Allisson's", "Bandaloop"]
+    }
+};
+
 function generateBuyers() {
     // Scripted onboarding for first 3 days
     if (gameState.day <= 3) {
@@ -3056,51 +3106,51 @@ function generateBuyers() {
     const weatherData = CONFIG.weather[gameState.weather];
     const locationBuyerBonus = getLocationBuyerBonus(); // Positive = more buyers
     const town = getCurrentTown();
+    const locationId = gameState.currentLocation;
+
+    // Get location-specific buyer names or fall back to generic
+    const localBuyers = LOCATION_BUYERS[locationId] || LOCATION_BUYERS.portland;
 
     // Wholesaler buyer - always present, accepts run or any grade
-    // This is the primary buyer before you have a grading table
-    const wholesalerNames = ["Portland Seafood Co.", "Maine Coast Dist.", "Atlantic Fresh", "NE Wholesale"];
-    const wName = randomChoice(wholesalerNames);
+    const wName = randomChoice(localBuyers.wholesalers);
     const wTrust = gameState.buyerRelations[wName] || 0;
     const wBuyerId = getOrCreateBuyer(wName, "wholesaler");
     const wTrustMod = getTrustSellMod(wBuyerId);
 
     buyers.push({
         name: wName,
-        buyerId: wBuyerId, // NEW: Link to buyer NPC
+        buyerId: wBuyerId,
         emoji: "🏭",
         type: "wholesaler",
         wantsAmount: randomInt(80, 200) + Math.floor(wTrust / 5),
-        acceptsRun: true,  // Will buy ungraded lobsters
-        acceptsGrades: ['select', 'quarter', 'chix'],  // Will also buy graded
-        pricePerLb: calculateSellPrice('quarter') * wTrustMod,  // Base price with trust mod
+        acceptsRun: true,
+        acceptsGrades: ['select', 'quarter', 'chix'],
+        pricePerLb: calculateSellPrice('quarter') * wTrustMod,
         trust: wTrust,
-        buyerTrust: gameState.buyerNPCs[wBuyerId]?.trust || 0 // NEW: Trust level
+        buyerTrust: gameState.buyerNPCs[wBuyerId]?.trust || 0
     });
 
     // Restaurant buyer - wants quarters or selects (graded only)
     const restaurantChance = town.traits.includes('tourist') || town.traits.includes('wealthy') ? 0.2 : 0.3;
     if (hasEquipment('bandingStation') || Math.random() > restaurantChance) {
-        const restaurantNames = ["Harbor Bistro", "The Clam Shack", "Oceanview Grill", "Pier 7", "Captain's Table"];
-        const name = randomChoice(restaurantNames);
+        const name = randomChoice(localBuyers.restaurants);
         const trust = gameState.buyerRelations[name] || 0;
         const rBuyerId = getOrCreateBuyer(name, "restaurant");
         const rTrustMod = getTrustSellMod(rBuyerId);
 
         if (Math.random() < weatherData.buyerMod) {
-            // Restaurants prefer specific sizes - randomly want selects or quarters
             const wantsSelects = Math.random() > 0.6;
             buyers.push({
                 name: name,
-                buyerId: rBuyerId, // NEW: Link to buyer NPC
+                buyerId: rBuyerId,
                 emoji: "🍽️",
                 type: "restaurant",
                 wantsAmount: randomInt(15, 40) + Math.floor(trust / 10) + (locationBuyerBonus * 5),
-                acceptsRun: false,  // Won't buy ungraded
+                acceptsRun: false,
                 acceptsGrades: wantsSelects ? ['select'] : ['select', 'quarter'],
                 pricePerLb: calculateSellPrice(wantsSelects ? 'select' : 'quarter') * rTrustMod,
                 trust: trust,
-                buyerTrust: gameState.buyerNPCs[rBuyerId]?.trust || 0 // NEW: Trust level
+                buyerTrust: gameState.buyerNPCs[rBuyerId]?.trust || 0
             });
         }
     }
@@ -3108,61 +3158,61 @@ function generateBuyers() {
     // Special buyer (tourists, events) - wants selects only (premium)
     const specialChance = town.traits.includes('tourist') ? 0.3 : town.traits.includes('wealthy') ? 0.4 : 0.5;
     if (Math.random() > specialChance && weatherData.buyerMod > 0.7) {
-        const specialNames = ["Tourist Group", "Private Yacht", "Wedding Caterer", "Food Festival"];
-        const sName = randomChoice(specialNames);
+        const sName = randomChoice(localBuyers.special);
         const sBuyerId = getOrCreateBuyer(sName, "tourist");
         const sTrustMod = getTrustSellMod(sBuyerId);
         buyers.push({
             name: sName,
-            buyerId: sBuyerId, // NEW: Link to buyer NPC
+            buyerId: sBuyerId,
             emoji: "⭐",
             type: "special",
             wantsAmount: randomInt(30, 80) + (locationBuyerBonus * 10),
             acceptsRun: false,
-            acceptsGrades: ['select'],  // Only want the big ones
+            acceptsGrades: ['select'],
             pricePerLb: calculateSellPrice('select') * sTrustMod,
             trust: 0,
-            buyerTrust: gameState.buyerNPCs[sBuyerId]?.trust || 0 // NEW: Trust level
+            buyerTrust: gameState.buyerNPCs[sBuyerId]?.trust || 0
         });
     }
 
     // Chix buyer - specifically wants smaller lobsters (cheaper for them)
     if (Math.random() > 0.6) {
-        const chixBuyerNames = ["Clam Bake Co.", "Beach Party Catering", "Lobster Roll Stand", "Food Truck Fleet"];
-        const cName = randomChoice(chixBuyerNames);
+        const cName = randomChoice(localBuyers.budget);
         const cBuyerId = getOrCreateBuyer(cName, "restaurant");
         const cTrustMod = getTrustSellMod(cBuyerId);
         buyers.push({
             name: cName,
-            buyerId: cBuyerId, // NEW: Link to buyer NPC
+            buyerId: cBuyerId,
             emoji: "🦞",
             type: "budget",
             wantsAmount: randomInt(40, 100),
             acceptsRun: false,
-            acceptsGrades: ['chix', 'quarter'],  // Want smaller, cheaper lobsters
+            acceptsGrades: ['chix', 'quarter'],
             pricePerLb: calculateSellPrice('chix') * cTrustMod,
             trust: 0,
-            buyerTrust: gameState.buyerNPCs[cBuyerId]?.trust || 0 // NEW: Trust level
+            buyerTrust: gameState.buyerNPCs[cBuyerId]?.trust || 0
         });
     }
 
     // Extra buyer in high-volume towns (Portland, Bar Harbor) - accepts run
     if (locationBuyerBonus >= 1 && Math.random() > 0.5) {
-        const extraNames = ["Local Market", "Cruise Ship Supply", "Hotel Chain", "Seafood Co-op"];
-        const eName = randomChoice(extraNames);
+        // Use a wholesaler from a different location for variety
+        const otherLocations = Object.keys(LOCATION_BUYERS).filter(l => l !== locationId);
+        const otherLocation = randomChoice(otherLocations);
+        const eName = randomChoice(LOCATION_BUYERS[otherLocation].wholesalers);
         const eBuyerId = getOrCreateBuyer(eName, "wholesaler");
         const eTrustMod = getTrustSellMod(eBuyerId);
         buyers.push({
             name: eName,
-            buyerId: eBuyerId, // NEW: Link to buyer NPC
+            buyerId: eBuyerId,
             emoji: "🏪",
             type: "bulk",
             wantsAmount: randomInt(50, 150),
-            acceptsRun: true,  // Will take ungraded for bulk
+            acceptsRun: true,
             acceptsGrades: ['select', 'quarter', 'chix'],
-            pricePerLb: calculateSellPrice('quarter') * 0.95 * eTrustMod, // Slight discount for bulk + trust
+            pricePerLb: calculateSellPrice('quarter') * 0.95 * eTrustMod,
             trust: 0,
-            buyerTrust: gameState.buyerNPCs[eBuyerId]?.trust || 0 // NEW: Trust level
+            buyerTrust: gameState.buyerNPCs[eBuyerId]?.trust || 0
         });
     }
 
@@ -3694,10 +3744,41 @@ function nextDay() {
     gameState.missedBuyers = [];
     gameState.boatsLostToRival = 0;
 
-    // Pay daily operating costs
-    const operatingCost = 50 + Math.floor(getTotalInventory() * 0.05);
-    gameState.cash -= operatingCost;
-    log(`Operating costs: $${operatingCost}`, "warning");
+    // Pay daily operating expenses (dock fees, tank maintenance)
+    const expenses = CONFIG.dailyExpenses;
+    const inventoryLbs = getTotalInventory();
+    const baseCost = expenses.base;
+    const tankCost = Math.floor(inventoryLbs * expenses.perLbInventory);
+    let totalExpense = baseCost + tankCost;
+
+    // Auto-pay portion of debt if player has cash and debt
+    let debtPayment = 0;
+    if (gameState.debt > 0 && gameState.cash > totalExpense) {
+        debtPayment = Math.min(
+            Math.ceil(gameState.debt * expenses.debtPayment),
+            gameState.cash - totalExpense - 100 // Keep at least $100 buffer
+        );
+        if (debtPayment > 0) {
+            debtPayment = Math.max(0, debtPayment);
+            gameState.debt -= debtPayment;
+            totalExpense += debtPayment;
+            if (gameState.debt === 0) {
+                gameState.stats.loansPaidOff = (gameState.stats.loansPaidOff || 0) + 1;
+                log(`Loan fully paid off! Debt-free!`, "positive");
+            }
+        }
+    }
+
+    // Deduct total from cash (can go negative)
+    gameState.cash -= totalExpense;
+    gameState.dailyCosts = totalExpense;
+
+    // Show expense breakdown
+    let expenseMsg = `Daily expenses: $${baseCost} dock + $${tankCost} tank`;
+    if (debtPayment > 0) {
+        expenseMsg += ` + $${debtPayment} debt payment`;
+    }
+    log(expenseMsg, "warning");
 
     // Track inventory at start of day for spoilage calculations
     trackDayStartInventory();
@@ -3841,39 +3922,51 @@ function checkGameEnd(isDayEnd = false) {
 
     // Bankruptcy checks only happen at day end (not during trading)
     if (!isDayEnd) {
-        // Quick check for severe bankruptcy during trading
-        if (netWorth < CONFIG.bankruptcyThreshold) {
-            endGame(false, "You've gone deeply bankrupt! The lobster business is brutal.");
+        // Only end during trading if severely in debt with no hope
+        if (netWorth < CONFIG.bankruptcyThreshold && gameState.cash < 0) {
+            endGame(false, "The bank has seized your assets. The lobster business is brutal.");
             return true;
         }
         return false;
     }
 
-    // Full bankruptcy check at day end - only increment once per day
+    // Full bankruptcy check at day end
     if (netWorth < 0 && lastBankruptcyCheckDay !== gameState.day) {
         lastBankruptcyCheckDay = gameState.day;
         gameState.daysInTrouble++;
 
         if (netWorth < CONFIG.bankruptcyThreshold) {
-            // Immediate bankruptcy if severely in debt
-            endGame(false, "You've gone deeply bankrupt! The lobster business is brutal.");
+            // Severe debt - immediate bankruptcy
+            endGame(false, "The bank has seized your assets. You're too deep in debt to recover.");
             return true;
         } else if (gameState.daysInTrouble >= CONFIG.daysUntilBankruptcy) {
-            // Bankruptcy after grace period
-            endGame(false, `You couldn't recover after ${CONFIG.daysUntilBankruptcy} days in the red. The bank has called in your debts.`);
+            // Bankruptcy after extended grace period
+            endGame(false, `After ${CONFIG.daysUntilBankruptcy} days struggling, the bank has called in your debts. Better luck next season!`);
             return true;
         } else {
             // Warning - player has time to recover
             const daysLeft = CONFIG.daysUntilBankruptcy - gameState.daysInTrouble;
-            log(`⚠️ WARNING: Net worth negative ($${formatMoney(netWorth)})! ${daysLeft} day(s) to recover before bankruptcy!`, "negative");
-            fishermanSays(`Things are lookin' rough! Better make some sales quick or the bank'll come knockin'!`);
+            if (gameState.daysInTrouble === 1) {
+                log(`⚠️ Finances tight! Net worth: $${formatMoney(netWorth)}. You have ${daysLeft} days to get back in the black.`, "negative");
+                fishermanSays(`Money's tight, but we've all been there. Sell some lobster and you'll be fine!`);
+            } else if (gameState.daysInTrouble >= 4) {
+                log(`⚠️ CRITICAL: Net worth $${formatMoney(netWorth)}! Only ${daysLeft} day(s) left!`, "negative");
+                fishermanSays(`This is serious now! You gotta move some product or the bank's gonna come knockin'!`);
+            } else {
+                log(`⚠️ Still in the red ($${formatMoney(netWorth)}). ${daysLeft} days remaining.`, "negative");
+            }
         }
     } else if (netWorth >= 0) {
         // Reset trouble counter when back in positive
         if (gameState.daysInTrouble > 0) {
             gameState.daysInTrouble = 0;
             log(`Back in the black! Financial crisis averted.`, "positive");
-            fishermanSays(`That's more like it! Keep your head above water!`);
+            fishermanSays(`That's the spirit! Knew you had it in ya!`);
+
+            // Track recovery from debt for achievements
+            if (gameState.debt > 0) {
+                gameState.stats.recoveredFromDebt = true;
+            }
         }
     }
 
@@ -3987,7 +4080,6 @@ function resetGame() {
             quartersSold: 0,
             chixSold: 0,
             runSold: 0,
-            daysAtTop: 0,
             loansPaidOff: 0,
             recoveredFromDebt: false,
             marketsCornered: 0,
@@ -4143,139 +4235,110 @@ function dismissToast(toast) {
 // UI UPDATES
 // ============================================
 function updateUI() {
-    // Header stats (Desktop)
-    document.getElementById("cash").textContent = formatMoney(gameState.cash);
-    document.getElementById("debt").textContent = formatMoney(gameState.debt);
-    document.getElementById("day").textContent = gameState.day;
-    // Season is always Summer for the 30-day challenge, no need to display
-    document.getElementById("weather-icon").textContent = CONFIG.weather[gameState.weather].icon;
+    // === STATUS STRIP UPDATES ===
+    // Cash
+    const cashEl = document.getElementById("cash");
+    if (cashEl) cashEl.textContent = `$${formatMoney(gameState.cash)}`;
 
-    // Mobile Day Card updates
-    const dayMobile = document.getElementById("day-mobile");
-    if (dayMobile) dayMobile.textContent = gameState.day;
+    // Day
+    const dayEl = document.getElementById("day");
+    if (dayEl) dayEl.textContent = gameState.day;
 
-    const cashMobile = document.getElementById("cash-mobile");
-    if (cashMobile) cashMobile.textContent = formatMoney(gameState.cash);
+    // Inventory total and capacity
+    const invTotal = document.getElementById("inventory-total");
+    if (invTotal) invTotal.textContent = getTotalInventory();
 
-    const locationMobile = document.getElementById("location-mobile");
-    if (locationMobile) {
-        const town = getCurrentTown();
-        locationMobile.textContent = town ? town.name : "Stonington";
+    const capEl = document.getElementById("capacity");
+    if (capEl) capEl.textContent = gameState.tankCapacity;
+
+    // Average freshness
+    const avgFresh = document.getElementById("avg-freshness");
+    if (avgFresh) {
+        const freshness = getAverageFreshness();
+        avgFresh.textContent = `${freshness}%`;
     }
 
-    const marketSignalMobile = document.getElementById("market-signal-mobile");
-    if (marketSignalMobile) {
-        let signal = "Stable";
-        if (gameState.marketTrend > 0) signal = "📈 Rising";
-        else if (gameState.marketTrend < 0) signal = "📉 Falling";
-        else signal = "➡️ Stable";
-        marketSignalMobile.textContent = signal;
-    }
+    // Weather
+    const weatherIcon = document.getElementById("weather-icon");
+    if (weatherIcon) weatherIcon.textContent = CONFIG.weather[gameState.weather].icon;
 
-    // Persistent Summary Bar updates
-    const summaryCash = document.getElementById("summary-cash");
-    if (summaryCash) summaryCash.textContent = `$${formatMoney(gameState.cash)}`;
-
-    const summaryInventory = document.getElementById("summary-inventory");
-    if (summaryInventory) summaryInventory.textContent = `${getTotalInventory()} lbs`;
-
-    const summaryFreshness = document.getElementById("summary-freshness");
-    if (summaryFreshness) {
-        const freshness = getOverallFreshness();
-        summaryFreshness.textContent = `${freshness}%`;
-        if (freshness >= 70) {
-            summaryFreshness.className = "summary-value positive";
-        } else if (freshness >= 40) {
-            summaryFreshness.className = "summary-value";
-        } else {
-            summaryFreshness.className = "summary-value negative";
-        }
-    }
-
-    const summaryYesterday = document.getElementById("summary-yesterday");
-    if (summaryYesterday) {
-        const net = gameState.yesterdayNet;
-        if (net > 0) {
-            summaryYesterday.textContent = `+$${formatMoney(net)}`;
-            summaryYesterday.className = "summary-value positive";
-        } else if (net < 0) {
-            summaryYesterday.textContent = `-$${formatMoney(Math.abs(net))}`;
-            summaryYesterday.className = "summary-value negative";
-        } else {
-            summaryYesterday.textContent = "$0";
-            summaryYesterday.className = "summary-value";
-        }
-    }
-
-    // Reputation display
-    const summaryReputation = document.getElementById("summary-reputation");
-    if (summaryReputation) {
-        summaryReputation.textContent = gameState.repTier;
-        // Color code by tier
-        if (gameState.repTier === "Statewide Power") {
-            summaryReputation.className = "summary-value reputation-tier-5";
-        } else if (gameState.repTier === "Regional Player") {
-            summaryReputation.className = "summary-value reputation-tier-4";
-        } else if (gameState.repTier === "Known Dealer") {
-            summaryReputation.className = "summary-value reputation-tier-3";
-        } else if (gameState.repTier === "Local Regular") {
-            summaryReputation.className = "summary-value reputation-tier-2";
-        } else {
-            summaryReputation.className = "summary-value reputation-tier-1";
-        }
-    }
-
-    document.getElementById("weather-name").textContent = CONFIG.weather[gameState.weather].name;
-    document.getElementById("tomorrow-weather").textContent = CONFIG.weather[gameState.tomorrowWeather].icon;
+    const tomorrowWeather = document.getElementById("tomorrow-weather");
+    if (tomorrowWeather) tomorrowWeather.textContent = CONFIG.weather[gameState.tomorrowWeather].icon;
 
     // Market trend
     const trendEl = document.getElementById("market-trend");
-    if (gameState.marketTrend > 0) {
-        trendEl.textContent = "📈 Rising";
-        trendEl.className = "trend-up";
-    } else if (gameState.marketTrend < 0) {
-        trendEl.textContent = "📉 Falling";
-        trendEl.className = "trend-down";
-    } else {
-        trendEl.textContent = "➡️ Stable";
-        trendEl.className = "trend-stable";
+    if (trendEl) {
+        if (gameState.marketTrend > 0) {
+            trendEl.textContent = "Rising";
+            trendEl.className = "trend-rising";
+        } else if (gameState.marketTrend < 0) {
+            trendEl.textContent = "Falling";
+            trendEl.className = "trend-falling";
+        } else {
+            trendEl.textContent = "Stable";
+            trendEl.className = "trend-stable";
+        }
     }
 
-    // Forecast panel (Desktop right column)
-    const forecastTodayIcon = document.getElementById("forecast-today-icon");
-    if (forecastTodayIcon) {
-        forecastTodayIcon.textContent = CONFIG.weather[gameState.weather].icon;
-        document.getElementById("forecast-today-name").textContent = CONFIG.weather[gameState.weather].name;
-        document.getElementById("forecast-tomorrow-icon").textContent = CONFIG.weather[gameState.tomorrowWeather].icon;
-        document.getElementById("forecast-tomorrow-name").textContent = CONFIG.weather[gameState.tomorrowWeather].name;
+    // Reputation in strip
+    const stripRep = document.getElementById("strip-reputation");
+    if (stripRep) {
+        stripRep.textContent = gameState.repTier;
+    }
 
-        const forecastTrend = document.getElementById("forecast-trend");
-        if (gameState.marketTrend > 0) {
-            forecastTrend.textContent = "📈 Rising";
-            forecastTrend.className = "trend-up";
-        } else if (gameState.marketTrend < 0) {
-            forecastTrend.textContent = "📉 Falling";
-            forecastTrend.className = "trend-down";
-        } else {
-            forecastTrend.textContent = "➡️ Stable";
-            forecastTrend.className = "trend-stable";
-        }
+    // === DOCK VIEW UPDATES ===
+    const town = getCurrentTown();
+
+    // Location name and emoji in dock view
+    const locEmoji = document.getElementById("location-emoji");
+    if (locEmoji) locEmoji.textContent = town.emoji;
+
+    const locName = document.getElementById("location-name");
+    if (locName) locName.textContent = town.name;
+
+    // Buy/sell modifiers
+    const buyMod = document.getElementById("buy-mod");
+    if (buyMod) {
+        const mod = Math.round((town.buyMod - 1) * 100);
+        buyMod.textContent = `${mod >= 0 ? '+' : ''}${mod}%`;
+    }
+
+    const sellMod = document.getElementById("sell-mod");
+    if (sellMod) {
+        const mod = Math.round((town.sellMod - 1) * 100);
+        sellMod.textContent = `${mod >= 0 ? '+' : ''}${mod}%`;
+    }
+
+    // Dock empty state visibility
+    const dockEmpty = document.getElementById("dock-empty");
+    if (dockEmpty) {
+        dockEmpty.style.display = gameState.boats.length === 0 ? 'block' : 'none';
+    }
+
+    // Buyers empty state visibility
+    const buyersEmpty = document.getElementById("buyers-empty");
+    if (buyersEmpty) {
+        buyersEmpty.style.display = gameState.buyers.length === 0 ? 'block' : 'none';
     }
 
     // Markets panel (Desktop left column)
     updateMarketsPanel();
 
-    // Daily tracker
-    document.getElementById("daily-spent").textContent = formatMoney(gameState.dailySpent);
-    document.getElementById("daily-earned").textContent = formatMoney(gameState.dailyEarned);
-    const dailyNet = gameState.dailyEarned - gameState.dailySpent;
+    // Daily tracker (optional elements)
+    const dailySpentEl = document.getElementById("daily-spent");
+    const dailyEarnedEl = document.getElementById("daily-earned");
     const profitEl = document.getElementById("daily-profit");
-    if (dailyNet >= 0) {
-        profitEl.textContent = `Net: +$${formatMoney(dailyNet)}`;
-        profitEl.className = "daily-stat profit-positive";
-    } else {
-        profitEl.textContent = `Net: -$${formatMoney(Math.abs(dailyNet))}`;
-        profitEl.className = "daily-stat profit-negative";
+    if (dailySpentEl) dailySpentEl.textContent = formatMoney(gameState.dailySpent);
+    if (dailyEarnedEl) dailyEarnedEl.textContent = formatMoney(gameState.dailyEarned);
+    if (profitEl) {
+        const dailyNet = gameState.dailyEarned - gameState.dailySpent;
+        if (dailyNet >= 0) {
+            profitEl.textContent = `Net: +$${formatMoney(dailyNet)}`;
+            profitEl.className = "daily-stat profit-positive";
+        } else {
+            profitEl.textContent = `Net: -$${formatMoney(Math.abs(dailyNet))}`;
+            profitEl.className = "daily-stat profit-negative";
+        }
     }
 
     // Tank display
@@ -4284,30 +4347,43 @@ function updateUI() {
 
     // Only show grade breakdown if player has grading table
     const breakdownEl = document.getElementById("inventory-breakdown");
-    if (hasEquipment('gradingTable')) {
-        breakdownEl.style.display = "flex";
-        document.getElementById("inventory-a").textContent = gameState.inventory.select;
-        document.getElementById("inventory-b").textContent = gameState.inventory.quarter;
-        document.getElementById("inventory-c").textContent = gameState.inventory.chix;
-        // Update labels if needed
-        const labelA = document.getElementById("label-a");
-        const labelB = document.getElementById("label-b");
-        const labelC = document.getElementById("label-c");
-        if (labelA) labelA.textContent = "Sel:";
-        if (labelB) labelB.textContent = "Qtr:";
-        if (labelC) labelC.textContent = "Chx:";
-    } else {
-        breakdownEl.style.display = "none";
+    if (breakdownEl) {
+        if (hasEquipment('gradingTable')) {
+            breakdownEl.style.display = "flex";
+            const invA = document.getElementById("inventory-a");
+            const invB = document.getElementById("inventory-b");
+            const invC = document.getElementById("inventory-c");
+            if (invA) invA.textContent = gameState.inventory.select;
+            if (invB) invB.textContent = gameState.inventory.quarter;
+            if (invC) invC.textContent = gameState.inventory.chix;
+            // Update labels if needed
+            const labelA = document.getElementById("label-a");
+            const labelB = document.getElementById("label-b");
+            const labelC = document.getElementById("label-c");
+            if (labelA) labelA.textContent = "Sel:";
+            if (labelB) labelB.textContent = "Qtr:";
+            if (labelC) labelC.textContent = "Chx:";
+        } else {
+            breakdownEl.style.display = "none";
+        }
     }
 
-    document.getElementById("inventory-total").textContent = total;
-    document.getElementById("capacity").textContent = capacity;
+    const invTotalEl = document.getElementById("inventory-total");
+    const capacityEl = document.getElementById("capacity");
+    if (invTotalEl) invTotalEl.textContent = total;
+    if (capacityEl) capacityEl.textContent = capacity;
 
-    const fillPercent = (total / capacity) * 100;
-    document.getElementById("tank-fill").style.height = `${fillPercent}%`;
+    const tankFillEl = document.getElementById("tank-fill");
+    if (tankFillEl) {
+        const fillPercent = (total / capacity) * 100;
+        tankFillEl.style.height = `${fillPercent}%`;
+    }
 
-    const lobsterCount = Math.min(Math.floor(total / 25), 15);
-    document.getElementById("lobster-icons").textContent = "🦞".repeat(lobsterCount);
+    const lobsterIconsEl = document.getElementById("lobster-icons");
+    if (lobsterIconsEl) {
+        const lobsterCount = Math.min(Math.floor(total / 25), 15);
+        lobsterIconsEl.textContent = "🦞".repeat(lobsterCount);
+    }
 
     // Dock
     updateDockUI();
@@ -4318,8 +4394,6 @@ function updateUI() {
     // Equipment shop
     updateShopUI();
 
-    // Leaderboard (replaces old rivals panel)
-    updateLeaderboardUI();
 
     // Location
     updateLocationUI();
@@ -4366,10 +4440,18 @@ function getBoatPriceTags(boat) {
 
 function updateDockUI() {
     const container = document.getElementById("boats-container");
-    container.innerHTML = "";
+    if (!container) return;
+
+    // Remove only boat cards, keep empty state
+    container.querySelectorAll('.boat-card').forEach(el => el.remove());
+
+    // Show/hide empty state
+    const emptyState = document.getElementById("dock-empty");
+    if (emptyState) {
+        emptyState.style.display = gameState.boats.length === 0 ? 'block' : 'none';
+    }
 
     if (gameState.boats.length === 0) {
-        container.innerHTML = '<p class="waiting">No boats at the dock...</p>';
         return;
     }
 
@@ -4554,10 +4636,18 @@ function clearAllBoatTimers() {
 
 function updateBuyersUI() {
     const container = document.getElementById("buyers-list");
-    container.innerHTML = "";
+    if (!container) return;
+
+    // Remove only buyer cards, keep empty state
+    container.querySelectorAll('.buyer-card').forEach(el => el.remove());
+
+    // Show/hide empty state
+    const emptyState = document.getElementById("buyers-empty");
+    if (emptyState) {
+        emptyState.style.display = gameState.buyers.length === 0 ? 'block' : 'none';
+    }
 
     if (gameState.buyers.length === 0) {
-        container.innerHTML = '<p class="waiting">No buyers today...</p>';
         return;
     }
 
@@ -4614,6 +4704,7 @@ function updateBuyersUI() {
 
 function updateShopUI() {
     const container = document.getElementById("equipment-list");
+    if (!container) return;
     container.innerHTML = "";
 
     const categories = { tanks: "Tanks", vehicles: "Vehicles", processing: "Processing" };
@@ -4823,21 +4914,31 @@ function updateLocationUI() {
     const town = getCurrentTown();
     if (!town) return;
 
-    document.getElementById("location-emoji").textContent = town.emoji;
-    document.getElementById("location-name").textContent = town.name;
+    const locEmoji = document.getElementById("location-emoji");
+    const locName = document.getElementById("location-name");
+    const locTraits = document.getElementById("location-traits");
+    const buyModEl = document.getElementById("buy-mod");
+    const sellModEl = document.getElementById("sell-mod");
+
+    if (locEmoji) locEmoji.textContent = town.emoji;
+    if (locName) locName.textContent = town.name;
 
     // Format traits for display
-    const traitsDisplay = town.traits.map(t => t.replace('_', ' ')).join(' / ');
-    document.getElementById("location-traits").textContent = traitsDisplay;
+    if (locTraits) {
+        const traitsDisplay = town.traits.map(t => t.replace('_', ' ')).join(' / ');
+        locTraits.textContent = traitsDisplay;
+    }
 
     // Format price modifiers
     const buyModPercent = Math.round((town.buyMod - 1) * 100);
     const sellModPercent = Math.round((town.sellMod - 1) * 100);
 
-    document.getElementById("buy-mod").textContent =
-        buyModPercent >= 0 ? `+${buyModPercent}%` : `${buyModPercent}%`;
-    document.getElementById("sell-mod").textContent =
-        sellModPercent >= 0 ? `+${sellModPercent}%` : `${sellModPercent}%`;
+    if (buyModEl) {
+        buyModEl.textContent = buyModPercent >= 0 ? `+${buyModPercent}%` : `${buyModPercent}%`;
+    }
+    if (sellModEl) {
+        sellModEl.textContent = sellModPercent >= 0 ? `+${sellModPercent}%` : `${sellModPercent}%`;
+    }
 }
 
 // ============================================
@@ -4852,16 +4953,21 @@ function updateMarketsPanel() {
 
     // Update current location card
     const locIcon = document.getElementById("markets-location-icon");
-    if (locIcon) {
-        locIcon.textContent = currentTown.emoji;
-        document.getElementById("markets-location-name").textContent = currentTown.name;
+    const locNameEl = document.getElementById("markets-location-name");
+    const buyModEl = document.getElementById("markets-buy-mod");
+    const sellModEl = document.getElementById("markets-sell-mod");
 
-        const buyModPercent = Math.round((currentTown.buyMod - 1) * 100);
-        const sellModPercent = Math.round((currentTown.sellMod - 1) * 100);
-        document.getElementById("markets-buy-mod").textContent =
-            buyModPercent >= 0 ? `+${buyModPercent}%` : `${buyModPercent}%`;
-        document.getElementById("markets-sell-mod").textContent =
-            sellModPercent >= 0 ? `+${sellModPercent}%` : `${sellModPercent}%`;
+    if (locIcon) locIcon.textContent = currentTown.emoji;
+    if (locNameEl) locNameEl.textContent = currentTown.name;
+
+    const buyModPercent = Math.round((currentTown.buyMod - 1) * 100);
+    const sellModPercent = Math.round((currentTown.sellMod - 1) * 100);
+
+    if (buyModEl) {
+        buyModEl.textContent = buyModPercent >= 0 ? `+${buyModPercent}%` : `${buyModPercent}%`;
+    }
+    if (sellModEl) {
+        sellModEl.textContent = sellModPercent >= 0 ? `+${sellModPercent}%` : `${sellModPercent}%`;
     }
 
     // Build list of other towns
@@ -5015,105 +5121,6 @@ function updateMapUI() {
             closeMap();
         });
     });
-}
-
-// ============================================
-// LEADERBOARD SYSTEM
-// ============================================
-function getLeaderboard() {
-    const entries = [];
-
-    // Add player
-    const playerNetWorth = gameState.cash - gameState.debt + getTotalInventory() * 4;
-    entries.push({
-        id: "player",
-        name: "You",
-        emoji: "🧑",
-        netWorth: playerNetWorth,
-        inventory: getTotalInventory(),
-        isPlayer: true
-    });
-
-    // Add rivals
-    for (const [rivalId, state] of Object.entries(gameState.rivals)) {
-        const rival = RIVALS[rivalId];
-        if (!rival) continue;
-        entries.push({
-            id: rivalId,
-            name: rival.name,
-            emoji: rival.emoji,
-            netWorth: state.cash + state.inventory * 4,
-            inventory: state.inventory,
-            isPlayer: false
-        });
-    }
-
-    // Sort by net worth descending
-    entries.sort((a, b) => b.netWorth - a.netWorth);
-
-    // Add rank
-    entries.forEach((entry, index) => {
-        entry.rank = index + 1;
-        entry.change = 0; // Will be calculated
-    });
-
-    return entries;
-}
-
-function updateLeaderboardTracking() {
-    const leaderboard = getLeaderboard();
-    const playerEntry = leaderboard.find(e => e.isPlayer);
-
-    if (playerEntry) {
-        // Track days at #1
-        if (playerEntry.rank === 1) {
-            gameState.stats.daysAtTop = (gameState.stats.daysAtTop || 0) + 1;
-        }
-
-        // Track position change
-        const previousPosition = gameState.lastLeaderboardPosition || playerEntry.rank;
-        playerEntry.change = previousPosition - playerEntry.rank; // Positive = moved up
-        gameState.lastLeaderboardPosition = playerEntry.rank;
-    }
-
-    return leaderboard;
-}
-
-function updateLeaderboardUI() {
-    const container = document.getElementById("leaderboard-list");
-    if (!container) return;
-
-    const leaderboard = getLeaderboard();
-    container.innerHTML = "";
-
-    leaderboard.forEach((entry, index) => {
-        const div = document.createElement("div");
-        div.className = `leaderboard-entry ${entry.isPlayer ? 'player-entry' : ''} ${index === 0 ? 'first-place' : ''}`;
-
-        const rankEmoji = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `#${entry.rank}`;
-        const changeIndicator = entry.change > 0 ? `<span class="rank-up">▲${entry.change}</span>` :
-                               entry.change < 0 ? `<span class="rank-down">▼${Math.abs(entry.change)}</span>` : '';
-
-        div.innerHTML = `
-            <span class="lb-rank">${rankEmoji}</span>
-            <span class="lb-emoji">${entry.emoji}</span>
-            <span class="lb-name">${entry.name}${changeIndicator}</span>
-            <span class="lb-worth">$${formatMoney(entry.netWorth)}</span>
-        `;
-        container.appendChild(div);
-    });
-
-    // Update prestige display
-    const prestigeTitle = getPrestigeTitle();
-    const prestigeTitleEl = document.getElementById("prestige-title");
-    const prestigePointsEl = document.getElementById("prestige-points");
-
-    if (prestigeTitleEl) {
-        prestigeTitleEl.textContent = prestigeTitle;
-    }
-    if (prestigePointsEl) {
-        prestigePointsEl.textContent = gameState.prestige || 0;
-    }
 }
 
 // ============================================
@@ -5760,6 +5767,15 @@ function skipTutorial() {
     endTutorial();
 }
 
+function replayTutorial() {
+    // Close any open modals
+    document.getElementById("stats-modal").style.display = "none";
+    // Reset tutorial state and start
+    tutorialActive = false;
+    currentTutorialStep = 0;
+    startTutorial();
+}
+
 // ============================================
 // HELPER TIPS SYSTEM
 // ============================================
@@ -6173,6 +6189,174 @@ function startGame() {
 // ============================================
 // EVENT HANDLERS
 // ============================================
+// Current workspace view
+let currentWorkspaceView = 'dock';
+
+function switchWorkspaceView(viewName) {
+    currentWorkspaceView = viewName;
+
+    // Hide all panels
+    document.querySelectorAll('.workspace-panel').forEach(panel => {
+        panel.classList.add('hidden');
+    });
+
+    // Show selected panel
+    const targetPanel = document.getElementById(`${viewName}-view`);
+    if (targetPanel) {
+        targetPanel.classList.remove('hidden');
+    }
+
+    // Update nav tabs
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.dataset.view === viewName) {
+            tab.classList.add('active');
+        }
+    });
+
+    // Update content for specific views
+    if (viewName === 'travel') {
+        updateTravelView();
+    } else if (viewName === 'tanks') {
+        updateTanksView();
+    } else if (viewName === 'buyers') {
+        updateBuyersLocation();
+    }
+}
+
+function updateTravelView() {
+    const portsList = document.getElementById('ports-list');
+    const currentPortName = document.getElementById('current-port-name');
+    const travelReq = document.getElementById('travel-requirement');
+
+    if (!portsList) return;
+
+    const currentTown = getCurrentTown();
+    if (currentPortName) currentPortName.textContent = currentTown.name;
+
+    const hasVan = hasEquipment('deliveryVan');
+
+    // Show/hide travel requirement
+    if (travelReq) {
+        travelReq.style.display = hasVan ? 'none' : 'block';
+    }
+
+    portsList.innerHTML = '';
+
+    // Port unlock requirements by reputation tier
+    const portUnlocks = {
+        stonington: "Dock Nobody",
+        rockland: "Dock Nobody",
+        camden: "Local Regular",
+        portland: "Local Regular",
+        boothbay: "Known Dealer",
+        barHarbor: "Known Dealer",
+        kennebunkport: "Regional Player"
+    };
+
+    const tierOrder = ["Dock Nobody", "Local Regular", "Known Dealer", "Regional Player", "Statewide Power"];
+    const currentTierIndex = tierOrder.indexOf(gameState.repTier);
+
+    for (const [townId, town] of Object.entries(TOWNS)) {
+        if (townId === gameState.currentLocation) continue;
+
+        const buyMod = Math.round((town.buyMod - 1) * 100);
+        const sellMod = Math.round((town.sellMod - 1) * 100);
+
+        // Check reputation lock
+        const requiredTier = portUnlocks[townId] || "Dock Nobody";
+        const requiredTierIndex = tierOrder.indexOf(requiredTier);
+        const isRepLocked = currentTierIndex < requiredTierIndex;
+
+        // Check van lock
+        const isVanLocked = !hasVan;
+        const isLocked = isVanLocked || isRepLocked;
+
+        let lockReason = '';
+        if (isVanLocked) {
+            lockReason = '🚚 Need Van';
+        } else if (isRepLocked) {
+            lockReason = `🔒 ${requiredTier}`;
+        }
+
+        const card = document.createElement('div');
+        card.className = `port-card ${isLocked ? 'locked' : ''}`;
+        card.innerHTML = `
+            <div class="port-info">
+                <span class="port-card-name">${town.emoji} ${town.name}</span>
+                <div class="port-mods">
+                    <span class="buy">Buy: ${buyMod >= 0 ? '+' : ''}${buyMod}%</span>
+                    <span class="sell">Sell: ${sellMod >= 0 ? '+' : ''}${sellMod}%</span>
+                </div>
+                ${isRepLocked ? `<span class="port-lock-reason">Requires: ${requiredTier}</span>` : ''}
+            </div>
+            <span class="port-cost">${isLocked ? lockReason : `$${town.travelCost}`}</span>
+        `;
+
+        if (!isLocked) {
+            card.addEventListener('click', () => {
+                travelTo(townId);
+                switchWorkspaceView('dock');
+            });
+        }
+
+        portsList.appendChild(card);
+    }
+}
+
+function updateTanksView() {
+    const total = getTotalInventory();
+    const capacity = gameState.tankCapacity;
+    const fillPercent = (total / capacity) * 100;
+
+    // Update capacity bar
+    const capacityFill = document.getElementById('tank-fill');
+    if (capacityFill) {
+        capacityFill.style.width = `${fillPercent}%`;
+        capacityFill.classList.toggle('warning', fillPercent > 80);
+    }
+
+    // Update text
+    const tankCurrent = document.getElementById('tank-current');
+    const tankMax = document.getElementById('tank-max');
+    if (tankCurrent) tankCurrent.textContent = total;
+    if (tankMax) tankMax.textContent = capacity;
+
+    // Update freshness
+    const avgFreshness = getAverageFreshness();
+    const tankFreshness = document.getElementById('tank-freshness');
+    if (tankFreshness) tankFreshness.textContent = `${avgFreshness}%`;
+
+    // Estimate loss
+    const estimatedLoss = Math.max(0, Math.floor(total * 0.02));
+    const tankLoss = document.getElementById('tank-loss-estimate');
+    if (tankLoss) tankLoss.textContent = `${estimatedLoss}-${estimatedLoss + 2} lbs`;
+
+    // Update inventory cards
+    const invA = document.getElementById('inventory-a');
+    const invB = document.getElementById('inventory-b');
+    const invC = document.getElementById('inventory-c');
+    const invRun = document.getElementById('inventory-run');
+    if (invA) invA.textContent = `${gameState.inventory.select} lbs`;
+    if (invB) invB.textContent = `${gameState.inventory.quarter} lbs`;
+    if (invC) invC.textContent = `${gameState.inventory.chix} lbs`;
+    if (invRun) invRun.textContent = `${gameState.inventory.run} lbs`;
+
+    // Show/hide warning
+    const tankWarning = document.getElementById('tank-warning');
+    if (tankWarning) {
+        tankWarning.classList.toggle('hidden', fillPercent <= 80);
+    }
+}
+
+function updateBuyersLocation() {
+    const buyersLocation = document.getElementById('buyers-location');
+    if (buyersLocation) {
+        const town = getCurrentTown();
+        buyersLocation.textContent = town.name;
+    }
+}
+
 function initEventHandlers() {
     // Welcome screen
     document.getElementById("start-game-btn").addEventListener("click", startGame);
@@ -6180,8 +6364,15 @@ function initEventHandlers() {
     // Tutorial buttons
     document.getElementById("tutorial-next").addEventListener("click", nextTutorialStep);
     document.getElementById("tutorial-skip").addEventListener("click", skipTutorial);
+    document.getElementById("replay-tutorial-btn").addEventListener("click", replayTutorial);
 
-    document.getElementById("next-day-btn").addEventListener("click", nextDay);
+    // Next Day buttons - check for both IDs
+    const nextDayBtn = document.getElementById("next-day-btn");
+    if (nextDayBtn) nextDayBtn.addEventListener("click", nextDay);
+
+    const nextDayMain = document.getElementById("next-day-btn-main");
+    if (nextDayMain) nextDayMain.addEventListener("click", nextDay);
+
     document.getElementById("restart-btn").addEventListener("click", resetGame);
     document.getElementById("shop-btn").addEventListener("click", openShop);
     document.getElementById("close-shop-btn").addEventListener("click", closeShop);
@@ -6189,32 +6380,26 @@ function initEventHandlers() {
     document.getElementById("close-bank-btn").addEventListener("click", closeBank);
     document.getElementById("stats-btn").addEventListener("click", openStats);
     document.getElementById("close-stats-btn").addEventListener("click", closeStats);
-    document.getElementById("map-btn").addEventListener("click", openMap);
     document.getElementById("close-map-btn").addEventListener("click", closeMap);
 
-    // Markets panel "Open Full Map" button
-    const openMapBtn = document.getElementById("open-map-btn");
-    if (openMapBtn) openMapBtn.addEventListener("click", openMap);
+    // Workspace navigation
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            switchWorkspaceView(tab.dataset.view);
+        });
+    });
 
-    // Mobile buttons
-    const nextDayMobile = document.getElementById("next-day-btn-mobile");
-    if (nextDayMobile) nextDayMobile.addEventListener("click", nextDay);
-
-    const mapBtnMobile = document.getElementById("map-btn-mobile");
-    if (mapBtnMobile) mapBtnMobile.addEventListener("click", openMap);
-
-    const shopBtnMobile = document.getElementById("shop-btn-mobile");
-    if (shopBtnMobile) shopBtnMobile.addEventListener("click", openShop);
-
-    const bankBtnMobile = document.getElementById("bank-btn-mobile");
-    if (bankBtnMobile) bankBtnMobile.addEventListener("click", openBank);
-
-    const statsBtnMobile = document.getElementById("stats-btn-mobile");
-    if (statsBtnMobile) statsBtnMobile.addEventListener("click", openStats);
-
-    // Photo mode button
-    const photoBtnMobile = document.getElementById("photo-btn-mobile");
-    if (photoBtnMobile) photoBtnMobile.addEventListener("click", enterPhotoMode);
+    // Workspace action buttons (switch views and actions)
+    document.querySelectorAll('[data-action]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const action = btn.dataset.action;
+            if (action === 'switch-dock') switchWorkspaceView('dock');
+            if (action === 'switch-tanks') switchWorkspaceView('tanks');
+            if (action === 'switch-buyers') switchWorkspaceView('buyers');
+            if (action === 'switch-travel') switchWorkspaceView('travel');
+            if (action === 'end-day') nextDay();
+        });
+    });
 
     // Day summary continue button
     const summaryContinue = document.getElementById("summary-continue");

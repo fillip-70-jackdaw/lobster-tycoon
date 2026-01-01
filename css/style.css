@@ -384,97 +384,578 @@ body::before {
 
 /* Game Container */
 .game-container {
-    max-width: 1400px;
+    max-width: 900px;
     margin: 0 auto;
-    padding: 16px;
+    padding: 0;
     position: relative;
     z-index: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
 /* ========================================
-   HEADER
+   STATUS STRIP - Persistent Header
    ======================================== */
-.game-header {
-    background: linear-gradient(135deg, var(--lobster-dark) 0%, var(--lobster-red) 50%, var(--lobster-dark) 100%);
-    padding: 16px 20px;
-    margin-bottom: 16px;
-    border: 5px solid var(--black);
+.status-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 16px;
+    background: linear-gradient(180deg, var(--ocean-dark) 0%, var(--ocean-deepest) 100%);
+    border-bottom: 3px solid var(--ocean-medium);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.strip-identity {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.strip-title {
+    font-size: 8px;
+    color: var(--ocean-foam);
+    opacity: 0.7;
+}
+
+.strip-reputation {
+    font-size: 9px;
+    color: var(--gold);
+    text-shadow: 0 0 8px var(--gold-dark);
+}
+
+.strip-survival {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.strip-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.strip-stat .stat-label {
+    font-size: 6px;
+    color: var(--ocean-foam);
+    opacity: 0.6;
+    text-transform: uppercase;
+}
+
+.strip-stat .stat-value {
+    font-size: 10px;
+    color: var(--cream);
+}
+
+.strip-cash .stat-value {
+    font-size: 14px;
+    color: var(--success-glow);
+    text-shadow: 0 0 10px var(--success);
+}
+
+.strip-pressure {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.strip-day .stat-value {
+    color: var(--sand);
+}
+
+.strip-weather {
+    flex-direction: row;
+    gap: 4px;
+}
+
+.strip-weather span {
+    font-size: 12px;
+}
+
+.weather-next {
+    font-size: 9px !important;
+    opacity: 0.6;
+}
+
+.strip-market {
+    background: rgba(0,0,0,0.3);
+    padding: 4px 8px;
     border-radius: 4px;
-    position: relative;
-    overflow: hidden;
-    box-shadow:
-        0 0 0 2px var(--lobster-glow),
-        inset 0 2px 0 rgba(255,255,255,0.2),
-        inset 0 -3px 0 rgba(0,0,0,0.3),
-        0 8px 20px var(--shadow);
 }
 
-/* Decorative rope border effect */
-.game-header::before {
-    content: "";
-    position: absolute;
-    top: 4px;
-    left: 4px;
-    right: 4px;
-    bottom: 4px;
-    border: 3px dashed rgba(255,255,255,0.15);
-    border-radius: 2px;
-    pointer-events: none;
+.strip-market .trend-stable { color: var(--ocean-foam); }
+.strip-market .trend-rising { color: var(--success-glow); }
+.strip-market .trend-falling { color: var(--danger); }
+
+.strip-actions {
+    display: flex;
+    gap: 8px;
 }
 
-.game-header h1 {
-    font-size: 13px;
-    text-shadow:
-        3px 3px 0px var(--black),
-        -1px -1px 0px var(--lobster-glow);
-    margin-bottom: 12px;
+.strip-btn {
+    background: rgba(0,0,0,0.4);
+    border: 2px solid var(--ocean-medium);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.strip-btn:hover {
+    background: var(--ocean-dark);
+    border-color: var(--gold);
+    transform: translateY(-2px);
+}
+
+/* ========================================
+   WORKSPACE NAVIGATION - Tab Bar
+   ======================================== */
+.workspace-nav {
+    display: flex;
+    background: var(--ocean-deepest);
+    border-bottom: 2px solid var(--ocean-dark);
+}
+
+.nav-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 8px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--ocean-foam);
+    font-family: inherit;
+    font-size: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0.6;
+}
+
+.nav-tab:hover {
+    opacity: 0.9;
+    background: rgba(255,255,255,0.05);
+}
+
+.nav-tab.active {
+    opacity: 1;
+    border-bottom-color: var(--gold);
+    background: rgba(255,215,0,0.1);
+    color: var(--gold);
+}
+
+.tab-icon {
+    font-size: 18px;
+}
+
+.tab-label {
+    font-size: 8px;
+    text-transform: uppercase;
     letter-spacing: 1px;
 }
 
-.status-bar {
+/* ========================================
+   MAIN WORKSPACE
+   ======================================== */
+.workspace {
+    flex: 1;
+    position: relative;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+.workspace-panel {
+    display: block;
+}
+
+.workspace-panel.hidden {
+    display: none;
+}
+
+.panel-header {
     display: flex;
-    flex-wrap: wrap;
-    gap: 12px 24px;
-    font-size: 9px;
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--ocean-dark);
 }
 
-.status-row {
+.panel-header h2 {
+    font-size: 12px;
+    color: var(--cream);
+    text-shadow: 2px 2px 0 var(--black);
+}
+
+.location-prices {
+    display: flex;
+    gap: 8px;
+}
+
+.price-tag {
+    font-size: 8px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: inherit;
+}
+
+.price-tag.buy {
+    background: rgba(80, 200, 120, 0.2);
+    color: var(--success-glow);
+    border: 1px solid var(--success);
+}
+
+.price-tag.sell {
+    background: rgba(255, 179, 71, 0.2);
+    color: var(--warning);
+    border: 1px solid var(--warning);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    border: 2px dashed var(--ocean-dark);
+}
+
+.empty-message {
+    font-size: 11px;
+    color: var(--ocean-foam);
+    margin-bottom: 20px;
+}
+
+.empty-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px 20px;
-    align-items: center;
+    gap: 12px;
+    justify-content: center;
 }
 
-.cash {
-    color: var(--success-glow);
-    text-shadow: 0 0 10px var(--success), 2px 2px 0px var(--black);
-    font-size: 11px;
+/* ========================================
+   DOCK VIEW - Boats Container
+   ======================================== */
+.boats-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
-.debt {
-    color: var(--danger);
-    text-shadow: 0 0 8px rgba(255,100,100,0.5), 2px 2px 0px var(--black);
+/* ========================================
+   TANKS VIEW
+   ======================================== */
+.tanks-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
-.date {
-    color: var(--sand);
-    text-shadow: 2px 2px 0px var(--black);
-}
-
-.weather {
-    color: var(--white);
+.tank-capacity {
     background: rgba(0,0,0,0.3);
-    padding: 4px 10px;
-    border-radius: 4px;
-    border: 2px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 16px;
 }
 
-.forecast {
+.capacity-bar {
+    height: 24px;
+    background: var(--ocean-deepest);
+    border-radius: 4px;
+    overflow: hidden;
+    border: 2px solid var(--ocean-dark);
+    margin-bottom: 8px;
+}
+
+.capacity-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--ocean-light) 0%, var(--ocean-bright) 100%);
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.capacity-fill.warning {
+    background: linear-gradient(90deg, var(--warning) 0%, var(--danger) 100%);
+}
+
+.capacity-text {
+    text-align: center;
+    font-size: 11px;
+    color: var(--cream);
+}
+
+.tank-risk {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+}
+
+.risk-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: rgba(0,0,0,0.2);
+    padding: 12px 20px;
+    border-radius: 6px;
+}
+
+.risk-label {
+    font-size: 7px;
+    color: var(--ocean-foam);
     opacity: 0.7;
-    margin-left: 8px;
+}
+
+.risk-value {
+    font-size: 12px;
+    color: var(--cream);
+}
+
+.risk-value.warning {
+    color: var(--warning);
+}
+
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.inventory-card {
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border: 2px solid var(--ocean-dark);
+}
+
+.inventory-card.grade-select { border-color: var(--gold); }
+.inventory-card.grade-quarter { border-color: var(--silver); }
+.inventory-card.grade-chix { border-color: var(--bronze); }
+.inventory-card.grade-run { border-color: var(--ocean-medium); }
+
+.grade-name {
     font-size: 8px;
+    color: var(--ocean-foam);
+}
+
+.grade-amount {
+    font-size: 14px;
+    color: var(--cream);
+}
+
+.tank-warning {
+    background: rgba(255, 100, 100, 0.2);
+    border: 2px solid var(--danger);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+    justify-content: center;
+}
+
+.tank-warning .warning-icon {
+    font-size: 20px;
+}
+
+.tank-warning .warning-text {
+    font-size: 9px;
+    color: var(--danger);
+}
+
+.tank-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+/* ========================================
+   BUYERS VIEW
+   ======================================== */
+.buyers-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ========================================
+   TRAVEL VIEW
+   ======================================== */
+.travel-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.current-port {
+    text-align: center;
+    padding: 16px;
+    background: rgba(255, 215, 0, 0.1);
+    border: 2px solid var(--gold);
+    border-radius: 8px;
+}
+
+.port-label {
+    font-size: 8px;
+    color: var(--ocean-foam);
+    display: block;
+    margin-bottom: 4px;
+}
+
+.port-name {
+    font-size: 14px;
+    color: var(--gold);
+}
+
+.ports-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.port-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    background: rgba(0,0,0,0.3);
+    border: 2px solid var(--ocean-dark);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.port-card:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: var(--ocean-light);
+    transform: translateX(4px);
+}
+
+.port-card.locked {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.port-card.locked:hover {
+    transform: none;
+}
+
+.port-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.port-card-name {
+    font-size: 11px;
+    color: var(--cream);
+}
+
+.port-mods {
+    display: flex;
+    gap: 8px;
+    font-size: 7px;
+}
+
+.port-mods .buy { color: var(--success); }
+.port-mods .sell { color: var(--warning); }
+
+.port-cost {
+    font-size: 9px;
+    color: var(--warning);
+}
+
+.travel-requirement {
+    text-align: center;
+    padding: 20px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    border: 2px dashed var(--ocean-dark);
+}
+
+.lock-icon {
+    font-size: 24px;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.requirement-text {
+    font-size: 9px;
+    color: var(--ocean-foam);
+}
+
+.port-lock-reason {
+    font-size: 7px;
+    color: var(--warning);
+    font-style: italic;
+}
+
+/* ========================================
+   ACTION BAR - End Day
+   ======================================== */
+.action-bar {
+    padding: 16px;
+    background: linear-gradient(180deg, transparent 0%, var(--ocean-deepest) 100%);
+    text-align: center;
+}
+
+/* ========================================
+   GAME LOG - Collapsible
+   ======================================== */
+.log-panel {
+    background: var(--ocean-deepest);
+    border-top: 2px solid var(--ocean-dark);
+}
+
+.log-panel summary {
+    padding: 12px 16px;
+    font-size: 9px;
+    color: var(--ocean-foam);
+    cursor: pointer;
+    list-style: none;
+}
+
+.log-panel summary::-webkit-details-marker {
+    display: none;
+}
+
+.log-panel summary::before {
+    content: "▶ ";
+}
+
+.log-panel[open] summary::before {
+    content: "▼ ";
+}
+
+#game-log {
+    max-height: 150px;
+    overflow-y: auto;
+    padding: 0 16px 16px;
+    font-size: 8px;
+}
+
+#game-log p {
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+/* ========================================
+   LEGACY STYLES (kept for compatibility)
+   ======================================== */
+.hidden {
+    display: none !important;
 }
 
 #market-trend {
@@ -718,11 +1199,11 @@ body::before {
 }
 
 .btn-tiny {
-    font-size: 14px;
-    padding: 8px 12px;
+    font-size: 18px;
+    padding: 12px 16px;
     background: rgba(0, 0, 0, 0.3);
     border: 2px solid var(--ocean-light);
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
     transition: all 0.1s ease;
 }
@@ -1838,8 +2319,8 @@ body::before {
 }
 
 .btn-small {
-    font-size: 7px;
-    padding: 8px 12px;
+    font-size: 14px;
+    padding: 10px 16px;
 }
 
 .btn-primary {
@@ -2894,104 +3375,6 @@ body::before {
     font-style: italic;
 }
 
-/* ========================================
-   LEADERBOARD
-   ======================================== */
-.leaderboard-panel {
-    background: linear-gradient(180deg, var(--ocean-dark) 0%, var(--ocean-deepest) 100%);
-}
-
-.leaderboard-panel h2 {
-    color: var(--gold);
-}
-
-#leaderboard-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.leaderboard-entry {
-    display: flex;
-    align-items: center;
-    padding: 8px 12px;
-    border-radius: 6px;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid transparent;
-    transition: all 0.2s ease;
-    gap: 8px;
-}
-
-.leaderboard-entry.player-entry {
-    background: linear-gradient(90deg, rgba(255, 215, 0, 0.15) 0%, rgba(0, 0, 0, 0.3) 100%);
-    border-color: var(--gold);
-}
-
-.leaderboard-entry.first-place {
-    background: linear-gradient(90deg, rgba(255, 215, 0, 0.25) 0%, rgba(0, 0, 0, 0.3) 100%);
-    border-color: var(--gold);
-}
-
-.leaderboard-entry:hover {
-    transform: translateX(4px);
-    border-color: var(--ocean-foam);
-}
-
-.lb-rank {
-    font-weight: bold;
-    min-width: 28px;
-    text-align: center;
-}
-
-.lb-emoji {
-    font-size: 1.2em;
-}
-
-.lb-name {
-    flex: 1;
-    font-weight: bold;
-}
-
-.leaderboard-entry.player-entry .lb-name {
-    color: var(--gold);
-}
-
-.lb-worth {
-    color: var(--success-glow);
-    font-size: 0.9em;
-}
-
-.rank-up {
-    color: var(--success);
-    font-size: 0.75em;
-    margin-left: 5px;
-}
-
-.rank-down {
-    color: var(--danger);
-    font-size: 0.75em;
-    margin-left: 5px;
-}
-
-.prestige-display {
-    margin-top: 10px;
-    padding: 10px;
-    background: linear-gradient(90deg, rgba(255, 215, 0, 0.1) 0%, transparent 100%);
-    border-radius: 6px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border: 1px solid rgba(255, 215, 0, 0.3);
-}
-
-.prestige-title {
-    color: var(--gold);
-    font-weight: bold;
-}
-
-.prestige-stars {
-    font-size: 1.1em;
-}
 
 /* ========================================
    ACHIEVEMENT POPUP
@@ -3426,11 +3809,17 @@ body::before {
     font-style: italic;
 }
 
-/* Stats Credit */
-.stats-credit {
+/* Stats Footer */
+.stats-footer {
     margin-top: 20px;
     padding-top: 15px;
     border-top: 1px solid var(--ocean-dark);
+    text-align: center;
+}
+
+/* Stats Credit */
+.stats-credit {
+    margin-top: 15px;
     text-align: center;
 }
 
