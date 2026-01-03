@@ -1010,42 +1010,56 @@ const TUTORIAL_STEPS = [
     {
         id: "dock",
         title: "The Dock",
-        message: "Fishing boats arrive here with fresh lobsters. Click 'Buy All' or 'Buy Half' to purchase their catch. Buy low!",
-        highlight: ".dock-panel",
-        position: "right"
+        message: "Fishing boats arrive here with fresh lobsters. Click 'Buy All' or 'Buy Half' to purchase their catch. Stonington has the cheapest lobsters on the coast!",
+        highlight: "#tab-dock",
+        position: "bottom"
     },
     {
         id: "tank",
         title: "Your Tank",
-        message: "Lobsters you buy are stored here. Watch your capacity! Lobsters can die if stored too long.",
-        highlight: ".tank-panel",
-        position: "right"
+        message: "Lobsters you buy are stored here. Watch your capacity and freshness! Lobsters lose value if stored too long.",
+        highlight: "#tab-tanks",
+        position: "bottom"
     },
     {
         id: "buyers",
         title: "Buyers",
-        message: "Sell your lobsters to buyers who visit. Different buyers pay different prices. Sell high!",
-        highlight: ".buyers-panel",
-        position: "left"
+        message: "Sell your lobsters to buyers who visit. Different buyers pay different prices. Restaurants and tourists pay more than wholesalers!",
+        highlight: "#tab-buyers",
+        position: "bottom"
+    },
+    {
+        id: "arbitrage",
+        title: "The Secret to Profit",
+        message: "Here's the key: Different towns have different prices! Buy cheap in fishing villages like Stonington, then sell high in tourist towns like Camden or Bar Harbor. This is called arbitrage.",
+        highlight: "#tab-travel",
+        position: "bottom"
+    },
+    {
+        id: "travel",
+        title: "Get a Delivery Van",
+        message: "To travel between towns, you'll need a Delivery Van from the Shop. It's your first big investment - save up $2,000 and the coast opens up!",
+        highlight: "#shop-btn",
+        position: "bottom"
     },
     {
         id: "nextday",
-        title: "Next Day",
-        message: "Click 'Next Day' to advance time. New boats and buyers arrive each day. Watch the weather - storms mean fewer boats!",
-        highlight: "#next-day-btn",
+        title: "End Day",
+        message: "Click 'End Day' to advance time. New boats and buyers arrive each day. Watch the weather - storms mean fewer boats!",
+        highlight: "#end-day-button",
         position: "top"
     },
     {
-        id: "shop",
-        title: "Upgrades",
-        message: "Visit the Shop to buy equipment upgrades. A Delivery Van lets you travel to other towns for better prices!",
-        highlight: "#shop-btn",
+        id: "reputation",
+        title: "Build Your Reputation",
+        message: "As you trade more, your reputation grows. Higher reputation unlocks access to premium ports where the real money is made. Start small, dream big!",
+        highlight: "#badge-icon",
         position: "bottom"
     },
     {
         id: "ready",
         title: "You're Ready!",
-        message: "Good luck! Remember: Buy Low, Sell High, and watch the calendar. Summer won't last forever!",
+        message: "Good luck! Remember: Buy cheap in fishing towns, sell high in tourist towns, and build your reputation. Summer won't last forever!",
         highlight: null,
         position: "center"
     }
@@ -1366,8 +1380,9 @@ const TOWNS = {
         name: "Stonington",
         description: "Remote fishing village - cheapest lobster",
         emoji: "🎣",
-        x: 75,  // Map position (percentage)
-        y: 55,
+        // Deer Isle - on real Maine outline
+        x: 68,
+        y: 58,
         buyMod: 0.80,   // 20% cheaper to buy
         sellMod: 0.85,  // 15% less when selling
         boatBonus: 2,   // Extra boats available
@@ -1380,8 +1395,9 @@ const TOWNS = {
         name: "Rockland",
         description: "Working harbor - good supply, fair prices",
         emoji: "⚓",
-        x: 58,
-        y: 52,
+        // West side of Penobscot Bay - on real Maine outline
+        x: 52,
+        y: 62,
         buyMod: 0.90,
         sellMod: 0.95,
         boatBonus: 1,
@@ -1394,8 +1410,9 @@ const TOWNS = {
         name: "Camden",
         description: "Wealthy yacht town - premium buyers",
         emoji: "⛵",
-        x: 52,
-        y: 48,
+        // North of Rockland - on real Maine outline
+        x: 55,
+        y: 56,
         buyMod: 1.10,
         sellMod: 1.20,
         boatBonus: 0,
@@ -1408,8 +1425,9 @@ const TOWNS = {
         name: "Portland",
         description: "Big city - high volume, competitive prices",
         emoji: "🏙️",
+        // Casco Bay - on real Maine outline
         x: 28,
-        y: 72,
+        y: 78,
         buyMod: 1.00,
         sellMod: 1.05,
         boatBonus: 1,
@@ -1422,8 +1440,9 @@ const TOWNS = {
         name: "Boothbay Harbor",
         description: "Tourist destination - seasonal demand",
         emoji: "🌊",
-        x: 38,
-        y: 60,
+        // Boothbay peninsula - on real Maine outline
+        x: 42,
+        y: 68,
         buyMod: 1.05,
         sellMod: 1.15,
         boatBonus: 0,
@@ -1436,8 +1455,9 @@ const TOWNS = {
         name: "Bar Harbor",
         description: "Acadia tourists - highest sell prices!",
         emoji: "🏔️",
-        x: 85,
-        y: 35,
+        // Mount Desert Island - on real Maine outline
+        x: 88,
+        y: 50,
         buyMod: 1.20,   // Expensive to buy
         sellMod: 1.40,  // But great sell prices!
         boatBonus: -1,  // Fewer boats
@@ -1450,8 +1470,9 @@ const TOWNS = {
         name: "Kennebunkport",
         description: "Bush family territory - old money buyers",
         emoji: "🦞",
+        // Southern Maine - on real Maine outline
         x: 18,
-        y: 82,
+        y: 88,
         buyMod: 1.15,
         sellMod: 1.30,
         boatBonus: 0,
@@ -3710,6 +3731,9 @@ function nextDay() {
         updateStats("dayEnd", { earned: gameState.dailyEarned, spent: gameState.dailySpent });
     }
 
+    // Store tier before processing changes (for rank-up detection)
+    const oldTier = gameState.repTier;
+
     // Store for summary modal (before reset)
     gameState.previousDayData = {
         day: previousDay,
@@ -3719,7 +3743,8 @@ function nextDay() {
         missedBoats: [...gameState.missedBoats],
         missedBuyers: [...gameState.missedBuyers],
         boatsLostToRival: gameState.boatsLostToRival,
-        totalMissedValue: totalMissedValue
+        totalMissedValue: totalMissedValue,
+        rankUp: null // Will be set if rank changes
     };
 
     // Save yesterday's net before resetting
@@ -3730,6 +3755,14 @@ function nextDay() {
 
     // Process end-of-day trust and reputation changes
     processEndOfDayTrust();
+
+    // Check for rank-up after reputation processing
+    if (gameState.repTier !== oldTier) {
+        gameState.previousDayData.rankUp = {
+            oldTier: oldTier,
+            newTier: gameState.repTier
+        };
+    }
 
     // Clear today's fortune for new day
     gameState.todayFortune = null;
@@ -4286,6 +4319,11 @@ function updateUI() {
         stripRep.textContent = gameState.repTier;
     }
 
+    // Update badge visual in strip
+    const badgeData = BADGE_TIERS[gameState.repTier] || BADGE_TIERS["Dock Nobody"];
+    const badgeVisual = document.getElementById("badge-visual");
+    if (badgeVisual) badgeVisual.textContent = badgeData.emblem;
+
     // === DOCK VIEW UPDATES ===
     const town = getCurrentTown();
 
@@ -4451,6 +4489,12 @@ function updateDockUI() {
         emptyState.style.display = gameState.boats.length === 0 ? 'block' : 'none';
     }
 
+    // Update dock context message (why no boats)
+    updateDockContext();
+
+    // Update dock ambient pressure
+    updateDockAmbient();
+
     if (gameState.boats.length === 0) {
         return;
     }
@@ -4523,6 +4567,72 @@ function updateDockUI() {
             startBoatTimer(boat);
         }
     });
+}
+
+// Update dock empty state context message
+function updateDockContext() {
+    const contextEl = document.getElementById('dock-empty-context');
+    if (!contextEl) return;
+
+    // Choose context message based on game state
+    let message = '';
+
+    // Weather-based messages
+    if (gameState.weather === 'stormy') {
+        message = "Storms are keeping the fleet offshore.";
+    } else if (gameState.weather === 'foggy') {
+        message = "The fog may be slowing boats down.";
+    } else if (gameState.weather === 'rainy') {
+        message = "Rain might keep some captains home.";
+    }
+    // Reputation-based messages (if weather is fine)
+    else if (gameState.repTier === 'Dock Nobody') {
+        message = "No one prioritizes you yet.";
+    }
+    // Time-based messages
+    else if (gameState.day <= 3) {
+        message = "You're still learning the rhythm of the dock.";
+    }
+    // Default
+    else {
+        message = "Boats come and go. Patience pays.";
+    }
+
+    contextEl.textContent = message;
+}
+
+// Update dock ambient pressure indicator
+function updateDockAmbient() {
+    const ambientEl = document.getElementById('dock-ambient');
+    const timeEl = document.getElementById('dock-time-of-day');
+    const pressureEl = document.getElementById('dock-pressure-hint');
+
+    if (!ambientEl) return;
+
+    // Show ambient only when dock is empty
+    ambientEl.style.display = gameState.boats.length === 0 ? 'block' : 'none';
+
+    // Time of day based on actions taken
+    if (timeEl) {
+        const actions = (gameState.dailySpent > 0 || gameState.dailyEarned > 0) ? 'Afternoon' : 'Morning';
+        timeEl.textContent = actions;
+    }
+
+    // Pressure hint based on inventory
+    if (pressureEl) {
+        const total = getTotalInventory();
+        const freshness = getAverageFreshness();
+
+        if (total === 0) {
+            pressureEl.textContent = "Your tanks are empty. Buy before you can sell.";
+        } else if (freshness < 70) {
+            pressureEl.textContent = "Freshness dropping. Sell soon or lose stock.";
+        } else if (total > gameState.tankCapacity * 0.8) {
+            pressureEl.textContent = "Tanks nearly full. Time to sell.";
+        } else {
+            pressureEl.textContent = "Freshness is holding... for now.";
+        }
+    }
 }
 
 // Start countdown timer for a boat
@@ -4782,6 +4892,101 @@ function openStats() {
 
 function closeStats() {
     document.getElementById("stats-modal").style.display = "none";
+}
+
+// Badge/License Modal
+const BADGE_TIERS = {
+    "Dock Nobody": {
+        frame: "badge-paper",
+        emblem: "📋",
+        flavor: "Temporary license. Nobody knows your name."
+    },
+    "Local Regular": {
+        frame: "badge-plastic",
+        emblem: "🪪",
+        flavor: "Licensed dealer. The captains are starting to remember you."
+    },
+    "Known Dealer": {
+        frame: "badge-metal",
+        emblem: "🏅",
+        flavor: "Official state license. Your reputation precedes you."
+    },
+    "Regional Player": {
+        frame: "badge-engraved",
+        emblem: "🎖️",
+        flavor: "Premium dealer certification. The coast knows your name."
+    },
+    "Statewide Power": {
+        frame: "badge-gilded",
+        emblem: "👑",
+        flavor: "Master Dealer. You ARE the Maine lobster trade."
+    }
+};
+
+function openBadgeModal() {
+    document.getElementById("badge-modal").style.display = "flex";
+    updateBadgeUI();
+}
+
+function closeBadgeModal() {
+    document.getElementById("badge-modal").style.display = "none";
+}
+
+function updateBadgeUI() {
+    const tier = gameState.repTier || "Dock Nobody";
+    const badgeData = BADGE_TIERS[tier] || BADGE_TIERS["Dock Nobody"];
+
+    // Update badge artwork
+    const artwork = document.getElementById("badge-artwork");
+    if (artwork) {
+        artwork.innerHTML = `
+            <div class="badge-frame ${badgeData.frame}">
+                <span class="badge-emblem">${badgeData.emblem}</span>
+            </div>
+        `;
+    }
+
+    // Update tier title and flavor
+    const tierTitle = document.getElementById("badge-tier-title");
+    if (tierTitle) tierTitle.textContent = tier;
+
+    const flavor = document.getElementById("badge-flavor");
+    if (flavor) flavor.textContent = badgeData.flavor;
+
+    // Update status strip badge
+    const badgeVisual = document.getElementById("badge-visual");
+    if (badgeVisual) badgeVisual.textContent = badgeData.emblem;
+
+    const stripRep = document.getElementById("strip-reputation");
+    if (stripRep) stripRep.textContent = tier;
+
+    // Update progress bar
+    const tierIndex = TIER_ORDER.indexOf(tier);
+    const nextTierIndex = tierIndex + 1;
+
+    // Calculate progress within current tier
+    const repThresholds = [0, 20, 50, 100, 200]; // Rep needed for each tier
+    const currentThreshold = repThresholds[tierIndex] || 0;
+    const nextThreshold = repThresholds[nextTierIndex] || repThresholds[repThresholds.length - 1];
+
+    let progressPercent = 100;
+    if (nextTierIndex < TIER_ORDER.length) {
+        const tierProgress = gameState.reputation - currentThreshold;
+        const tierRange = nextThreshold - currentThreshold;
+        progressPercent = Math.min(100, Math.max(0, (tierProgress / tierRange) * 100));
+    }
+
+    const repFill = document.getElementById("badge-rep-fill");
+    if (repFill) repFill.style.width = `${progressPercent}%`;
+
+    const repNext = document.getElementById("badge-rep-next");
+    if (repNext) {
+        if (nextTierIndex < TIER_ORDER.length) {
+            repNext.textContent = `Next: ${TIER_ORDER[nextTierIndex]}`;
+        } else {
+            repNext.textContent = "Maximum rank achieved!";
+        }
+    }
 }
 
 function updateStatsUI() {
@@ -6012,6 +6217,30 @@ function showDaySummary() {
         missedSection.style.display = "none";
     }
 
+    // Rank-up section (shown when tier increases)
+    const rankupSection = document.getElementById("summary-rankup-section");
+    if (rankupSection) {
+        if (prevData.rankUp) {
+            rankupSection.style.display = "block";
+            const newTier = prevData.rankUp.newTier;
+            const badgeData = BADGE_TIERS[newTier] || BADGE_TIERS["Dock Nobody"];
+
+            const rankupIcon = document.getElementById("rankup-icon");
+            if (rankupIcon) rankupIcon.textContent = badgeData.emblem;
+
+            const rankupTier = document.getElementById("rankup-tier");
+            if (rankupTier) rankupTier.textContent = newTier;
+
+            const rankupFlavor = document.getElementById("rankup-flavor");
+            if (rankupFlavor) rankupFlavor.textContent = badgeData.flavor;
+
+            // Also update the badge UI
+            updateBadgeUI();
+        } else {
+            rankupSection.style.display = "none";
+        }
+    }
+
     // Verdict emoji - now considers missed opportunities
     const verdictEl = document.getElementById("summary-verdict");
     if (dailyProfit > 500 && missedBoats.length === 0) {
@@ -6224,12 +6453,36 @@ function switchWorkspaceView(viewName) {
     }
 }
 
+// Track selected port for travel
+let selectedPort = null;
+
+// Port unlock requirements by reputation tier
+const PORT_UNLOCKS = {
+    stonington: "Dock Nobody",
+    rockland: "Dock Nobody",
+    camden: "Local Regular",
+    portland: "Local Regular",
+    boothbay: "Known Dealer",
+    barHarbor: "Known Dealer",
+    kennebunkport: "Regional Player"
+};
+
+// Human narrative reasons for locked ports
+const LOCK_NARRATIVES = {
+    camden: "They don't deal with strangers.",
+    portland: "You'll need a name around here.",
+    boothbay: "The regulars here are tight-knit.",
+    barHarbor: "Only serious dealers work this dock.",
+    kennebunkport: "Serious money moves through this port."
+};
+
+const TIER_ORDER = ["Dock Nobody", "Local Regular", "Known Dealer", "Regional Player", "Statewide Power"];
+
 function updateTravelView() {
-    const portsList = document.getElementById('ports-list');
+    const mapPorts = document.getElementById('map-ports');
+    const portsList = document.getElementById('travel-port-list');
     const currentPortName = document.getElementById('current-port-name');
     const travelReq = document.getElementById('travel-requirement');
-
-    if (!portsList) return;
 
     const currentTown = getCurrentTown();
     if (currentPortName) currentPortName.textContent = currentTown.name;
@@ -6241,34 +6494,64 @@ function updateTravelView() {
         travelReq.style.display = hasVan ? 'none' : 'block';
     }
 
-    portsList.innerHTML = '';
+    // Clear and rebuild map nodes
+    if (mapPorts) {
+        mapPorts.innerHTML = '';
+        renderMapNodes(mapPorts, hasVan);
+    }
 
-    // Port unlock requirements by reputation tier
-    const portUnlocks = {
-        stonington: "Dock Nobody",
-        rockland: "Dock Nobody",
-        camden: "Local Regular",
-        portland: "Local Regular",
-        boothbay: "Known Dealer",
-        barHarbor: "Known Dealer",
-        kennebunkport: "Regional Player"
-    };
+    // Clear and rebuild port list
+    if (portsList) {
+        portsList.innerHTML = '';
+        renderPortList(portsList, hasVan);
+    }
 
-    const tierOrder = ["Dock Nobody", "Local Regular", "Known Dealer", "Regional Player", "Statewide Power"];
-    const currentTierIndex = tierOrder.indexOf(gameState.repTier);
+    // Reset selection
+    selectedPort = null;
+    updatePortDetails(null);
+}
+
+function renderMapNodes(container, hasVan) {
+    const currentTierIndex = TIER_ORDER.indexOf(gameState.repTier);
+
+    for (const [townId, town] of Object.entries(TOWNS)) {
+        const isCurrent = townId === gameState.currentLocation;
+        const requiredTier = PORT_UNLOCKS[townId] || "Dock Nobody";
+        const requiredTierIndex = TIER_ORDER.indexOf(requiredTier);
+        const isRepLocked = currentTierIndex < requiredTierIndex;
+        const isVanLocked = !hasVan && !isCurrent;
+        const isLocked = isVanLocked || isRepLocked;
+
+        const node = document.createElement('div');
+        node.className = `port-node ${isCurrent ? 'current' : ''} ${isLocked ? 'locked' : ''}`;
+        node.id = `travel-port-node-${townId}`;
+        node.style.left = `${town.x}%`;
+        node.style.top = `${town.y}%`;
+
+        node.innerHTML = `
+            <div class="port-node-dot">${town.emoji}</div>
+            <span class="port-node-label">${town.name}</span>
+        `;
+
+        node.addEventListener('click', () => selectPort(townId));
+        container.appendChild(node);
+    }
+}
+
+function renderPortList(container, hasVan) {
+    const currentTierIndex = TIER_ORDER.indexOf(gameState.repTier);
 
     for (const [townId, town] of Object.entries(TOWNS)) {
         if (townId === gameState.currentLocation) continue;
 
         const buyMod = Math.round((town.buyMod - 1) * 100);
         const sellMod = Math.round((town.sellMod - 1) * 100);
+        const buyLabel = getQualitativeLabel(buyMod, 'buy');
+        const sellLabel = getQualitativeLabel(sellMod, 'sell');
 
-        // Check reputation lock
-        const requiredTier = portUnlocks[townId] || "Dock Nobody";
-        const requiredTierIndex = tierOrder.indexOf(requiredTier);
+        const requiredTier = PORT_UNLOCKS[townId] || "Dock Nobody";
+        const requiredTierIndex = TIER_ORDER.indexOf(requiredTier);
         const isRepLocked = currentTierIndex < requiredTierIndex;
-
-        // Check van lock
         const isVanLocked = !hasVan;
         const isLocked = isVanLocked || isRepLocked;
 
@@ -6280,27 +6563,161 @@ function updateTravelView() {
         }
 
         const card = document.createElement('div');
-        card.className = `port-card ${isLocked ? 'locked' : ''}`;
+        card.className = `port-card ${isLocked ? 'locked' : ''} ${selectedPort === townId ? 'selected' : ''}`;
         card.innerHTML = `
             <div class="port-info">
                 <span class="port-card-name">${town.emoji} ${town.name}</span>
                 <div class="port-mods">
-                    <span class="buy">Buy: ${buyMod >= 0 ? '+' : ''}${buyMod}%</span>
-                    <span class="sell">Sell: ${sellMod >= 0 ? '+' : ''}${sellMod}%</span>
+                    <span class="buy ${buyLabel.class}">${buyLabel.text}</span>
+                    <span class="sell ${sellLabel.class}">${sellLabel.text}</span>
                 </div>
-                ${isRepLocked ? `<span class="port-lock-reason">Requires: ${requiredTier}</span>` : ''}
             </div>
             <span class="port-cost">${isLocked ? lockReason : `$${town.travelCost}`}</span>
         `;
 
-        if (!isLocked) {
-            card.addEventListener('click', () => {
-                travelTo(townId);
-                switchWorkspaceView('dock');
-            });
-        }
+        card.addEventListener('click', () => selectPort(townId));
+        container.appendChild(card);
+    }
+}
 
-        portsList.appendChild(card);
+function selectPort(townId) {
+    // Don't select current location
+    if (townId === gameState.currentLocation) return;
+
+    selectedPort = townId;
+
+    // Update node selection visuals
+    document.querySelectorAll('.port-node').forEach(node => {
+        node.classList.remove('selected');
+    });
+    const selectedNode = document.getElementById(`travel-port-node-${townId}`);
+    if (selectedNode) selectedNode.classList.add('selected');
+
+    // Update port list selection
+    document.querySelectorAll('.port-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+
+    // Update details panel
+    updatePortDetails(townId);
+}
+
+function updatePortDetails(townId) {
+    const placeholder = document.querySelector('.details-placeholder');
+    const content = document.getElementById('details-content');
+    const confirmBtn = document.getElementById('travel-confirm-button');
+
+    if (!townId) {
+        if (placeholder) placeholder.style.display = 'block';
+        if (content) content.style.display = 'none';
+        return;
+    }
+
+    if (placeholder) placeholder.style.display = 'none';
+    if (content) content.style.display = 'flex';
+
+    const town = TOWNS[townId];
+    if (!town) return;
+
+    const hasVan = hasEquipment('deliveryVan');
+    const currentTierIndex = TIER_ORDER.indexOf(gameState.repTier);
+    const requiredTier = PORT_UNLOCKS[townId] || "Dock Nobody";
+    const requiredTierIndex = TIER_ORDER.indexOf(requiredTier);
+    const isRepLocked = currentTierIndex < requiredTierIndex;
+    const isVanLocked = !hasVan;
+    const isLocked = isVanLocked || isRepLocked;
+
+    const buyMod = Math.round((town.buyMod - 1) * 100);
+    const sellMod = Math.round((town.sellMod - 1) * 100);
+    const buyLabel = getQualitativeLabel(buyMod, 'buy');
+    const sellLabel = getQualitativeLabel(sellMod, 'sell');
+
+    // Update details
+    const emoji = document.getElementById('details-emoji');
+    const name = document.getElementById('details-name');
+    const buyEl = document.getElementById('details-buy');
+    const sellEl = document.getElementById('details-sell');
+    const desc = document.getElementById('details-desc');
+    const lockDiv = document.getElementById('details-lock');
+    const lockTier = document.getElementById('details-lock-tier');
+    const lockReason = document.getElementById('details-lock-reason');
+    const cost = document.getElementById('details-cost');
+
+    if (emoji) emoji.textContent = town.emoji;
+    if (name) name.textContent = town.name;
+    if (buyEl) {
+        buyEl.textContent = buyLabel.text;
+        buyEl.className = `mod-value ${buyLabel.class}`;
+    }
+    if (sellEl) {
+        sellEl.textContent = sellLabel.text;
+        sellEl.className = `mod-value ${sellLabel.class}`;
+    }
+    if (desc) desc.textContent = town.description;
+    if (cost) cost.textContent = town.travelCost;
+
+    // Lock info
+    if (lockDiv) {
+        if (isLocked) {
+            lockDiv.style.display = 'block';
+            if (isVanLocked) {
+                if (lockTier) lockTier.textContent = '🚚 Requires Delivery Van';
+                if (lockReason) lockReason.textContent = 'Buy a van from the Shop to travel.';
+            } else if (isRepLocked) {
+                if (lockTier) lockTier.textContent = `🔒 Requires: ${requiredTier}`;
+                if (lockReason) lockReason.textContent = LOCK_NARRATIVES[townId] || '';
+            }
+        } else {
+            lockDiv.style.display = 'none';
+        }
+    }
+
+    // Confirm button
+    if (confirmBtn) {
+        confirmBtn.disabled = isLocked || gameState.cash < town.travelCost;
+        if (isLocked) {
+            confirmBtn.textContent = isVanLocked ? 'Need Van' : `Requires ${requiredTier}`;
+        } else if (gameState.cash < town.travelCost) {
+            confirmBtn.textContent = 'Not Enough Cash';
+        } else {
+            confirmBtn.innerHTML = `Travel - $<span id="details-cost">${town.travelCost}</span>`;
+        }
+    }
+}
+
+function confirmTravel() {
+    if (!selectedPort) return;
+    const town = TOWNS[selectedPort];
+    if (!town) return;
+
+    const hasVan = hasEquipment('deliveryVan');
+    const currentTierIndex = TIER_ORDER.indexOf(gameState.repTier);
+    const requiredTier = PORT_UNLOCKS[selectedPort] || "Dock Nobody";
+    const requiredTierIndex = TIER_ORDER.indexOf(requiredTier);
+    const isLocked = !hasVan || currentTierIndex < requiredTierIndex;
+
+    if (isLocked || gameState.cash < town.travelCost) return;
+
+    travelTo(selectedPort);
+    switchWorkspaceView('dock');
+}
+
+// Convert percentage modifiers to qualitative labels
+function getQualitativeLabel(percent, type) {
+    if (type === 'buy') {
+        // For buying: negative = cheap (good), positive = expensive (bad)
+        if (percent <= -15) return { text: 'Very Cheap', class: 'mod-great' };
+        if (percent <= -5) return { text: 'Cheap', class: 'mod-good' };
+        if (percent >= 15) return { text: 'Expensive', class: 'mod-bad' };
+        if (percent >= 5) return { text: 'Pricey', class: 'mod-warn' };
+        return { text: 'Fair', class: 'mod-neutral' };
+    } else {
+        // For selling: positive = premium prices, negative = low prices
+        if (percent >= 15) return { text: 'Premium', class: 'mod-great' };
+        if (percent >= 5) return { text: 'Good', class: 'mod-good' };
+        if (percent <= -15) return { text: 'Low', class: 'mod-bad' };
+        if (percent <= -5) return { text: 'Below Avg', class: 'mod-warn' };
+        return { text: 'Fair', class: 'mod-neutral' };
     }
 }
 
@@ -6308,31 +6725,121 @@ function updateTanksView() {
     const total = getTotalInventory();
     const capacity = gameState.tankCapacity;
     const fillPercent = (total / capacity) * 100;
+    const avgFreshness = getAverageFreshness();
 
-    // Update capacity bar
-    const capacityFill = document.getElementById('tank-fill');
-    if (capacityFill) {
-        capacityFill.style.width = `${fillPercent}%`;
-        capacityFill.classList.toggle('warning', fillPercent > 80);
+    // === TankHero Visual ===
+    // Update water level
+    const tankWater = document.getElementById('tank-water');
+    if (tankWater) {
+        tankWater.style.height = `${Math.min(100, fillPercent)}%`;
+        // Set freshness color class
+        tankWater.classList.remove('fresh', 'aging', 'stale', 'spoiling');
+        if (avgFreshness >= 90) tankWater.classList.add('fresh');
+        else if (avgFreshness >= 70) tankWater.classList.add('aging');
+        else if (avgFreshness >= 50) tankWater.classList.add('stale');
+        else tankWater.classList.add('spoiling');
     }
 
-    // Update text
+    // Update lobster icons (3-10 based on fullness)
+    const tankLobsters = document.getElementById('tank-lobsters');
+    if (tankLobsters) {
+        const lobsterCount = total === 0 ? 0 : Math.min(10, Math.max(3, Math.floor(fillPercent / 10)));
+        tankLobsters.innerHTML = Array(lobsterCount).fill('<span class="tank-lobster">🦞</span>').join('');
+    }
+
+    // === TankSummaryRow ===
     const tankCurrent = document.getElementById('tank-current');
     const tankMax = document.getElementById('tank-max');
     if (tankCurrent) tankCurrent.textContent = total;
     if (tankMax) tankMax.textContent = capacity;
 
-    // Update freshness
-    const avgFreshness = getAverageFreshness();
     const tankFreshness = document.getElementById('tank-freshness');
-    if (tankFreshness) tankFreshness.textContent = `${avgFreshness}%`;
+    if (tankFreshness) {
+        tankFreshness.textContent = `${avgFreshness}%`;
+        tankFreshness.className = 'stat-value';
+        if (avgFreshness < 50) tankFreshness.classList.add('danger');
+        else if (avgFreshness < 70) tankFreshness.classList.add('warning');
+    }
 
-    // Estimate loss
-    const estimatedLoss = Math.max(0, Math.floor(total * 0.02));
+    // Capacity status label
+    const capacityLabel = document.getElementById('tank-capacity-label');
+    if (capacityLabel) {
+        capacityLabel.classList.remove('tight', 'full');
+        if (total === 0) {
+            capacityLabel.textContent = 'Empty';
+        } else if (fillPercent < 60) {
+            capacityLabel.textContent = 'Plenty of room';
+        } else if (fillPercent < 85) {
+            capacityLabel.textContent = 'Getting tight';
+            capacityLabel.classList.add('tight');
+        } else {
+            capacityLabel.textContent = 'Near full';
+            capacityLabel.classList.add('full');
+        }
+    }
+
+    // === RiskForecastCard ===
+    const estimatedLossMin = Math.max(0, Math.floor(total * 0.02));
+    const estimatedLossMax = estimatedLossMin + 2;
+
     const tankLoss = document.getElementById('tank-loss-estimate');
-    if (tankLoss) tankLoss.textContent = `${estimatedLoss}-${estimatedLoss + 2} lbs`;
+    if (tankLoss) tankLoss.textContent = `${estimatedLossMin}-${estimatedLossMax} lbs`;
 
-    // Update inventory cards
+    // Calculate dollar impact using current town's sell price
+    const town = getCurrentTown();
+    const basePrice = CONFIG.baseLobsterPrice;
+    const effectivePrice = basePrice * town.sellMod;
+    const dollarLossMin = Math.round(estimatedLossMin * effectivePrice);
+    const dollarLossMax = Math.round(estimatedLossMax * effectivePrice);
+
+    const tankLossDollars = document.getElementById('tank-loss-dollars');
+    if (tankLossDollars) {
+        tankLossDollars.textContent = dollarLossMax > 0 ? `~$${dollarLossMin}-${dollarLossMax}` : '$0';
+        tankLossDollars.classList.toggle('danger', dollarLossMax >= 20);
+    }
+
+    // Risk trend
+    const riskTrend = document.getElementById('risk-trend');
+    if (riskTrend) {
+        riskTrend.classList.remove('increasing', 'critical');
+        if (avgFreshness < 50 || fillPercent > 90) {
+            riskTrend.textContent = 'Critical';
+            riskTrend.classList.add('critical');
+        } else if (avgFreshness < 70 || fillPercent > 80) {
+            riskTrend.textContent = 'Increasing';
+            riskTrend.classList.add('increasing');
+        } else {
+            riskTrend.textContent = 'Stable';
+        }
+    }
+
+    // Risk card warning state
+    const riskCard = document.getElementById('risk-card');
+    if (riskCard) {
+        riskCard.classList.remove('warning-low', 'warning-high');
+        if (estimatedLossMax >= 12 || avgFreshness < 60) {
+            riskCard.classList.add('warning-high');
+        } else if (estimatedLossMax >= 5) {
+            riskCard.classList.add('warning-low');
+        }
+    }
+
+    // === Do Nothing Preview ===
+    const projectedFreshness = document.getElementById('projected-freshness');
+    if (projectedFreshness) {
+        const projected = Math.max(0, avgFreshness - 5); // Simple decay estimate
+        projectedFreshness.textContent = `${projected}%`;
+    }
+
+    const projectedRisk = document.getElementById('projected-risk');
+    if (projectedRisk) {
+        const projected = Math.max(0, avgFreshness - 5);
+        if (projected < 50) projectedRisk.textContent = 'High';
+        else if (projected < 70) projectedRisk.textContent = 'Moderate';
+        else projectedRisk.textContent = 'Low';
+    }
+
+    // === Inventory cards ===
     const invA = document.getElementById('inventory-a');
     const invB = document.getElementById('inventory-b');
     const invC = document.getElementById('inventory-c');
@@ -6342,7 +6849,14 @@ function updateTanksView() {
     if (invC) invC.textContent = `${gameState.inventory.chix} lbs`;
     if (invRun) invRun.textContent = `${gameState.inventory.run} lbs`;
 
-    // Show/hide warning
+    // === Decision Panel - Sell consequence ===
+    const sellConsequence = document.getElementById('sell-consequence');
+    if (sellConsequence) {
+        const estRevenue = Math.round(total * effectivePrice);
+        sellConsequence.innerHTML = `Est. revenue: <strong>$${formatMoney(estRevenue)}</strong>`;
+    }
+
+    // === Tank Warning ===
     const tankWarning = document.getElementById('tank-warning');
     if (tankWarning) {
         tankWarning.classList.toggle('hidden', fillPercent <= 80);
@@ -6366,12 +6880,9 @@ function initEventHandlers() {
     document.getElementById("tutorial-skip").addEventListener("click", skipTutorial);
     document.getElementById("replay-tutorial-btn").addEventListener("click", replayTutorial);
 
-    // Next Day buttons - check for both IDs
-    const nextDayBtn = document.getElementById("next-day-btn");
-    if (nextDayBtn) nextDayBtn.addEventListener("click", nextDay);
-
-    const nextDayMain = document.getElementById("next-day-btn-main");
-    if (nextDayMain) nextDayMain.addEventListener("click", nextDay);
+    // End Day button - single source of truth
+    const endDayBtn = document.getElementById("end-day-button");
+    if (endDayBtn) endDayBtn.addEventListener("click", nextDay);
 
     document.getElementById("restart-btn").addEventListener("click", resetGame);
     document.getElementById("shop-btn").addEventListener("click", openShop);
@@ -6416,6 +6927,16 @@ function initEventHandlers() {
         payLoan(amount);
         updateBankUI();
     });
+
+    // Travel confirm button
+    const travelConfirmBtn = document.getElementById("travel-confirm-button");
+    if (travelConfirmBtn) travelConfirmBtn.addEventListener("click", confirmTravel);
+
+    // Badge modal
+    const badgeIcon = document.getElementById("badge-icon");
+    if (badgeIcon) badgeIcon.addEventListener("click", openBadgeModal);
+    const closeBadgeBtn = document.getElementById("close-badge-btn");
+    if (closeBadgeBtn) closeBadgeBtn.addEventListener("click", closeBadgeModal);
 
     // Close modals on outside click
     document.querySelectorAll(".modal").forEach(modal => {

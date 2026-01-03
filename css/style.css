@@ -642,6 +642,41 @@ body::before {
     justify-content: center;
 }
 
+/* Contextual empty state message */
+.empty-context {
+    font-size: 10px;
+    font-style: italic;
+    color: var(--ocean-light);
+    margin-bottom: 16px;
+    opacity: 0.8;
+}
+
+/* Dock Ambient Pressure Indicator */
+.dock-ambient {
+    display: none;
+    margin-top: 24px;
+    padding: 16px;
+    text-align: center;
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.ambient-time {
+    display: block;
+    font-size: 9px;
+    color: var(--ocean-foam);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+
+.ambient-pressure {
+    display: block;
+    font-size: 10px;
+    font-style: italic;
+    color: var(--cream);
+    opacity: 0.7;
+}
+
 /* ========================================
    DOCK VIEW - Boats Container
    ======================================== */
@@ -652,97 +687,356 @@ body::before {
 }
 
 /* ========================================
-   TANKS VIEW
+   TANKS VIEW - Decision-oriented layout
    ======================================== */
 .tanks-container {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
+    padding: 8px 0;
 }
 
-.tank-capacity {
-    background: rgba(0,0,0,0.3);
-    border-radius: 8px;
+/* TankHero - Visual tank display */
+.tank-hero {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 12px;
     padding: 16px;
-}
-
-.capacity-bar {
-    height: 24px;
-    background: var(--ocean-deepest);
-    border-radius: 4px;
-    overflow: hidden;
-    border: 2px solid var(--ocean-dark);
-    margin-bottom: 8px;
-}
-
-.capacity-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--ocean-light) 0%, var(--ocean-bright) 100%);
-    transition: width 0.3s ease;
+    background: linear-gradient(180deg, rgba(10, 30, 50, 0.5) 0%, rgba(5, 15, 30, 0.8) 100%);
+    border-radius: 12px;
     position: relative;
 }
 
-.capacity-fill.warning {
-    background: linear-gradient(90deg, var(--warning) 0%, var(--danger) 100%);
+.tank-vessel {
+    position: relative;
+    width: 140px;
+    height: 120px;
 }
 
-.capacity-text {
-    text-align: center;
-    font-size: 11px;
-    color: var(--cream);
+.tank-glass {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(100, 180, 220, 0.15) 0%, rgba(60, 140, 180, 0.1) 100%);
+    border: 3px solid rgba(100, 180, 220, 0.4);
+    border-radius: 8px 8px 16px 16px;
+    overflow: hidden;
+    box-shadow:
+        inset 0 0 20px rgba(100, 180, 220, 0.1),
+        0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
-.tank-risk {
+.tank-water {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 0%;
+    background: linear-gradient(180deg, #3a8ab8 0%, #2a6a98 50%, #1a4a78 100%);
+    transition: height 0.5s ease, background 0.5s ease;
+    overflow: hidden;
+}
+
+/* Freshness color states */
+.tank-water.fresh {
+    background: linear-gradient(180deg, #4a9ac8 0%, #3a7aa8 50%, #2a5a88 100%);
+}
+
+.tank-water.aging {
+    background: linear-gradient(180deg, #6a9a88 0%, #5a8a78 50%, #4a7a68 100%);
+}
+
+.tank-water.stale {
+    background: linear-gradient(180deg, #a88a5a 0%, #987a4a 50%, #886a3a 100%);
+}
+
+.tank-water.spoiling {
+    background: linear-gradient(180deg, #a85a5a 0%, #984a4a 50%, #883a3a 100%);
+}
+
+/* Animated water surface */
+.water-surface {
+    position: absolute;
+    top: -4px;
+    left: -10%;
+    right: -10%;
+    height: 12px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(200, 230, 255, 0.3) 20%,
+        rgba(200, 230, 255, 0.5) 50%,
+        rgba(200, 230, 255, 0.3) 80%,
+        transparent 100%);
+    animation: water-wave 3s ease-in-out infinite;
+    border-radius: 50%;
+}
+
+@keyframes water-wave {
+    0%, 100% { transform: translateX(-5%) scaleY(1); }
+    50% { transform: translateX(5%) scaleY(0.7); }
+}
+
+/* Lobster icons in tank */
+.tank-lobsters {
+    position: absolute;
+    inset: 10px;
     display: flex;
-    gap: 16px;
+    flex-wrap: wrap;
+    align-content: flex-end;
     justify-content: center;
+    gap: 4px;
 }
 
-.risk-item {
+.tank-lobster {
+    font-size: 18px;
+    animation: lobster-bob 2s ease-in-out infinite;
+    opacity: 0.9;
+}
+
+.tank-lobster:nth-child(odd) { animation-delay: -0.5s; }
+.tank-lobster:nth-child(3n) { animation-delay: -1s; }
+
+@keyframes lobster-bob {
+    0%, 100% { transform: translateY(0) rotate(-5deg); }
+    50% { transform: translateY(-4px) rotate(5deg); }
+}
+
+.tank-frame {
+    position: absolute;
+    inset: -4px;
+    border: 4px solid #4a6070;
+    border-radius: 12px 12px 20px 20px;
+    pointer-events: none;
+}
+
+.tank-base {
+    position: absolute;
+    bottom: -8px;
+    left: -8px;
+    right: -8px;
+    height: 16px;
+    background: linear-gradient(180deg, #3a4a55 0%, #2a3a45 100%);
+    border-radius: 4px 4px 8px 8px;
+}
+
+/* Tank gauge */
+.tank-gauge {
+    position: relative;
+    width: 24px;
+    height: 120px;
+}
+
+.gauge-marks {
+    position: relative;
+    height: 100%;
+}
+
+.gauge-marks .mark {
+    position: absolute;
+    right: 0;
+    font-size: 7px;
+    color: var(--ocean-foam);
+    opacity: 0.6;
+    transform: translateY(50%);
+    white-space: nowrap;
+}
+
+/* TankSummaryRow */
+.tank-summary-row {
+    display: flex;
+    justify-content: space-around;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.tank-summary-row .summary-stat {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    background: rgba(0,0,0,0.2);
-    padding: 12px 20px;
-    border-radius: 6px;
+    gap: 2px;
 }
 
-.risk-label {
-    font-size: 7px;
+.tank-summary-row .stat-value {
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--cream);
+}
+
+.tank-summary-row .stat-label {
+    font-size: 8px;
+    color: var(--ocean-foam);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.capacity-label {
+    font-size: 12px !important;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(100, 180, 220, 0.2);
+}
+
+.capacity-label.tight {
+    background: rgba(255, 180, 0, 0.2);
+    color: var(--warning);
+}
+
+.capacity-label.full {
+    background: rgba(220, 80, 80, 0.2);
+    color: var(--danger);
+}
+
+/* RiskForecastCard */
+.risk-forecast-card {
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(100, 100, 100, 0.3);
+    border-radius: 10px;
+    padding: 14px;
+    transition: border-color 0.3s;
+}
+
+.risk-forecast-card.warning-low {
+    border-color: rgba(255, 180, 0, 0.4);
+}
+
+.risk-forecast-card.warning-high {
+    border-color: rgba(220, 80, 80, 0.5);
+    background: rgba(100, 30, 30, 0.2);
+}
+
+.risk-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.risk-header .risk-icon {
+    font-size: 16px;
+}
+
+.risk-header h3 {
+    font-size: 11px;
+    color: var(--cream);
+    margin: 0;
+    flex: 1;
+}
+
+.risk-trend {
+    font-size: 9px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(100, 180, 100, 0.2);
+    color: #8fbc8f;
+}
+
+.risk-trend.increasing {
+    background: rgba(255, 150, 0, 0.2);
+    color: #ffb347;
+}
+
+.risk-trend.critical {
+    background: rgba(220, 80, 80, 0.2);
+    color: #e57373;
+}
+
+.risk-stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.risk-stat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.risk-stat .risk-label {
+    font-size: 8px;
     color: var(--ocean-foam);
     opacity: 0.7;
 }
 
-.risk-value {
-    font-size: 12px;
+.risk-stat .risk-value {
+    font-size: 14px;
+    color: var(--cream);
+    font-weight: bold;
+}
+
+.risk-stat .risk-value.danger {
+    color: var(--danger);
+}
+
+/* Do Nothing Preview */
+.do-nothing-preview {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 6px;
+    padding: 10px;
+    border-left: 3px solid var(--warning);
+}
+
+.do-nothing-preview .preview-title {
+    font-size: 8px;
+    color: var(--ocean-foam);
+    margin: 0 0 6px 0;
+    font-style: italic;
+}
+
+.do-nothing-preview .preview-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 10px;
     color: var(--cream);
 }
 
-.risk-value.warning {
+.do-nothing-preview strong {
     color: var(--warning);
+}
+
+/* Inventory breakdown (collapsible) */
+.inventory-details {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 4px;
+}
+
+.inventory-details summary {
+    font-size: 10px;
+    color: var(--ocean-foam);
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+.inventory-details[open] summary {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 12px;
 }
 
 .inventory-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    gap: 8px;
+    padding: 0 8px 8px;
 }
 
 .inventory-card {
-    background: rgba(0,0,0,0.3);
-    border-radius: 8px;
-    padding: 16px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 6px;
+    padding: 10px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    border: 2px solid var(--ocean-dark);
+    gap: 4px;
+    border-left: 3px solid var(--ocean-dark);
 }
 
-.inventory-card.grade-select { border-color: var(--gold); }
-.inventory-card.grade-quarter { border-color: var(--silver); }
-.inventory-card.grade-chix { border-color: var(--bronze); }
-.inventory-card.grade-run { border-color: var(--ocean-medium); }
+.inventory-card.grade-select { border-left-color: var(--gold); }
+.inventory-card.grade-quarter { border-left-color: var(--silver); }
+.inventory-card.grade-chix { border-left-color: var(--bronze); }
+.inventory-card.grade-run { border-left-color: var(--ocean-medium); }
 
 .grade-name {
     font-size: 8px;
@@ -750,35 +1044,84 @@ body::before {
 }
 
 .grade-amount {
-    font-size: 14px;
+    font-size: 12px;
     color: var(--cream);
+    font-weight: bold;
 }
 
+/* DecisionPanel */
+.decision-panel {
+    background: linear-gradient(180deg, rgba(30, 60, 80, 0.4) 0%, rgba(20, 40, 60, 0.6) 100%);
+    border: 2px solid var(--ocean-medium);
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.decision-prompt {
+    font-size: 10px;
+    color: var(--ocean-foam);
+    text-align: center;
+    margin: 0 0 16px 0;
+    font-style: italic;
+}
+
+.decision-options {
+    display: flex;
+    gap: 12px;
+}
+
+.decision-option {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.decision-option .btn {
+    width: 100%;
+}
+
+.decision-consequence {
+    font-size: 9px;
+    color: var(--ocean-foam);
+    text-align: center;
+    margin: 0;
+    opacity: 0.8;
+}
+
+.decision-sell .decision-consequence strong {
+    color: var(--positive);
+}
+
+.decision-hunt .decision-consequence {
+    color: var(--warning);
+}
+
+/* Tank Warning */
 .tank-warning {
-    background: rgba(255, 100, 100, 0.2);
+    background: linear-gradient(90deg, rgba(180, 50, 50, 0.2) 0%, rgba(220, 80, 80, 0.3) 100%);
     border: 2px solid var(--danger);
     border-radius: 8px;
-    padding: 12px;
+    padding: 12px 16px;
     display: flex;
     align-items: center;
-    gap: 10px;
-    text-align: center;
-    justify-content: center;
+    gap: 12px;
+    animation: warning-pulse 2s ease-in-out infinite;
+}
+
+@keyframes warning-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
 }
 
 .tank-warning .warning-icon {
-    font-size: 20px;
+    font-size: 24px;
 }
 
 .tank-warning .warning-text {
-    font-size: 9px;
+    font-size: 10px;
     color: var(--danger);
-}
-
-.tank-actions {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
+    font-weight: bold;
 }
 
 /* ========================================
@@ -865,16 +1208,31 @@ body::before {
 
 .port-mods {
     display: flex;
-    gap: 8px;
-    font-size: 7px;
+    gap: 12px;
+    font-size: 8px;
 }
 
-.port-mods .buy { color: var(--success); }
-.port-mods .sell { color: var(--warning); }
+/* Qualitative label colors */
+.port-mods .mod-great { color: #50c878; font-weight: bold; }
+.port-mods .mod-good { color: var(--success); }
+.port-mods .mod-neutral { color: var(--ocean-foam); }
+.port-mods .mod-warn { color: var(--warning); }
+.port-mods .mod-bad { color: var(--danger); }
+
+/* Narrative lock reason */
+.port-lock-reason {
+    font-size: 8px;
+    font-style: italic;
+    color: var(--ocean-light);
+    opacity: 0.8;
+    margin-top: 2px;
+}
 
 .port-cost {
     font-size: 9px;
     color: var(--warning);
+    min-width: 70px;
+    text-align: right;
 }
 
 .travel-requirement {
@@ -900,6 +1258,585 @@ body::before {
     font-size: 7px;
     color: var(--warning);
     font-style: italic;
+}
+
+/* Current Port Badge in Header */
+.current-port-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 215, 0, 0.15);
+    padding: 4px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--gold);
+}
+
+.current-port-badge .port-label {
+    font-size: 12px;
+    margin: 0;
+}
+
+.current-port-badge .port-name {
+    font-size: 10px;
+    color: var(--gold);
+}
+
+/* Port List Fallback */
+.port-list-fallback {
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    padding: 0;
+}
+
+.port-list-fallback summary {
+    padding: 12px 16px;
+    font-size: 10px;
+    color: var(--ocean-foam);
+    cursor: pointer;
+}
+
+.port-list-fallback[open] summary {
+    border-bottom: 1px solid var(--ocean-dark);
+}
+
+.port-list-fallback .ports-list {
+    padding: 12px;
+}
+
+/* ========================================
+   COASTAL MAP - Iconic Maine Silhouette
+   Inspired by retro game overworld maps
+   ======================================== */
+.coastal-map {
+    position: relative;
+    width: 100%;
+    height: 260px;
+    background: #0a1825;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 4px solid #1a3550;
+    /* Vignette for focus */
+    box-shadow:
+        inset 0 0 60px rgba(0, 0, 0, 0.5),
+        inset 0 0 120px rgba(0, 0, 0, 0.3);
+}
+
+.map-background {
+    position: absolute;
+    inset: 0;
+}
+
+/* Ocean - deep blue with shallow coastal gradient */
+.map-ocean {
+    position: absolute;
+    inset: 0;
+    /* Base deep ocean */
+    background: #0d1f30;
+}
+
+/* Shallow water near coast - visible depth cue */
+.map-ocean::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    /* Shallow water glow along coastline */
+    background:
+        /* SW coast shallow */
+        radial-gradient(ellipse 15% 12% at 12% 85%, rgba(40, 90, 130, 0.5) 0%, transparent 100%),
+        /* Casco Bay shallow */
+        radial-gradient(ellipse 20% 15% at 28% 72%, rgba(40, 90, 130, 0.4) 0%, transparent 100%),
+        /* Penobscot Bay shallow */
+        radial-gradient(ellipse 25% 20% at 50% 55%, rgba(40, 90, 130, 0.45) 0%, transparent 100%),
+        /* Downeast shallow */
+        radial-gradient(ellipse 20% 18% at 78% 42%, rgba(40, 90, 130, 0.35) 0%, transparent 100%),
+        /* MDI area shallow */
+        radial-gradient(ellipse 15% 12% at 90% 28%, rgba(40, 90, 130, 0.4) 0%, transparent 100%);
+}
+
+/* Subtle wave lines */
+.map-ocean::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        95deg,
+        transparent 0px,
+        rgba(60, 100, 140, 0.08) 1px,
+        transparent 3px,
+        transparent 8px
+    );
+    opacity: 0.6;
+}
+
+/* ===========================================
+   MAINE LAND MASS - Real SVG Outline
+   From Natural Earth GeoJSON (public domain)
+   =========================================== */
+.map-land-svg {
+    position: absolute;
+    /* Position SVG to show coastal Maine */
+    top: -15%;
+    right: -5%;
+    width: 110%;
+    height: 130%;
+    pointer-events: none;
+}
+
+.maine-land {
+    fill: #2d4a3a;
+    stroke: rgba(180, 210, 230, 0.3);
+    stroke-width: 0.5;
+}
+
+.map-ports {
+    position: absolute;
+    inset: 0;
+}
+
+/* Port Node - Board game style markers */
+.port-node {
+    position: absolute;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    z-index: 10;
+    transition: z-index 0.1s;
+}
+
+.port-node:hover {
+    z-index: 20;
+}
+
+.port-node-dot {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #4a7c6f 0%, #2a5548 50%, #1a3a30 100%);
+    border: 3px solid rgba(255, 248, 230, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow:
+        0 3px 8px rgba(0,0,0,0.5),
+        0 1px 3px rgba(0,0,0,0.3),
+        inset 0 2px 4px rgba(255,255,255,0.1);
+    position: relative;
+}
+
+/* Anchor/dock indicator beneath the node */
+.port-node-dot::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 8px;
+    background: rgba(255, 248, 230, 0.4);
+    border-radius: 0 0 2px 2px;
+}
+
+.port-node:hover .port-node-dot {
+    transform: scale(1.2) translateY(-3px);
+    box-shadow:
+        0 8px 16px rgba(0,0,0,0.5),
+        0 0 20px rgba(255, 215, 0, 0.3);
+    border-color: var(--gold);
+}
+
+/* Current location - golden beacon */
+.port-node.current .port-node-dot {
+    background: radial-gradient(circle at 30% 30%, #ffd54f 0%, #ffb300 50%, #ff8f00 100%);
+    border-color: #fff8e1;
+    box-shadow:
+        0 0 20px rgba(255, 193, 7, 0.6),
+        0 0 40px rgba(255, 193, 7, 0.3),
+        0 4px 12px rgba(0,0,0,0.4);
+    animation: current-port-glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes current-port-glow {
+    from {
+        box-shadow:
+            0 0 20px rgba(255, 193, 7, 0.6),
+            0 0 40px rgba(255, 193, 7, 0.3),
+            0 4px 12px rgba(0,0,0,0.4);
+    }
+    to {
+        box-shadow:
+            0 0 30px rgba(255, 193, 7, 0.8),
+            0 0 60px rgba(255, 193, 7, 0.4),
+            0 4px 12px rgba(0,0,0,0.4);
+    }
+}
+
+/* Selected port - pulsing ring */
+.port-node.selected .port-node-dot {
+    border-color: var(--gold);
+    box-shadow:
+        0 0 0 4px rgba(255, 215, 0, 0.4),
+        0 0 24px rgba(255, 215, 0, 0.5),
+        0 4px 12px rgba(0,0,0,0.4);
+    animation: selected-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes selected-pulse {
+    0%, 100% {
+        box-shadow:
+            0 0 0 4px rgba(255, 215, 0, 0.4),
+            0 0 24px rgba(255, 215, 0, 0.5),
+            0 4px 12px rgba(0,0,0,0.4);
+    }
+    50% {
+        box-shadow:
+            0 0 0 8px rgba(255, 215, 0, 0.2),
+            0 0 32px rgba(255, 215, 0, 0.6),
+            0 4px 12px rgba(0,0,0,0.4);
+    }
+}
+
+/* Locked port - clearly secondary, dimmed and smaller */
+.port-node.locked {
+    width: 36px;  /* Smaller than unlocked */
+    height: 36px;
+}
+
+.port-node.locked .port-node-dot {
+    background: #1a2530;
+    border-color: rgba(80, 100, 120, 0.4);
+    opacity: 0.4;  /* Much more dimmed */
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    font-size: 14px;  /* Smaller emoji */
+}
+
+.port-node.locked .port-node-dot::before {
+    content: '🔒';
+    position: absolute;
+    font-size: 8px;
+    top: -2px;
+    right: -2px;
+    background: rgba(30, 40, 50, 0.9);
+    border-radius: 50%;
+    padding: 2px;
+    line-height: 1;
+    opacity: 0.8;
+}
+
+/* Hide the anchor pin on locked ports */
+.port-node.locked .port-node-dot::after {
+    display: none;
+}
+
+.port-node.locked:hover .port-node-dot {
+    transform: scale(1.05);
+    opacity: 0.55;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+
+/* Locked port labels more subtle */
+.port-node.locked .port-node-label {
+    opacity: 0;
+    font-size: 8px;
+    background: rgba(0, 20, 40, 0.6);
+}
+
+.port-node.locked:hover .port-node-label {
+    opacity: 0.7;
+}
+
+/* Port labels - always visible for key ports, hover for others */
+.port-node-label {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    font-size: 9px;
+    font-weight: 600;
+    color: #fff8e1;
+    text-shadow:
+        0 1px 3px rgba(0,0,0,0.9),
+        0 0 8px rgba(0,0,0,0.7);
+    padding: 2px 6px;
+    background: rgba(0, 20, 40, 0.75);
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+}
+
+.port-node:hover .port-node-label {
+    opacity: 1;
+    transform: translateX(-50%) translateY(2px);
+}
+
+.port-node.selected .port-node-label,
+.port-node.current .port-node-label {
+    opacity: 1;
+    background: rgba(0, 20, 40, 0.9);
+}
+
+/* Price indicator badges on ports */
+.port-node[data-price-tier="cheap"] .port-node-dot {
+    border-color: #4caf50;
+}
+
+.port-node[data-price-tier="premium"] .port-node-dot {
+    border-color: #ff9800;
+}
+
+@keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.6); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+}
+
+/* Port Details Panel */
+.port-details {
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    padding: 16px;
+    min-height: 120px;
+}
+
+.details-placeholder {
+    text-align: center;
+    color: var(--ocean-foam);
+    font-size: 10px;
+    font-style: italic;
+    padding: 30px 0;
+}
+
+.details-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.details-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.details-emoji {
+    font-size: 28px;
+}
+
+.details-name {
+    font-size: 14px;
+    color: var(--cream);
+    font-weight: bold;
+}
+
+.details-mods {
+    display: flex;
+    gap: 20px;
+}
+
+.details-mod {
+    display: flex;
+    gap: 6px;
+    font-size: 10px;
+}
+
+.mod-label {
+    color: var(--ocean-foam);
+}
+
+.details-desc {
+    font-size: 9px;
+    color: var(--ocean-light);
+    font-style: italic;
+    margin: 0;
+}
+
+.details-lock {
+    background: rgba(255, 100, 100, 0.1);
+    border: 1px solid var(--danger);
+    border-radius: 6px;
+    padding: 10px;
+}
+
+.lock-tier {
+    display: block;
+    font-size: 10px;
+    color: var(--warning);
+    margin-bottom: 4px;
+}
+
+.lock-reason {
+    font-size: 9px;
+    color: var(--ocean-foam);
+    font-style: italic;
+}
+
+#travel-confirm-button {
+    margin-top: 8px;
+}
+
+#travel-confirm-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ========================================
+   BADGE / LICENSE SYSTEM
+   ======================================== */
+.badge-btn {
+    background: none;
+    border: 2px solid var(--ocean-dark);
+    border-radius: 8px;
+    padding: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.badge-btn:hover {
+    border-color: var(--gold);
+    transform: scale(1.05);
+}
+
+.badge-visual {
+    font-size: 20px;
+    display: block;
+}
+
+.identity-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* Badge Modal */
+.badge-content {
+    text-align: center;
+    max-width: 320px;
+}
+
+.modal-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: var(--ocean-foam);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 5px 10px;
+}
+
+.modal-close-btn:hover {
+    color: var(--cream);
+}
+
+.badge-display {
+    margin-bottom: 24px;
+}
+
+.badge-artwork {
+    margin-bottom: 16px;
+}
+
+.badge-frame {
+    width: 100px;
+    height: 120px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    position: relative;
+}
+
+.badge-emblem {
+    font-size: 48px;
+}
+
+/* Badge Tiers */
+.badge-paper {
+    background: linear-gradient(180deg, #d4c4a8 0%, #b8a888 100%);
+    border: 3px solid #8a7a5a;
+    box-shadow: inset 0 2px 4px rgba(255,255,255,0.3);
+}
+
+.badge-plastic {
+    background: linear-gradient(180deg, #4a9cc7 0%, #2a7ca7 100%);
+    border: 3px solid #1a5c87;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.badge-metal {
+    background: linear-gradient(180deg, #c0c0c0 0%, #808080 100%);
+    border: 3px solid #606060;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.4);
+}
+
+.badge-engraved {
+    background: linear-gradient(180deg, #c9a227 0%, #a68b1a 100%);
+    border: 4px solid #8a7510;
+    box-shadow: 0 4px 16px rgba(201, 162, 39, 0.4), inset 0 2px 4px rgba(255,255,255,0.3);
+}
+
+.badge-gilded {
+    background: linear-gradient(180deg, #ffd700 0%, #c9a227 100%);
+    border: 4px solid #a68b1a;
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.6), inset 0 2px 4px rgba(255,255,255,0.5);
+    animation: badge-glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes badge-glow {
+    from { box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); }
+    to { box-shadow: 0 0 40px rgba(255, 215, 0, 0.8); }
+}
+
+.badge-tier-title {
+    font-size: 16px;
+    color: var(--gold);
+    margin: 0 0 8px 0;
+}
+
+.badge-flavor {
+    font-size: 10px;
+    color: var(--ocean-foam);
+    font-style: italic;
+    margin: 0;
+}
+
+.badge-progress {
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.badge-progress h3 {
+    font-size: 10px;
+    color: var(--ocean-foam);
+    margin: 0 0 10px 0;
+}
+
+.rep-bar {
+    height: 8px;
+    background: var(--ocean-dark);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.rep-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--ocean-light), var(--gold));
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.rep-next {
+    font-size: 9px;
+    color: var(--ocean-light);
+    margin: 0;
 }
 
 /* ========================================
@@ -1424,6 +2361,54 @@ body::before {
 
 .summary-value.warning {
     color: #ff9800;
+}
+
+/* Rank-Up Section */
+.summary-rankup {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 165, 0, 0.1) 100%);
+    border: 2px solid var(--gold);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    animation: rankup-glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes rankup-glow {
+    0% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
+    100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.6); }
+}
+
+.rankup-content h3 {
+    color: var(--gold);
+    font-size: 12px;
+    margin: 8px 0;
+}
+
+.rankup-icon {
+    font-size: 36px;
+    display: block;
+    margin-bottom: 4px;
+    animation: badge-bounce 0.6s ease-out;
+}
+
+@keyframes badge-bounce {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.rankup-tier {
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--cream);
+    margin: 4px 0;
+}
+
+.rankup-flavor {
+    font-size: 10px;
+    color: var(--ocean-foam);
+    font-style: italic;
+    margin: 0;
 }
 
 .summary-total .summary-label,
@@ -4732,6 +5717,49 @@ body::before {
     .panel::before,
     .panel::after {
         display: none;
+    }
+
+    /* TOUCH TARGET IMPROVEMENTS - Minimum 44x44px */
+    .btn {
+        min-height: 44px;
+        padding: 12px 16px;
+        font-size: 11px;
+    }
+
+    .boat-actions .btn {
+        min-height: 44px;
+        padding: 10px 12px;
+        font-size: 9px;
+    }
+
+    .nav-tab {
+        min-height: 48px;
+        min-width: 48px;
+    }
+
+    .strip-btn {
+        min-width: 44px;
+        min-height: 44px;
+        font-size: 18px;
+    }
+
+    /* Port cards - touch-friendly */
+    .port-card {
+        min-height: 60px;
+        padding: 16px;
+    }
+
+    /* Buyer sell buttons */
+    .buyer-card .btn {
+        min-height: 44px;
+        width: 100%;
+        margin-top: 8px;
+    }
+
+    /* Empty action buttons */
+    .empty-actions .btn {
+        min-height: 44px;
+        padding: 12px 16px;
     }
 }
 

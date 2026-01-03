@@ -48,10 +48,15 @@
              STATUS STRIP - Always visible at top
              ═══════════════════════════════════════════════════════════ -->
         <header class="status-strip">
-            <!-- Left: Identity -->
+            <!-- Left: Identity + Badge -->
             <div class="strip-identity">
-                <span class="strip-title">Lobster Tycoon</span>
-                <span class="strip-reputation" id="strip-reputation">Dock Nobody</span>
+                <button class="badge-btn" id="badge-icon" title="View License">
+                    <span class="badge-visual" id="badge-visual">📋</span>
+                </button>
+                <div class="identity-text">
+                    <span class="strip-title">Lobster Tycoon</span>
+                    <span class="strip-reputation" id="strip-reputation">Dock Nobody</span>
+                </div>
             </div>
 
             <!-- Center: Survival State -->
@@ -96,19 +101,19 @@
              WORKSPACE NAVIGATION - Tab bar
              ═══════════════════════════════════════════════════════════ -->
         <nav class="workspace-nav">
-            <button class="nav-tab active" data-view="dock">
+            <button id="tab-dock" class="nav-tab active" data-view="dock">
                 <span class="tab-icon">⚓</span>
                 <span class="tab-label">Dock</span>
             </button>
-            <button class="nav-tab" data-view="tanks">
+            <button id="tab-tanks" class="nav-tab" data-view="tanks">
                 <span class="tab-icon">🦞</span>
                 <span class="tab-label">Tanks</span>
             </button>
-            <button class="nav-tab" data-view="buyers">
+            <button id="tab-buyers" class="nav-tab" data-view="buyers">
                 <span class="tab-icon">💰</span>
                 <span class="tab-label">Buyers</span>
             </button>
-            <button class="nav-tab" data-view="travel">
+            <button id="tab-travel" class="nav-tab" data-view="travel">
                 <span class="tab-icon">🗺️</span>
                 <span class="tab-label">Travel</span>
             </button>
@@ -147,13 +152,19 @@
                     <!-- Empty state -->
                     <div class="empty-state" id="dock-empty">
                         <p class="empty-message">No boats at the dock yet...</p>
-                        <div class="empty-actions">
+                        <p class="empty-context" id="dock-empty-context">The morning fog is still lifting...</p>
+                        <div class="empty-actions" id="dock-primary-actions">
                             <button class="btn btn-secondary" data-action="switch-buyers">Check Buyers</button>
                             <button class="btn btn-secondary" data-action="switch-travel">Travel to Another Port</button>
-                            <button class="btn btn-primary" data-action="end-day">End Day</button>
                         </div>
                     </div>
                     <!-- Boats populated by JS -->
+                </div>
+
+                <!-- Ambient pressure indicator -->
+                <div class="dock-ambient" id="dock-ambient">
+                    <span class="ambient-time" id="dock-time-of-day">Morning</span>
+                    <span class="ambient-pressure" id="dock-pressure-hint">Freshness is holding... for now.</span>
                 </div>
             </section>
 
@@ -161,64 +172,120 @@
                  TANKS VIEW - Inventory risk management
                  ═══════════════════════════════════════════════════════ -->
             <section class="workspace-panel hidden" id="tanks-view">
-                <div class="panel-header">
-                    <h2>Your Tanks</h2>
-                </div>
-
                 <div class="tanks-container">
-                    <!-- Capacity Bar -->
-                    <div class="tank-capacity">
-                        <div class="capacity-bar">
-                            <div class="capacity-fill" id="tank-fill"></div>
+
+                    <!-- TankHero - Visual tank display -->
+                    <div class="tank-hero" id="tank-hero">
+                        <div class="tank-vessel">
+                            <div class="tank-glass">
+                                <div class="tank-water" id="tank-water">
+                                    <div class="water-surface"></div>
+                                    <div class="tank-lobsters" id="tank-lobsters">
+                                        <!-- Lobster icons populated by JS -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tank-frame"></div>
+                            <div class="tank-base"></div>
                         </div>
-                        <div class="capacity-text">
-                            <span id="tank-current">0</span> / <span id="tank-max">500</span> lbs
+                        <div class="tank-gauge">
+                            <div class="gauge-marks">
+                                <span class="mark" style="bottom: 100%">Full</span>
+                                <span class="mark" style="bottom: 50%">50%</span>
+                                <span class="mark" style="bottom: 0%">Empty</span>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Risk Indicators -->
-                    <div class="tank-risk" id="tank-risk">
-                        <div class="risk-item">
-                            <span class="risk-label">Avg Freshness</span>
-                            <span class="risk-value" id="tank-freshness">100%</span>
+                    <!-- TankSummaryRow -->
+                    <div class="tank-summary-row">
+                        <div class="summary-stat">
+                            <span class="stat-value"><span id="tank-current">0</span>/<span id="tank-max">500</span></span>
+                            <span class="stat-label">lbs</span>
                         </div>
-                        <div class="risk-item">
-                            <span class="risk-label">Expected Loss Tomorrow</span>
-                            <span class="risk-value warning" id="tank-loss-estimate">0-2 lbs</span>
+                        <div class="summary-stat">
+                            <span class="stat-value" id="tank-freshness">100%</span>
+                            <span class="stat-label">Fresh</span>
                         </div>
-                    </div>
-
-                    <!-- Inventory Breakdown -->
-                    <div class="inventory-grid" id="inventory-breakdown">
-                        <div class="inventory-card grade-select">
-                            <span class="grade-name">Select (2+ lb)</span>
-                            <span class="grade-amount" id="inventory-a">0 lbs</span>
-                        </div>
-                        <div class="inventory-card grade-quarter">
-                            <span class="grade-name">Quarter (1.25-2 lb)</span>
-                            <span class="grade-amount" id="inventory-b">0 lbs</span>
-                        </div>
-                        <div class="inventory-card grade-chix">
-                            <span class="grade-name">Chix (1-1.25 lb)</span>
-                            <span class="grade-amount" id="inventory-c">0 lbs</span>
-                        </div>
-                        <div class="inventory-card grade-run" id="run-card">
-                            <span class="grade-name">Run (Ungraded)</span>
-                            <span class="grade-amount" id="inventory-run">0 lbs</span>
+                        <div class="summary-stat">
+                            <span class="stat-value capacity-label" id="tank-capacity-label">Empty</span>
+                            <span class="stat-label">Status</span>
                         </div>
                     </div>
 
-                    <!-- Tank Warning -->
+                    <!-- RiskForecastCard -->
+                    <div class="risk-forecast-card" id="risk-card">
+                        <div class="risk-header">
+                            <span class="risk-icon">⚠️</span>
+                            <h3>Tomorrow's Risk</h3>
+                            <span class="risk-trend" id="risk-trend">Stable</span>
+                        </div>
+                        <div class="risk-stats">
+                            <div class="risk-stat">
+                                <span class="risk-label">Expected Loss</span>
+                                <span class="risk-value" id="tank-loss-estimate">0-2 lbs</span>
+                            </div>
+                            <div class="risk-stat risk-dollars">
+                                <span class="risk-label">Dollar Impact</span>
+                                <span class="risk-value danger" id="tank-loss-dollars">~$0</span>
+                            </div>
+                        </div>
+                        <!-- Do Nothing Preview -->
+                        <div class="do-nothing-preview">
+                            <p class="preview-title">If you end the day without selling:</p>
+                            <div class="preview-stats">
+                                <span>Tomorrow's freshness: <strong id="projected-freshness">95%</strong></span>
+                                <span>Spoilage risk: <strong id="projected-risk">Low</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inventory Breakdown (collapsible) -->
+                    <details class="inventory-details">
+                        <summary>Inventory Breakdown</summary>
+                        <div class="inventory-grid" id="inventory-breakdown">
+                            <div class="inventory-card grade-select">
+                                <span class="grade-name">Select (2+ lb)</span>
+                                <span class="grade-amount" id="inventory-a">0 lbs</span>
+                            </div>
+                            <div class="inventory-card grade-quarter">
+                                <span class="grade-name">Quarter (1.25-2 lb)</span>
+                                <span class="grade-amount" id="inventory-b">0 lbs</span>
+                            </div>
+                            <div class="inventory-card grade-chix">
+                                <span class="grade-name">Chix (1-1.25 lb)</span>
+                                <span class="grade-amount" id="inventory-c">0 lbs</span>
+                            </div>
+                            <div class="inventory-card grade-run" id="run-card">
+                                <span class="grade-name">Run (Ungraded)</span>
+                                <span class="grade-amount" id="inventory-run">0 lbs</span>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- DecisionPanel -->
+                    <div class="decision-panel">
+                        <p class="decision-prompt">Hold for better prices and risk spoilage, or sell now and lock in today's margin.</p>
+
+                        <div class="decision-options">
+                            <div class="decision-option decision-sell">
+                                <button class="btn btn-primary btn-large" data-action="switch-buyers">Sell Now</button>
+                                <p class="decision-consequence" id="sell-consequence">Est. revenue: <strong>$0</strong></p>
+                            </div>
+
+                            <div class="decision-option decision-hunt">
+                                <button class="btn btn-secondary btn-large" data-action="switch-travel">Find Better Prices</button>
+                                <p class="decision-consequence">Travel costs + spoilage risk</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tank Warning (hidden by default) -->
                     <div class="tank-warning hidden" id="tank-warning">
-                        <span class="warning-icon">⚠️</span>
+                        <span class="warning-icon">🚨</span>
                         <span class="warning-text">Tank over 80% - sell soon to avoid spoilage!</span>
                     </div>
 
-                    <!-- Tank Actions -->
-                    <div class="tank-actions">
-                        <button class="btn btn-primary" data-action="switch-buyers">Sell Now</button>
-                        <button class="btn btn-secondary" data-action="switch-travel">Find Better Prices</button>
-                    </div>
                 </div>
             </section>
 
@@ -244,39 +311,101 @@
             </section>
 
             <!-- ═══════════════════════════════════════════════════════
-                 TRAVEL VIEW - Port selection
+                 TRAVEL VIEW - Coastal Map + Port selection
                  ═══════════════════════════════════════════════════════ -->
             <section class="workspace-panel hidden" id="travel-view">
                 <div class="panel-header">
-                    <h2>Travel to Another Port</h2>
+                    <h2>Maine Coast</h2>
+                    <div class="current-port-badge">
+                        <span class="port-label">📍</span>
+                        <span class="port-name" id="current-port-name">Stonington</span>
+                    </div>
                 </div>
 
                 <div class="travel-container">
-                    <!-- Current Location -->
-                    <div class="current-port">
-                        <span class="port-label">Currently at:</span>
-                        <span class="port-name" id="current-port-name">Stonington</span>
+                    <!-- Coastal Map -->
+                    <div class="coastal-map" id="travel-map">
+                        <div class="map-background">
+                            <div class="map-ocean"></div>
+                            <!-- Maine outline from Natural Earth GeoJSON (public domain) -->
+                            <svg class="map-land-svg" viewBox="0 0 100 107" preserveAspectRatio="xMidYMid meet">
+                                <defs>
+                                    <filter id="land-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                                        <feDropShadow dx="-2" dy="2" stdDeviation="1" flood-color="#000" flood-opacity="0.4"/>
+                                    </filter>
+                                </defs>
+                                <path class="maine-land" filter="url(#land-shadow)" d="
+                                    M 9.2,107 L 6.3,105.3 L 6.7,102.9 L 2.8,100 L 1.2,68.2 L 0,52.5
+                                    L 10.5,49.2 L 8.8,47.5 L 12.8,43.7 L 17,41.9 L 16.2,40.5 L 20,38.2
+                                    L 18.8,34 L 21.2,27.5 L 25,25.4 L 26.4,18.6 L 45.3,0 L 49.7,0.8
+                                    L 50,5.3 L 53.2,6.9 L 61,4.3 L 66,4.3 L 69.5,2.5 L 76.3,6.4
+                                    L 80.3,9.6 L 80.5,36.9 L 80,43.5 L 88.4,45.2 L 87.2,48 L 89.4,50.7
+                                    L 87.6,53.1 L 91.7,56.5 L 95.6,56.3 L 100,64.6 L 94.9,68.4 L 92,67
+                                    L 89.6,69.6 L 86.1,69 L 85.7,71.2 L 81.2,71 L 74,76.1 L 72.2,72.5
+                                    L 69.7,72.3 L 70.9,76.1 L 65.3,77 L 64,74 L 61.3,75.5 L 55,75.5
+                                    L 54.9,72 L 51.1,72.8 L 51.8,75.3 L 48.3,80.6 L 49,82.1 L 44.5,85
+                                    L 39.9,84 L 37.2,87 L 33.5,87.4 L 30.4,90 L 26.7,89.4 L 25.6,86.8
+                                    L 20.2,91 L 21.6,93.7 L 17.6,94.6 L 17.4,96.9 L 12.8,99.4 Z"/>
+                            </svg>
+                        </div>
+                        <div class="map-ports" id="map-ports">
+                            <!-- Port nodes populated by JS -->
+                        </div>
                     </div>
 
-                    <!-- Port List -->
-                    <div class="ports-list" id="ports-list">
-                        <!-- Ports populated by JS -->
+                    <!-- Port Details Panel -->
+                    <div class="port-details" id="travel-details">
+                        <div class="details-placeholder">
+                            <p>Select a port on the map to see details</p>
+                        </div>
+                        <div class="details-content" id="details-content" style="display: none;">
+                            <div class="details-header">
+                                <span class="details-emoji" id="details-emoji">🎣</span>
+                                <span class="details-name" id="details-name">Stonington</span>
+                            </div>
+                            <div class="details-mods">
+                                <div class="details-mod">
+                                    <span class="mod-label">Buy:</span>
+                                    <span class="mod-value" id="details-buy">Very Cheap</span>
+                                </div>
+                                <div class="details-mod">
+                                    <span class="mod-label">Sell:</span>
+                                    <span class="mod-value" id="details-sell">Below Avg</span>
+                                </div>
+                            </div>
+                            <p class="details-desc" id="details-desc">Remote fishing village - cheapest lobster</p>
+                            <div class="details-lock" id="details-lock" style="display: none;">
+                                <span class="lock-tier" id="details-lock-tier">🔒 Local Regular</span>
+                                <span class="lock-reason" id="details-lock-reason">They don't deal with strangers.</span>
+                            </div>
+                            <button class="btn btn-primary btn-large" id="travel-confirm-button" disabled>
+                                Travel - $<span id="details-cost">0</span>
+                            </button>
+                        </div>
                     </div>
 
-                    <!-- Travel Requirement -->
+                    <!-- Fallback Port List (collapsible) -->
+                    <details class="port-list-fallback">
+                        <summary>Port List</summary>
+                        <div class="ports-list" id="travel-port-list">
+                            <!-- Ports populated by JS -->
+                        </div>
+                    </details>
+
+                    <!-- Travel Requirement (shown when no van) -->
                     <div class="travel-requirement" id="travel-requirement">
-                        <span class="lock-icon">🔒</span>
-                        <span class="requirement-text">Requires: Delivery Van from the Shop</span>
+                        <span class="lock-icon">🚚</span>
+                        <span class="requirement-text">Buy a Delivery Van from the Shop to travel between ports</span>
                     </div>
                 </div>
             </section>
         </main>
 
         <!-- ═══════════════════════════════════════════════════════════
-             ACTION BAR - End Day button
+             ACTION BAR - End Day button (SINGLE SOURCE OF TRUTH)
              ═══════════════════════════════════════════════════════════ -->
-        <div class="action-bar">
-            <button id="next-day-btn-main" class="btn btn-large btn-ceremony">End Day</button>
+        <div class="action-bar" id="action-bar">
+            <button id="end-day-button" class="btn btn-large btn-ceremony">End Day</button>
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════
@@ -442,6 +571,29 @@
             </div>
         </div>
 
+        <!-- Badge/License Modal -->
+        <div id="badge-modal" class="modal" style="display: none;">
+            <div class="modal-content badge-content">
+                <button id="close-badge-btn" class="modal-close-btn">✕</button>
+                <div class="badge-display">
+                    <div class="badge-artwork" id="badge-artwork">
+                        <div class="badge-frame badge-paper">
+                            <span class="badge-emblem">📋</span>
+                        </div>
+                    </div>
+                    <h2 class="badge-tier-title" id="badge-tier-title">Dock Nobody</h2>
+                    <p class="badge-flavor" id="badge-flavor">Temporary license. Nobody knows your name.</p>
+                </div>
+                <div class="badge-progress">
+                    <h3>Reputation Progress</h3>
+                    <div class="rep-bar">
+                        <div class="rep-fill" id="badge-rep-fill" style="width: 0%"></div>
+                    </div>
+                    <p class="rep-next" id="badge-rep-next">Next: Local Regular</p>
+                </div>
+            </div>
+        </div>
+
         <!-- Game Over Modal -->
         <div id="game-over-modal" class="modal" style="display: none;">
             <div class="modal-content">
@@ -504,6 +656,16 @@
                             <span class="summary-label">Freshness</span>
                             <span class="summary-value" id="summary-stock-freshness">100%</span>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Rank Up Section (shown when tier increases) -->
+                <div class="summary-section summary-rankup" id="summary-rankup-section" style="display: none;">
+                    <div class="rankup-content">
+                        <span class="rankup-icon" id="rankup-icon">🎖️</span>
+                        <h3>New License Issued!</h3>
+                        <p class="rankup-tier" id="rankup-tier">Local Regular</p>
+                        <p class="rankup-flavor" id="rankup-flavor">The captains are starting to remember you.</p>
                     </div>
                 </div>
 
