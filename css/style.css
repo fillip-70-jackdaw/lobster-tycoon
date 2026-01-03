@@ -581,21 +581,25 @@ body::before {
     font-family: 'Press Start 2P', cursive;
     font-size: 11px;
     padding: 16px 32px;
-    background: transparent;
-    border: 3px solid var(--ocean-foam);
+    background: rgba(0, 20, 40, 0.5);
+    border: 4px solid var(--ocean-foam);
     border-radius: 8px;
     color: var(--ocean-foam);
     cursor: pointer;
     transition: all 0.2s;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.3);
 }
 
 .btn-secondary-ceremony:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 20, 40, 0.7);
     border-color: var(--gold);
     color: var(--gold);
     transform: translateY(-2px);
+}
+
+.btn-secondary-ceremony:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
 }
 
 .story-content .btn-secondary-ceremony {
@@ -4151,7 +4155,7 @@ body::before {
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 100;
+    z-index: 2000;
     padding: 20px;
     backdrop-filter: blur(4px);
 }

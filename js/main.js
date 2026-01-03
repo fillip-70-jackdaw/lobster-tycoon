@@ -6200,7 +6200,7 @@ function showDaySummary() {
     }
 
     document.getElementById("summary-total-cash").textContent = `$${formatMoney(gameState.cash)}`;
-    document.getElementById("summary-next-day").textContent = gameState.day;
+    document.getElementById("summary-next-day").textContent = data.day + 1;
 
     // Inventory status
     const stockEl = document.getElementById("summary-stock");
