@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="ocean-bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0a1628"/>
+      <stop offset="100%" stop-color="#051020"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#ocean-bg)"/>
+
+  <!-- Subtle wave pattern -->
+  <g opacity="0.1">
+    <path d="M0 400 Q300 380 600 400 T1200 400 V630 H0 Z" fill="#1a3a50"/>
+    <path d="M0 450 Q300 430 600 450 T1200 450 V630 H0 Z" fill="#1a3a50"/>
+  </g>
+
+  <!-- Lobster emoji (large, centered) -->
+  <text x="600" y="280" font-size="180" text-anchor="middle" dominant-baseline="middle">🦞</text>
+
+  <!-- Game title -->
+  <text x="600" y="420" font-family="Georgia, serif" font-size="56" font-weight="bold" fill="#fff8e1" text-anchor="middle">Maine Lobster</text>
+  <text x="600" y="490" font-family="Georgia, serif" font-size="56" font-weight="bold" fill="#fff8e1" text-anchor="middle">Dealer Tycoon</text>
+
+  <!-- Tagline -->
+  <text x="600" y="560" font-family="Georgia, serif" font-size="24" fill="#8ba5b5" text-anchor="middle">Build your empire on the Maine coast</text>
+</svg>
