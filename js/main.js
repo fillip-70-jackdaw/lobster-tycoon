@@ -2759,10 +2759,16 @@ function generateOnboardingBoats() {
     const boats = [];
     const boatIdCounter = Date.now();
 
-    // Use game seed for minor variations in onboarding (keeps tutorial functional)
+    // Use game seed for variations in onboarding (keeps tutorial functional but feels different)
     const seedRng = mulberry32(gameState.gameSeed + gameState.day);
-    const catchVariation = 0.9 + seedRng() * 0.2; // 90-110% of base
-    const priceVariation = 0.95 + seedRng() * 0.1; // 95-105% of base
+
+    // More noticeable variation in catch and price
+    const catchVariation = 0.75 + seedRng() * 0.5; // 75-125% of base (60-100 lbs)
+    const priceVariation = 0.85 + seedRng() * 0.3; // 85-115% of base ($3.40-$4.60)
+
+    // Boat name variety (keeps same captain for tutorial consistency)
+    const boatNames = ["Mary Lou", "Sea Spirit", "Lucky Strike", "Morning Star", "Blue Wave"];
+    const boatNameIndex = Math.floor(seedRng() * boatNames.length);
 
     // Day 1: Single reliable captain, easy deal
     if (gameState.day === 1) {
@@ -2773,15 +2779,15 @@ function generateOnboardingBoats() {
 
         boats.push({
             id: `boat_${boatIdCounter}_0`,
-            name: "Mary Lou",
+            name: boatNames[boatNameIndex],
             captain: captain,
             sellerId: sellerId,
             captainTrait: "reliable",
             captainFlavor: "First day? I'll give you a fair deal.",
             loyalty: 0,
             sellerTrust: sellerNPC ? sellerNPC.trust : 0,
-            catchAmount: Math.round(80 * catchVariation), // Varied amount
-            pricePerLb: Math.round(4.00 * priceVariation * 100) / 100, // Varied price
+            catchAmount: Math.round(80 * catchVariation), // 60-100 lbs
+            pricePerLb: Math.round(4.00 * priceVariation * 100) / 100, // $3.40-$4.60
             boatType: 'lobsterBoat',
             boatTypeData: CONFIG.boatTypes.lobsterBoat,
             timeLeft: 60, // Generous timer
@@ -6128,18 +6134,36 @@ function updateGoalUI() {
 // ============================================
 function showDaySummary() {
     const modal = document.getElementById("day-summary-modal");
-    if (!modal) return;
+    if (!modal) {
+        console.error("Day summary modal not found!");
+        return;
+    }
 
     // Use stored previous day data (saved before reset in nextDay)
     const prevData = gameState.previousDayData;
-    if (!prevData) return;
+    if (!prevData) {
+        // Create minimal data if none exists (shouldn't happen, but failsafe)
+        console.warn("No previous day data, creating minimal summary");
+        gameState.previousDayData = {
+            day: gameState.day - 1,
+            earned: 0,
+            spent: 0,
+            hadActivity: false,
+            missedBoats: [],
+            missedBuyers: [],
+            boatsLostToRival: 0,
+            totalMissedValue: 0,
+            rankUp: null
+        };
+    }
 
-    const dailyProfit = prevData.earned - prevData.spent;
+    const data = gameState.previousDayData;
+    const dailyProfit = data.earned - data.spent;
 
     // Update summary content
-    document.getElementById("summary-day").textContent = prevData.day;
-    document.getElementById("summary-spent").textContent = `$${formatMoney(prevData.spent)}`;
-    document.getElementById("summary-earned").textContent = `$${formatMoney(prevData.earned)}`;
+    document.getElementById("summary-day").textContent = data.day;
+    document.getElementById("summary-spent").textContent = `$${formatMoney(data.spent)}`;
+    document.getElementById("summary-earned").textContent = `$${formatMoney(data.earned)}`;
 
     const netEl = document.getElementById("summary-net");
     if (dailyProfit >= 0) {
@@ -6197,9 +6221,9 @@ function showDaySummary() {
     const rivalLossesEl = document.getElementById("summary-rival-losses");
     const missedValueEl = document.getElementById("summary-missed-value");
 
-    const missedBoats = prevData.missedBoats || [];
-    const boatsLostToRival = prevData.boatsLostToRival || 0;
-    const totalMissedValue = prevData.totalMissedValue || 0;
+    const missedBoats = data.missedBoats || [];
+    const boatsLostToRival = data.boatsLostToRival || 0;
+    const totalMissedValue = data.totalMissedValue || 0;
 
     if (missedBoats.length > 0 || boatsLostToRival > 0) {
         missedSection.style.display = "block";
@@ -6244,9 +6268,9 @@ function showDaySummary() {
     // Rank-up section (shown when tier increases)
     const rankupSection = document.getElementById("summary-rankup-section");
     if (rankupSection) {
-        if (prevData.rankUp) {
+        if (data.rankUp) {
             rankupSection.style.display = "block";
-            const newTier = prevData.rankUp.newTier;
+            const newTier = data.rankUp.newTier;
             const badgeData = BADGE_TIERS[newTier] || BADGE_TIERS["Dock Nobody"];
 
             const rankupIcon = document.getElementById("rankup-icon");
