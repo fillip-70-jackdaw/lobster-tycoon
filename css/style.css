@@ -371,6 +371,113 @@ body::before {
     }
 }
 
+/* Welcome screen "How to Play" link */
+.welcome-link {
+    display: block;
+    margin-top: 20px;
+    background: transparent;
+    border: none;
+    color: var(--ocean-foam);
+    font-family: inherit;
+    font-size: 10px;
+    cursor: pointer;
+    text-decoration: underline;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.welcome-link:hover {
+    opacity: 1;
+}
+
+/* How to Play Guide Styles */
+.how-to-play-content {
+    max-height: 60vh;
+    overflow-y: auto;
+    text-align: left;
+    padding-right: 10px;
+}
+
+.guide-section {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.guide-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.guide-section h3 {
+    color: var(--gold);
+    font-size: 11px;
+    margin-bottom: 10px;
+}
+
+.guide-section p {
+    font-size: 9px;
+    line-height: 1.8;
+    color: var(--cream);
+    margin-bottom: 10px;
+}
+
+.guide-tiers,
+.guide-steps,
+.guide-list {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0;
+}
+
+.guide-tiers li,
+.guide-steps li,
+.guide-list li {
+    font-size: 9px;
+    line-height: 2;
+    color: var(--cream);
+    padding-left: 15px;
+    position: relative;
+}
+
+.guide-tiers li::before {
+    content: "";
+}
+
+.guide-steps li {
+    padding-left: 20px;
+    counter-increment: step;
+}
+
+.guide-steps li::before {
+    content: counter(step) ".";
+    position: absolute;
+    left: 0;
+    color: var(--gold);
+    font-weight: bold;
+}
+
+.guide-steps {
+    counter-reset: step;
+}
+
+.guide-list li::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: var(--gold);
+}
+
+.guide-tiers-compact {
+    font-size: 9px;
+    color: var(--gold);
+    text-align: center;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    margin-top: 8px;
+}
+
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
     .hero-sun,
@@ -464,6 +571,39 @@ body::before {
         font-size: 11px;
     }
     .story-content .btn-ceremony {
+        font-size: 13px;
+        padding: 20px 44px;
+    }
+}
+
+/* Secondary ceremony button - same size, different color */
+.btn-secondary-ceremony {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 11px;
+    padding: 16px 32px;
+    background: transparent;
+    border: 3px solid var(--ocean-foam);
+    border-radius: 8px;
+    color: var(--ocean-foam);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-secondary-ceremony:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--gold);
+    color: var(--gold);
+    transform: translateY(-2px);
+}
+
+.story-content .btn-secondary-ceremony {
+    margin-top: 16px;
+}
+
+@media (min-width: 768px) {
+    .btn-secondary-ceremony {
         font-size: 13px;
         padding: 20px 44px;
     }
@@ -1586,9 +1726,15 @@ body::before {
         radial-gradient(ellipse 20% 18% at 78% 42%, rgba(40, 90, 130, 0.35) 0%, transparent 100%),
         /* MDI area shallow */
         radial-gradient(ellipse 15% 12% at 90% 28%, rgba(40, 90, 130, 0.4) 0%, transparent 100%);
+    animation: ocean-shimmer 8s ease-in-out infinite;
 }
 
-/* Subtle wave lines */
+@keyframes ocean-shimmer {
+    0%, 100% { opacity: 0.9; }
+    50% { opacity: 1; }
+}
+
+/* Subtle wave lines - animated drift */
 .map-ocean::after {
     content: '';
     position: absolute;
@@ -1601,6 +1747,27 @@ body::before {
         transparent 8px
     );
     opacity: 0.6;
+    animation: wave-drift 20s linear infinite;
+}
+
+@keyframes wave-drift {
+    from { background-position: 0 0; }
+    to { background-position: 50px 25px; }
+}
+
+/* Offshore depth gradient overlay */
+.coastal-map::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        135deg,
+        transparent 0%,
+        transparent 50%,
+        rgba(0, 10, 20, 0.4) 100%
+    );
+    pointer-events: none;
+    z-index: 2;
 }
 
 /* ===========================================
@@ -1609,23 +1776,55 @@ body::before {
    =========================================== */
 .map-land-svg {
     position: absolute;
-    /* Position SVG to show coastal Maine */
-    top: -15%;
-    right: -5%;
+    /* Position SVG: coastline anchored left, ocean to right */
+    left: -10%;
+    top: -20%;
     width: 110%;
-    height: 130%;
+    height: 125%;
     pointer-events: none;
 }
 
+/* Desktop: Taller map, more visual presence */
+@media (min-width: 768px) {
+    .coastal-map {
+        height: 320px;
+    }
+}
+
 .maine-land {
-    fill: #2d4a3a;
-    stroke: rgba(180, 210, 230, 0.3);
-    stroke-width: 0.5;
+    fill: url(#land-gradient);
+    stroke: rgba(200, 220, 240, 0.5); /* Shore highlight rim - brighter */
+    stroke-width: 0.8;
+}
+
+/* Texture overlay on land */
+.maine-land-texture {
+    fill: url(#land-texture);
+    stroke: none;
+    pointer-events: none;
+}
+
+/* Inner shadow on map background - carved coastline feel */
+.map-background::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        ellipse 60% 50% at 30% 50%,
+        transparent 40%,
+        rgba(0, 20, 40, 0.3) 100%
+    );
+    pointer-events: none;
+    z-index: 1;
 }
 
 .map-ports {
     position: absolute;
-    inset: 0;
+    /* Match SVG positioning so port coordinates align with coastline */
+    left: -10%;
+    top: -20%;
+    width: 110%;
+    height: 125%;
 }
 
 /* Port Node - Board game style markers */
@@ -1637,6 +1836,45 @@ body::before {
     cursor: pointer;
     z-index: 10;
     transition: z-index 0.1s;
+}
+
+/* Harbor ring glow - territorial claim */
+.port-node::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    background: radial-gradient(
+        circle,
+        rgba(255, 200, 100, 0.15) 0%,
+        transparent 70%
+    );
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+.port-node:not(.locked)::before {
+    opacity: 1;
+}
+
+/* Ground shadow beneath port */
+.port-node::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 8px;
+    background: radial-gradient(
+        ellipse,
+        rgba(0, 0, 0, 0.4) 0%,
+        transparent 70%
+    );
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: -1;
 }
 
 .port-node:hover {
@@ -1733,10 +1971,36 @@ body::before {
     }
 }
 
+/* Current port - enhanced pulsing harbor glow */
+.port-node.current::before {
+    background: radial-gradient(
+        circle,
+        rgba(255, 193, 7, 0.4) 0%,
+        transparent 70%
+    );
+    opacity: 1;
+    animation: harbor-pulse 3s ease-in-out infinite;
+}
+
+@keyframes harbor-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.15); opacity: 1; }
+}
+
 /* Locked port - clearly secondary, dimmed and smaller */
 .port-node.locked {
     width: 36px;  /* Smaller than unlocked */
     height: 36px;
+}
+
+/* Locked port - dimmed harbor glow */
+.port-node.locked::before {
+    background: radial-gradient(
+        circle,
+        rgba(100, 120, 140, 0.1) 0%,
+        transparent 70%
+    );
+    opacity: 0.5;
 }
 
 .port-node.locked .port-node-dot {
@@ -1827,6 +2091,206 @@ body::before {
     0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.6); }
     70% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
     100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+}
+
+/* ===========================================
+   COMPASS ROSE - Prestige detail
+   =========================================== */
+.map-compass {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    width: 40px;
+    height: 40px;
+    opacity: 0.15;
+    pointer-events: none;
+    z-index: 3;
+}
+
+/* Compass circle */
+.map-compass::before {
+    content: 'N';
+    position: absolute;
+    top: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 8px;
+    color: rgba(255, 248, 230, 0.6);
+    font-weight: bold;
+    font-family: Georgia, serif;
+}
+
+/* Compass needle */
+.map-compass::after {
+    content: '';
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 18px solid rgba(255, 248, 230, 0.25);
+}
+
+/* Compass ring */
+.map-compass {
+    background: radial-gradient(
+        circle,
+        transparent 35%,
+        rgba(255, 248, 230, 0.15) 36%,
+        rgba(255, 248, 230, 0.15) 38%,
+        transparent 39%
+    );
+}
+
+@media (max-width: 767px) {
+    .map-compass {
+        width: 30px;
+        height: 30px;
+        opacity: 0.1;
+        bottom: 8px;
+        right: 8px;
+    }
+    .map-compass::before {
+        font-size: 6px;
+    }
+    .map-compass::after {
+        top: 9px;
+        border-left-width: 4px;
+        border-right-width: 4px;
+        border-bottom-width: 12px;
+    }
+}
+
+/* ===========================================
+   ROUTE LINES - Connecting ports
+   =========================================== */
+.map-routes {
+    position: absolute;
+    left: -10%;
+    top: -20%;
+    width: 110%;
+    height: 125%;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.route-line {
+    fill: none;
+    stroke: rgba(255, 180, 80, 0.3);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+}
+
+.route-line.active {
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1s ease-out;
+}
+
+.route-line.locked {
+    stroke: rgba(100, 120, 140, 0.15);
+    stroke-dasharray: 4 4;
+    stroke-dashoffset: 0;
+}
+
+/* ===========================================
+   REP-BASED MAP MOOD - Evolves with reputation
+   =========================================== */
+
+/* Dock Nobody - muted, cold, unfamiliar territory */
+.coastal-map.rep-dock-nobody {
+    filter: saturate(0.7) brightness(0.9);
+}
+
+.coastal-map.rep-dock-nobody .port-node:not(.current)::before {
+    opacity: 0.3;
+}
+
+/* Local Regular - warming up, more comfortable */
+.coastal-map.rep-local-regular {
+    filter: saturate(0.85) brightness(0.95);
+}
+
+/* Known Dealer - confident, neutral colors */
+.coastal-map.rep-known-dealer {
+    filter: saturate(1) brightness(1);
+}
+
+/* Regional Player - dominant, vibrant */
+.coastal-map.rep-regional-player {
+    filter: saturate(1.1) brightness(1.05);
+}
+
+/* Statewide Power - claimed territory, prestigious */
+.coastal-map.rep-statewide-power {
+    filter: saturate(1.2) brightness(1.1);
+}
+
+.coastal-map.rep-statewide-power .route-line.active {
+    stroke: rgba(255, 200, 100, 0.5);
+    stroke-width: 3;
+}
+
+/* ===========================================
+   CINEMATIC FIRST REVEAL
+   =========================================== */
+.coastal-map.map-revealing {
+    animation: map-fade-in 0.8s ease-out;
+}
+
+@keyframes map-fade-in {
+    from { opacity: 0; transform: scale(1.02); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.port-node.port-reveal {
+    animation: port-light-up 0.4s ease-out forwards;
+    opacity: 0;
+}
+
+@keyframes port-light-up {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* ===========================================
+   PREFERS-REDUCED-MOTION - Accessibility
+   =========================================== */
+@media (prefers-reduced-motion: reduce) {
+    .map-ocean::before,
+    .map-ocean::after,
+    .port-node.current::before,
+    .coastal-map.map-revealing,
+    .port-node.port-reveal {
+        animation: none;
+    }
+
+    .route-line.active {
+        transition: none;
+        stroke-dashoffset: 0;
+    }
+}
+
+/* Mobile optimizations - reduced animation complexity */
+@media (max-width: 767px) {
+    /* Slower wave animation = less CPU */
+    .map-ocean::after {
+        animation-duration: 30s;
+    }
+
+    /* Subtler harbor glow */
+    .port-node::before {
+        inset: -4px;
+    }
+
+    /* Faster first reveal */
+    .coastal-map.map-revealing {
+        animation-duration: 0.5s;
+    }
 }
 
 /* Port Details Panel */

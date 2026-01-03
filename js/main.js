@@ -1380,9 +1380,9 @@ const TOWNS = {
         name: "Stonington",
         description: "Remote fishing village - cheapest lobster",
         emoji: "🎣",
-        // Deer Isle - on real Maine outline
-        x: 68,
-        y: 58,
+        // Deer Isle - Penobscot Bay islands
+        x: 54,
+        y: 69,
         buyMod: 0.80,   // 20% cheaper to buy
         sellMod: 0.85,  // 15% less when selling
         boatBonus: 2,   // Extra boats available
@@ -1395,9 +1395,9 @@ const TOWNS = {
         name: "Rockland",
         description: "Working harbor - good supply, fair prices",
         emoji: "⚓",
-        // West side of Penobscot Bay - on real Maine outline
-        x: 52,
-        y: 62,
+        // West side of Penobscot Bay
+        x: 48,
+        y: 76,
         buyMod: 0.90,
         sellMod: 0.95,
         boatBonus: 1,
@@ -1410,9 +1410,9 @@ const TOWNS = {
         name: "Camden",
         description: "Wealthy yacht town - premium buyers",
         emoji: "⛵",
-        // North of Rockland - on real Maine outline
-        x: 55,
-        y: 56,
+        // North of Rockland on Penobscot Bay
+        x: 50,
+        y: 73,
         buyMod: 1.10,
         sellMod: 1.20,
         boatBonus: 0,
@@ -1425,9 +1425,9 @@ const TOWNS = {
         name: "Portland",
         description: "Big city - high volume, competitive prices",
         emoji: "🏙️",
-        // Casco Bay - on real Maine outline
-        x: 28,
-        y: 78,
+        // Casco Bay - southern Maine
+        x: 21,
+        y: 86,
         buyMod: 1.00,
         sellMod: 1.05,
         boatBonus: 1,
@@ -1440,9 +1440,9 @@ const TOWNS = {
         name: "Boothbay Harbor",
         description: "Tourist destination - seasonal demand",
         emoji: "🌊",
-        // Boothbay peninsula - on real Maine outline
-        x: 42,
-        y: 68,
+        // Boothbay peninsula
+        x: 35,
+        y: 81,
         buyMod: 1.05,
         sellMod: 1.15,
         boatBonus: 0,
@@ -1455,9 +1455,9 @@ const TOWNS = {
         name: "Bar Harbor",
         description: "Acadia tourists - highest sell prices!",
         emoji: "🏔️",
-        // Mount Desert Island - on real Maine outline
-        x: 88,
-        y: 50,
+        // Mount Desert Island - Acadia
+        x: 87,
+        y: 65,
         buyMod: 1.20,   // Expensive to buy
         sellMod: 1.40,  // But great sell prices!
         boatBonus: -1,  // Fewer boats
@@ -1470,9 +1470,9 @@ const TOWNS = {
         name: "Kennebunkport",
         description: "Bush family territory - old money buyers",
         emoji: "🦞",
-        // Southern Maine - on real Maine outline
-        x: 18,
-        y: 88,
+        // Southern Maine coast
+        x: 13,
+        y: 93,
         buyMod: 1.15,
         sellMod: 1.30,
         boatBonus: 0,
@@ -1481,6 +1481,16 @@ const TOWNS = {
         traits: ["wealthy", "exclusive"]
     }
 };
+
+// Route connections between adjacent ports (for map visualization)
+const ROUTES = [
+    ['kennebunkport', 'portland'],
+    ['portland', 'boothbay'],
+    ['boothbay', 'rockland'],
+    ['rockland', 'camden'],
+    ['camden', 'stonington'],
+    ['stonington', 'barHarbor']
+];
 
 // ============================================
 // GAME STATE
@@ -1569,6 +1579,9 @@ let gameState = {
     missedBuyers: [],    // Buyers not sold to
     boatsLostToRival: 0, // Boats that timed out and went to Slick Rick
     potentialEarnings: 0, // Money that could have been earned
+
+    // UI state
+    mapRevealed: false,  // Track first map reveal for cinematic animation
 
     // Boat timer system
     boatTimers: {},      // boatId -> { timeLeft, intervalId }
@@ -3785,6 +3798,14 @@ function nextDay() {
         };
     }
 
+    // CRITICAL: Show day summary IMMEDIATELY after all summary data is prepared
+    // This ensures summary always appears regardless of what happens next
+    try {
+        showDaySummary();
+    } catch (e) {
+        console.error("Error showing day summary:", e);
+    }
+
     // Clear today's fortune for new day
     gameState.todayFortune = null;
 
@@ -3882,11 +3903,7 @@ function nextDay() {
     // Update market supply tracking
     updateMarketSupply();
 
-    // ALWAYS show day summary first - this is the atomic feedback for the day that just ended
-    // Summary must appear before any game-ending states are processed
-    if (gameState.previousDayData) {
-        showDaySummary();
-    }
+    // Day summary was already shown earlier in the function
 
     // Check if summer season has ended
     if (checkSeasonEnd()) {
@@ -4960,6 +4977,14 @@ function openBadgeModal() {
 
 function closeBadgeModal() {
     document.getElementById("badge-modal").style.display = "none";
+}
+
+function openHowToPlay() {
+    document.getElementById("how-to-play-modal").style.display = "flex";
+}
+
+function closeHowToPlay() {
+    document.getElementById("how-to-play-modal").style.display = "none";
 }
 
 function updateBadgeUI() {
@@ -6551,16 +6576,33 @@ function updateTravelView() {
     const portsList = document.getElementById('travel-port-list');
     const currentPortName = document.getElementById('current-port-name');
     const travelReq = document.getElementById('travel-requirement');
+    const map = document.getElementById('travel-map');
 
     const currentTown = getCurrentTown();
     if (currentPortName) currentPortName.textContent = currentTown.name;
 
     const hasVan = hasEquipment('deliveryVan');
 
+    // Apply rep-tier class to map for mood styling
+    if (map) {
+        map.className = 'coastal-map';
+        const repClass = 'rep-' + gameState.repTier.toLowerCase().replace(/\s+/g, '-');
+        map.classList.add(repClass);
+
+        // Cinematic first reveal
+        if (!gameState.mapRevealed) {
+            playMapReveal(map);
+            gameState.mapRevealed = true;
+        }
+    }
+
     // Show/hide travel requirement
     if (travelReq) {
         travelReq.style.display = hasVan ? 'none' : 'block';
     }
+
+    // Render route lines (if van owned)
+    renderRoutes(hasVan);
 
     // Clear and rebuild map nodes
     if (mapPorts) {
@@ -6577,6 +6619,62 @@ function updateTravelView() {
     // Reset selection
     selectedPort = null;
     updatePortDetails(null);
+}
+
+function playMapReveal(map) {
+    map.classList.add('map-revealing');
+
+    // Sequential port light-up after a brief delay
+    setTimeout(() => {
+        const ports = document.querySelectorAll('.port-node:not(.locked)');
+        ports.forEach((port, i) => {
+            port.style.animationDelay = `${0.3 + i * 0.15}s`;
+            port.classList.add('port-reveal');
+        });
+    }, 100);
+
+    // Clean up after animation
+    setTimeout(() => {
+        map.classList.remove('map-revealing');
+        const ports = document.querySelectorAll('.port-node.port-reveal');
+        ports.forEach(p => {
+            p.classList.remove('port-reveal');
+            p.style.animationDelay = '';
+        });
+    }, 2000);
+}
+
+function renderRoutes(hasVan) {
+    const svg = document.getElementById('map-routes');
+    if (!svg) return;
+    svg.innerHTML = '';
+
+    // Only show routes if player has van
+    if (!hasVan) return;
+
+    const currentTierIndex = TIER_ORDER.indexOf(gameState.repTier);
+
+    ROUTES.forEach(([from, to]) => {
+        const fromTown = TOWNS[from];
+        const toTown = TOWNS[to];
+        if (!fromTown || !toTown) return;
+
+        // Check if either port is locked
+        const fromRequired = PORT_UNLOCKS[from] || "Dock Nobody";
+        const toRequired = PORT_UNLOCKS[to] || "Dock Nobody";
+        const fromLocked = TIER_ORDER.indexOf(fromRequired) > currentTierIndex;
+        const toLocked = TIER_ORDER.indexOf(toRequired) > currentTierIndex;
+        const isLocked = fromLocked || toLocked;
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', `${fromTown.x}%`);
+        line.setAttribute('y1', `${fromTown.y}%`);
+        line.setAttribute('x2', `${toTown.x}%`);
+        line.setAttribute('y2', `${toTown.y}%`);
+        line.classList.add('route-line');
+        line.classList.add(isLocked ? 'locked' : 'active');
+        svg.appendChild(line);
+    });
 }
 
 function renderMapNodes(container, hasVan) {
@@ -6947,6 +7045,10 @@ function initEventHandlers() {
     const storyContinueBtn = document.getElementById("story-continue-btn");
     if (storyContinueBtn) storyContinueBtn.addEventListener("click", startFromStory);
 
+    // Story screen how to play button
+    const storyHowToPlayBtn = document.getElementById("story-how-to-play-btn");
+    if (storyHowToPlayBtn) storyHowToPlayBtn.addEventListener("click", openHowToPlay);
+
     // Tutorial buttons
     document.getElementById("tutorial-next").addEventListener("click", nextTutorialStep);
     document.getElementById("tutorial-skip").addEventListener("click", skipTutorial);
@@ -7042,6 +7144,19 @@ function initEventHandlers() {
     if (badgeIcon) badgeIcon.addEventListener("click", openBadgeModal);
     const closeBadgeBtn = document.getElementById("close-badge-btn");
     if (closeBadgeBtn) closeBadgeBtn.addEventListener("click", closeBadgeModal);
+
+    // How to Play modal - accessible from status strip
+    const helpBtn = document.getElementById("help-btn");
+    if (helpBtn) helpBtn.addEventListener("click", openHowToPlay);
+    const helpBtnMobile = document.getElementById("help-btn-mobile");
+    if (helpBtnMobile) helpBtnMobile.addEventListener("click", () => {
+        document.getElementById("more-menu").classList.remove("open");
+        openHowToPlay();
+    });
+    const howToPlayBtn = document.getElementById("how-to-play-btn");
+    if (howToPlayBtn) howToPlayBtn.addEventListener("click", openHowToPlay);
+    const closeHowToPlayBtn = document.getElementById("close-how-to-play-btn");
+    if (closeHowToPlayBtn) closeHowToPlayBtn.addEventListener("click", closeHowToPlay);
 
     // Close modals on outside click
     document.querySelectorAll(".modal").forEach(modal => {

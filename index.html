@@ -21,7 +21,6 @@
         <!-- Content Overlay -->
         <div class="welcome-content">
             <h1 class="welcome-title">Maine Lobster<br>Dealer Tycoon</h1>
-            <p class="welcome-tagline">Buy low. Sell high. Build your empire.</p>
             <button id="start-game-btn" class="btn-ceremony">Begin Your Run</button>
         </div>
     </div>
@@ -35,8 +34,9 @@
                 secured a spot on the <strong>Stonington fish pier</strong>,
                 and bet everything on making it as a lobster dealer.
             </p>
-            <p class="story-subtext">Buy from the boats. Sell to the buyers. Build your empire.</p>
+            <p class="story-subtext">Every day is a risk. Make it count.</p>
             <button id="story-continue-btn" class="btn-ceremony">Start Day 1</button>
+            <button id="story-how-to-play-btn" class="btn-secondary-ceremony">How to Play</button>
         </div>
     </div>
 
@@ -108,6 +108,7 @@
                 <button id="shop-btn" class="strip-btn" title="Shop">🛒</button>
                 <button id="bank-btn" class="strip-btn" title="Bank">🏦</button>
                 <button id="stats-btn" class="strip-btn" title="Stats">📊</button>
+                <button id="help-btn" class="strip-btn" title="How to Play">❓</button>
             </div>
             <!-- Mobile overflow menu -->
             <div class="strip-actions-mobile">
@@ -116,6 +117,7 @@
                     <button id="shop-btn-mobile" class="more-menu-item">🛒 Shop</button>
                     <button id="bank-btn-mobile" class="more-menu-item">🏦 Bank</button>
                     <button id="stats-btn-mobile" class="more-menu-item">📊 Stats</button>
+                    <button id="help-btn-mobile" class="more-menu-item">❓ How to Play</button>
                 </div>
             </div>
         </header>
@@ -350,27 +352,61 @@
                     <div class="coastal-map" id="travel-map">
                         <div class="map-background">
                             <div class="map-ocean"></div>
+                            <div class="map-compass"></div>
                             <!-- Maine outline from Natural Earth GeoJSON (public domain) -->
-                            <svg class="map-land-svg" viewBox="0 0 100 107" preserveAspectRatio="xMidYMid meet">
+                            <svg class="map-land-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
                                 <defs>
+                                    <!-- Drop shadow for depth -->
                                     <filter id="land-shadow" x="-20%" y="-20%" width="140%" height="140%">
                                         <feDropShadow dx="-2" dy="2" stdDeviation="1" flood-color="#000" flood-opacity="0.4"/>
                                     </filter>
+
+                                    <!-- Topographic texture pattern -->
+                                    <pattern id="land-texture" patternUnits="userSpaceOnUse" width="20" height="20">
+                                        <rect width="20" height="20" fill="transparent"/>
+                                        <circle cx="10" cy="10" r="0.5" fill="rgba(255,255,255,0.03)"/>
+                                        <circle cx="5" cy="5" r="0.3" fill="rgba(0,0,0,0.02)"/>
+                                        <circle cx="15" cy="3" r="0.4" fill="rgba(255,255,255,0.02)"/>
+                                        <circle cx="3" cy="15" r="0.3" fill="rgba(0,0,0,0.03)"/>
+                                    </pattern>
+
+                                    <!-- Composite texture fill -->
+                                    <linearGradient id="land-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#3a5a48"/>
+                                        <stop offset="50%" stop-color="#2d4a3a"/>
+                                        <stop offset="100%" stop-color="#243d30"/>
+                                    </linearGradient>
                                 </defs>
+                                <!-- Base land with gradient -->
                                 <path class="maine-land" filter="url(#land-shadow)" d="
-                                    M 9.2,107 L 6.3,105.3 L 6.7,102.9 L 2.8,100 L 1.2,68.2 L 0,52.5
-                                    L 10.5,49.2 L 8.8,47.5 L 12.8,43.7 L 17,41.9 L 16.2,40.5 L 20,38.2
-                                    L 18.8,34 L 21.2,27.5 L 25,25.4 L 26.4,18.6 L 45.3,0 L 49.7,0.8
-                                    L 50,5.3 L 53.2,6.9 L 61,4.3 L 66,4.3 L 69.5,2.5 L 76.3,6.4
-                                    L 80.3,9.6 L 80.5,36.9 L 80,43.5 L 88.4,45.2 L 87.2,48 L 89.4,50.7
-                                    L 87.6,53.1 L 91.7,56.5 L 95.6,56.3 L 100,64.6 L 94.9,68.4 L 92,67
-                                    L 89.6,69.6 L 86.1,69 L 85.7,71.2 L 81.2,71 L 74,76.1 L 72.2,72.5
-                                    L 69.7,72.3 L 70.9,76.1 L 65.3,77 L 64,74 L 61.3,75.5 L 55,75.5
-                                    L 54.9,72 L 51.1,72.8 L 51.8,75.3 L 48.3,80.6 L 49,82.1 L 44.5,85
-                                    L 39.9,84 L 37.2,87 L 33.5,87.4 L 30.4,90 L 26.7,89.4 L 25.6,86.8
-                                    L 20.2,91 L 21.6,93.7 L 17.6,94.6 L 17.4,96.9 L 12.8,99.4 Z"/>
+                                    M 9.2,100 L 6.3,98.4 L 6.7,96.2 L 2.8,93.5 L 1.2,63.7 L 0,49.1
+                                    L 10.5,46 L 8.8,44.4 L 12.8,40.8 L 17,39.2 L 16.2,37.9 L 20,35.7
+                                    L 18.8,31.8 L 21.2,25.7 L 25,23.7 L 26.4,17.4 L 45.3,0 L 49.7,0.7
+                                    L 50,5 L 53.2,6.4 L 61,4 L 66,4 L 69.5,2.3 L 76.3,6
+                                    L 80.3,9 L 80.5,34.5 L 80,40.7 L 88.4,42.2 L 87.2,44.9 L 89.4,47.4
+                                    L 87.6,49.6 L 91.7,52.8 L 95.6,52.6 L 100,60.4 L 94.9,63.9 L 92,62.6
+                                    L 89.6,65.1 L 86.1,64.5 L 85.7,66.5 L 81.2,66.4 L 74,71.1 L 72.2,67.8
+                                    L 69.7,67.6 L 70.9,71.1 L 65.3,72 L 64,69.2 L 61.3,70.6 L 55,70.6
+                                    L 54.9,67.3 L 51.1,68.1 L 51.8,70.4 L 48.3,75.3 L 49,76.7 L 44.5,79.4
+                                    L 39.9,78.5 L 37.2,81.3 L 33.5,81.7 L 30.4,84.1 L 26.7,83.6 L 25.6,81.1
+                                    L 20.2,85 L 21.6,87.6 L 17.6,88.4 L 17.4,90.6 L 12.8,92.9 Z"/>
+                                <!-- Texture overlay -->
+                                <path class="maine-land-texture" d="
+                                    M 9.2,100 L 6.3,98.4 L 6.7,96.2 L 2.8,93.5 L 1.2,63.7 L 0,49.1
+                                    L 10.5,46 L 8.8,44.4 L 12.8,40.8 L 17,39.2 L 16.2,37.9 L 20,35.7
+                                    L 18.8,31.8 L 21.2,25.7 L 25,23.7 L 26.4,17.4 L 45.3,0 L 49.7,0.7
+                                    L 50,5 L 53.2,6.4 L 61,4 L 66,4 L 69.5,2.3 L 76.3,6
+                                    L 80.3,9 L 80.5,34.5 L 80,40.7 L 88.4,42.2 L 87.2,44.9 L 89.4,47.4
+                                    L 87.6,49.6 L 91.7,52.8 L 95.6,52.6 L 100,60.4 L 94.9,63.9 L 92,62.6
+                                    L 89.6,65.1 L 86.1,64.5 L 85.7,66.5 L 81.2,66.4 L 74,71.1 L 72.2,67.8
+                                    L 69.7,67.6 L 70.9,71.1 L 65.3,72 L 64,69.2 L 61.3,70.6 L 55,70.6
+                                    L 54.9,67.3 L 51.1,68.1 L 51.8,70.4 L 48.3,75.3 L 49,76.7 L 44.5,79.4
+                                    L 39.9,78.5 L 37.2,81.3 L 33.5,81.7 L 30.4,84.1 L 26.7,83.6 L 25.6,81.1
+                                    L 20.2,85 L 21.6,87.6 L 17.6,88.4 L 17.4,90.6 L 12.8,92.9 Z"/>
                             </svg>
                         </div>
+                        <!-- Route lines between ports -->
+                        <svg class="map-routes" id="map-routes"></svg>
                         <div class="map-ports" id="map-ports">
                             <!-- Port nodes populated by JS -->
                         </div>
@@ -561,9 +597,81 @@
                     </div>
                     <div class="stats-footer">
                         <button id="replay-tutorial-btn" class="btn btn-small">Replay Tutorial</button>
+                        <button id="how-to-play-btn" class="btn btn-small">How to Play</button>
                     </div>
                     <div class="stats-credit">
                         <p>A tycoon game by Derek</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- How to Play Modal -->
+        <div id="how-to-play-modal" class="modal" style="display: none;">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h2>How to Play</h2>
+                    <button id="close-how-to-play-btn" class="btn btn-small">X</button>
+                </div>
+                <div class="how-to-play-content">
+                    <div class="guide-section">
+                        <h3>🎯 What You're Trying to Do</h3>
+                        <p>You start with $5,000, a spot on the Stonington pier, and no reputation.</p>
+                        <ul class="guide-list">
+                            <li>Grow your cash over 30 summer days</li>
+                            <li>Buy smart, manage risk, earn trust</li>
+                        </ul>
+                        <p class="guide-tiers-compact">
+                            ⭐ $10K · ⭐⭐ $25K · ⭐⭐⭐ $50K · ⭐⭐⭐⭐ $100K
+                        </p>
+                    </div>
+                    <div class="guide-section">
+                        <h3>🦞 How You Make Money</h3>
+                        <ul class="guide-list">
+                            <li><strong>Buy</strong> lobsters from boats at the dock</li>
+                            <li><strong>Sell</strong> to restaurants, tourists, wholesalers</li>
+                            <li><strong>End Day</strong> to advance — new boats and buyers arrive</li>
+                        </ul>
+                        <p>Sell before freshness drops. Don't hold too long!</p>
+                    </div>
+                    <div class="guide-section">
+                        <h3>💡 The Real Secret</h3>
+                        <ul class="guide-list">
+                            <li><strong>Fishing villages</strong> (Stonington) → cheap lobster</li>
+                            <li><strong>Tourist towns</strong> (Bar Harbor) → premium prices</li>
+                        </ul>
+                        <p>Buy low, travel, sell high. That's the game.</p>
+                    </div>
+                    <div class="guide-section">
+                        <h3>🚚 Travel</h3>
+                        <p>Get a <strong>Delivery Van</strong> ($2,000 from Shop) to travel. It's your first big investment.</p>
+                    </div>
+                    <div class="guide-section">
+                        <h3>📊 Lobster Grades</h3>
+                        <ul class="guide-list">
+                            <li><strong>Selects</strong> — 2+ lbs, highest price, slower to sell</li>
+                            <li><strong>Quarters</strong> — 1.25-2 lbs, reliable value</li>
+                            <li><strong>Chix</strong> — 1-1.25 lbs, cheaper, easier to move</li>
+                            <li><strong>Run</strong> — Mixed sizes, lowest price, fast turnover</li>
+                        </ul>
+                    </div>
+                    <div class="guide-section">
+                        <h3>⭐ Reputation</h3>
+                        <p>Trade fairly to build trust. Higher rep unlocks:</p>
+                        <ul class="guide-list">
+                            <li>Better prices from loyal captains</li>
+                            <li>Access to premium ports</li>
+                            <li>Special buyers</li>
+                        </ul>
+                    </div>
+                    <div class="guide-section">
+                        <h3>⚠️ Watch Out For</h3>
+                        <ul class="guide-list">
+                            <li>Lobsters lose value over time</li>
+                            <li>Tanks have limited capacity</li>
+                            <li>Bad weather reduces supply</li>
+                            <li>Rivals take boats if you wait too long</li>
+                        </ul>
                     </div>
                 </div>
             </div>
