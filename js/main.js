@@ -1640,6 +1640,17 @@ function randomFloat(min, max) {
     return Math.random() * (max - min) + min;
 }
 
+// Seeded random number generator (Mulberry32)
+// Returns a function that produces deterministic random numbers from a seed
+function mulberry32(seed) {
+    return function() {
+        let t = seed += 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+}
+
 function randomChoice(array) {
     return array[Math.floor(Math.random() * array.length)];
 }
@@ -2400,8 +2411,8 @@ function checkMilestones() {
 }
 
 function maybeIdleChatter() {
-    // 15% chance of random chatter
-    if (Math.random() < 0.15) {
+    // 5% chance of random chatter (reduced to minimize popup overload)
+    if (Math.random() < 0.05) {
         fishermanSays(getRandomComment(CONFIG.dockworker.idle));
     }
 }
@@ -2748,6 +2759,11 @@ function generateOnboardingBoats() {
     const boats = [];
     const boatIdCounter = Date.now();
 
+    // Use game seed for minor variations in onboarding (keeps tutorial functional)
+    const seedRng = mulberry32(gameState.gameSeed + gameState.day);
+    const catchVariation = 0.9 + seedRng() * 0.2; // 90-110% of base
+    const priceVariation = 0.95 + seedRng() * 0.1; // 95-105% of base
+
     // Day 1: Single reliable captain, easy deal
     if (gameState.day === 1) {
         const captain = "Cap'n Joe";
@@ -2764,8 +2780,8 @@ function generateOnboardingBoats() {
             captainFlavor: "First day? I'll give you a fair deal.",
             loyalty: 0,
             sellerTrust: sellerNPC ? sellerNPC.trust : 0,
-            catchAmount: 80, // Manageable amount
-            pricePerLb: 4.00, // Good starting price
+            catchAmount: Math.round(80 * catchVariation), // Varied amount
+            pricePerLb: Math.round(4.00 * priceVariation * 100) / 100, // Varied price
             boatType: 'lobsterBoat',
             boatTypeData: CONFIG.boatTypes.lobsterBoat,
             timeLeft: 60, // Generous timer
@@ -3441,8 +3457,8 @@ function buyFromBoat(boatIndex, amount) {
     // Check speed run milestones
     checkSpeedRunMilestones();
 
-    // Fisherman commentary on the purchase
-    if (Math.random() < 0.5) { // 50% chance of comment
+    // Fisherman commentary on the purchase (25% chance - reduced for less popup spam)
+    if (Math.random() < 0.25) {
         const bob = CONFIG.dockworker;
         if (buyAmount >= 150) {
             fishermanSays(getRandomComment(bob.buying.big_haul));
@@ -3455,8 +3471,8 @@ function buyFromBoat(boatIndex, amount) {
         }
     }
 
-    // Check for low cash warning
-    if (gameState.cash < 500 && Math.random() < 0.4) {
+    // Check for low cash warning (20% chance)
+    if (gameState.cash < 500 && Math.random() < 0.2) {
         fishermanSays(getRandomComment(CONFIG.dockworker.low_cash));
     }
 
@@ -3613,16 +3629,15 @@ function sellToBuyer(buyerIndex) {
     // Check speed run milestones
     checkSpeedRunMilestones();
 
-    // Fisherman commentary on the sale
-    if (Math.random() < 0.5) { // 50% chance of comment
+    // Fisherman commentary on the sale (25% chance - reduced for less popup spam)
+    if (Math.random() < 0.25) {
         const bob = CONFIG.dockworker;
         if (finalRevenue >= 500) {
             fishermanSays(getRandomComment(bob.selling.big_sale));
         } else if (buyer.type === 'special') {
             fishermanSays(getRandomComment(bob.selling.premium_buyer));
-        } else {
-            fishermanSays(getRandomComment(bob.selling.good_sale));
         }
+        // Removed generic "good_sale" comment to reduce noise
     }
 
     // Check milestones after earning money
@@ -3861,6 +3876,12 @@ function nextDay() {
     // Update market supply tracking
     updateMarketSupply();
 
+    // ALWAYS show day summary first - this is the atomic feedback for the day that just ended
+    // Summary must appear before any game-ending states are processed
+    if (gameState.previousDayData) {
+        showDaySummary();
+    }
+
     // Check if summer season has ended
     if (checkSeasonEnd()) {
         updateUI();
@@ -3878,23 +3899,22 @@ function nextDay() {
             playBoatArrival();
         }
 
-        // Fisherman morning commentary (30% chance)
-        if (Math.random() < 0.3) {
+        // Fisherman morning commentary (15% chance - reduced for less popup spam)
+        if (Math.random() < 0.15) {
             fishermanSays(getRandomComment(CONFIG.dockworker.morning));
         }
 
-        // Weather-specific commentary (40% chance)
-        if (Math.random() < 0.4) {
+        // Weather-specific commentary (20% chance - only on notable weather)
+        if (Math.random() < 0.2 && gameState.weather !== "sunny") {
             const weatherComments = CONFIG.dockworker.weather[gameState.weather];
             if (weatherComments) {
                 fishermanSays(getRandomComment(weatherComments));
             }
         }
 
-        // Market trend commentary (25% chance)
-        if (Math.random() < 0.25) {
-            const trendType = gameState.marketTrend > 0 ? 'rising' :
-                              gameState.marketTrend < 0 ? 'falling' : 'stable';
+        // Market trend commentary (15% chance - only when trending)
+        if (Math.random() < 0.15 && gameState.marketTrend !== 0) {
+            const trendType = gameState.marketTrend > 0 ? 'rising' : 'falling';
             fishermanSays(getRandomComment(CONFIG.dockworker.market[trendType]));
         }
 
@@ -3920,11 +3940,6 @@ function nextDay() {
 
         // Occasional idle chatter
         maybeIdleChatter();
-    }
-
-    // Show day summary modal (for all users)
-    if (gameState.previousDayData && gameState.previousDayData.hadActivity) {
-        showDaySummary();
     }
 
     updateUI();
@@ -4035,15 +4050,24 @@ function resetGame() {
     // Calculate starting cash with prestige bonus
     const startingCash = CONFIG.startingCash + (prestigeBonuses.startingCash || 0);
 
+    // Generate a random seed for this game run
+    const gameSeed = Date.now() + Math.floor(Math.random() * 10000);
+
+    // Use seed to create initial variety
+    const seedRng = mulberry32(gameSeed);
+    const initialWeather = seedRng() > 0.7 ? "cloudy" : "sunny"; // 30% chance cloudy start
+    const initialMarketTrend = seedRng() > 0.6 ? (seedRng() > 0.5 ? 1 : -1) : 0; // 40% chance of initial trend
+
     gameState = {
+        gameSeed: gameSeed,
         cash: startingCash,
         debt: 0,
         day: 1,
         week: 1,
         season: "Summer",
-        weather: "sunny",
+        weather: initialWeather,
         tomorrowWeather: generateWeather(),
-        marketTrend: 0,
+        marketTrend: initialMarketTrend,
         currentLocation: "stonington", // Start in cheapest fishing village
         travelingTo: null,
         inventory: { select: 0, quarter: 0, chix: 0, run: 0 },
@@ -6389,12 +6413,32 @@ function showSeasonEndScreen() {
 // ============================================
 function startGame() {
     const welcomeScreen = document.getElementById("welcome-screen");
+    const storyScreen = document.getElementById("story-screen");
+
+    // Fade out welcome screen
     welcomeScreen.style.opacity = "0";
     welcomeScreen.style.transition = "opacity 0.5s ease";
 
     setTimeout(() => {
         welcomeScreen.classList.add("hidden");
+        // Show story screen
+        if (storyScreen) {
+            storyScreen.style.display = "flex";
+        }
     }, 500);
+}
+
+function startFromStory() {
+    const storyScreen = document.getElementById("story-screen");
+
+    // Fade out story screen
+    if (storyScreen) {
+        storyScreen.style.opacity = "0";
+        storyScreen.style.transition = "opacity 0.5s ease";
+        setTimeout(() => {
+            storyScreen.style.display = "none";
+        }, 500);
+    }
 
     // Initialize weather effects
     updateWeatherEffects();
@@ -6875,6 +6919,10 @@ function initEventHandlers() {
     // Welcome screen
     document.getElementById("start-game-btn").addEventListener("click", startGame);
 
+    // Story screen continue button
+    const storyContinueBtn = document.getElementById("story-continue-btn");
+    if (storyContinueBtn) storyContinueBtn.addEventListener("click", startFromStory);
+
     // Tutorial buttons
     document.getElementById("tutorial-next").addEventListener("click", nextTutorialStep);
     document.getElementById("tutorial-skip").addEventListener("click", skipTutorial);
@@ -6892,6 +6940,39 @@ function initEventHandlers() {
     document.getElementById("stats-btn").addEventListener("click", openStats);
     document.getElementById("close-stats-btn").addEventListener("click", closeStats);
     document.getElementById("close-map-btn").addEventListener("click", closeMap);
+
+    // Mobile overflow menu
+    const moreMenuBtn = document.getElementById("more-menu-btn");
+    const moreMenu = document.getElementById("more-menu");
+    if (moreMenuBtn && moreMenu) {
+        moreMenuBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            moreMenu.classList.toggle("open");
+        });
+        // Close menu when clicking outside
+        document.addEventListener("click", (e) => {
+            if (!moreMenu.contains(e.target) && e.target !== moreMenuBtn) {
+                moreMenu.classList.remove("open");
+            }
+        });
+    }
+
+    // Mobile menu buttons - same actions as desktop
+    const shopBtnMobile = document.getElementById("shop-btn-mobile");
+    const bankBtnMobile = document.getElementById("bank-btn-mobile");
+    const statsBtnMobile = document.getElementById("stats-btn-mobile");
+    if (shopBtnMobile) shopBtnMobile.addEventListener("click", () => {
+        moreMenu.classList.remove("open");
+        openShop();
+    });
+    if (bankBtnMobile) bankBtnMobile.addEventListener("click", () => {
+        moreMenu.classList.remove("open");
+        openBank();
+    });
+    if (statsBtnMobile) statsBtnMobile.addEventListener("click", () => {
+        moreMenu.classList.remove("open");
+        openStats();
+    });
 
     // Workspace navigation
     document.querySelectorAll('.nav-tab').forEach(tab => {

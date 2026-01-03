@@ -382,6 +382,93 @@ body::before {
     }
 }
 
+/* ========================================
+   OPENING STORY SCREEN
+   ======================================== */
+.story-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 1999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(180deg,
+        var(--ocean-deepest) 0%,
+        var(--ocean-dark) 50%,
+        var(--dawn-sky-mid) 100%
+    );
+    padding: 30px;
+}
+
+.story-screen.hidden {
+    display: none;
+}
+
+.story-content {
+    max-width: 500px;
+    text-align: center;
+    animation: storyFadeIn 0.8s ease-out;
+}
+
+@keyframes storyFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.story-content .story-icon {
+    font-size: 64px;
+    margin-bottom: 24px;
+    animation: lobsterBob 3s ease-in-out infinite;
+}
+
+@keyframes lobsterBob {
+    0%, 100% { transform: translateY(0) rotate(-5deg); }
+    50% { transform: translateY(-10px) rotate(5deg); }
+}
+
+.story-text {
+    font-size: 12px;
+    line-height: 2;
+    color: var(--cream);
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.story-text strong {
+    color: var(--gold);
+}
+
+.story-subtext {
+    font-size: 10px;
+    color: var(--ocean-foam);
+    opacity: 0.8;
+    margin-bottom: 30px;
+}
+
+.story-content .btn-ceremony {
+    font-size: 11px;
+    padding: 16px 32px;
+}
+
+@media (min-width: 768px) {
+    .story-text {
+        font-size: 14px;
+    }
+    .story-subtext {
+        font-size: 11px;
+    }
+    .story-content .btn-ceremony {
+        font-size: 13px;
+        padding: 20px 44px;
+    }
+}
+
 /* Game Container */
 .game-container {
     max-width: 900px;
@@ -512,6 +599,154 @@ body::before {
     background: var(--ocean-dark);
     border-color: var(--gold);
     transform: translateY(-2px);
+}
+
+/* Mobile overflow menu */
+.strip-actions-mobile {
+    display: none;
+    position: relative;
+}
+
+.more-btn {
+    font-size: 20px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.more-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    background: var(--ocean-dark);
+    border: 2px solid var(--ocean-medium);
+    border-radius: 8px;
+    padding: 8px;
+    z-index: 200;
+    min-width: 120px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+
+.more-menu.open {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.more-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(0,0,0,0.3);
+    border: none;
+    border-radius: 6px;
+    color: var(--cream);
+    font-family: inherit;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.more-menu-item:hover {
+    background: var(--ocean-medium);
+}
+
+/* Mobile status strip layout */
+@media (max-width: 767px) {
+    .status-strip {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 8px 12px;
+    }
+
+    /* Hide title, just show badge */
+    .strip-identity .identity-text {
+        display: none;
+    }
+
+    .strip-identity {
+        order: 1;
+    }
+
+    /* Cash is most important - make it prominent */
+    .strip-survival {
+        order: 2;
+        gap: 10px;
+    }
+
+    .strip-survival .stat-label {
+        font-size: 6px;
+    }
+
+    .strip-survival .stat-value {
+        font-size: 9px;
+    }
+
+    /* Day/weather on mobile */
+    .strip-pressure {
+        order: 3;
+        gap: 8px;
+    }
+
+    .strip-pressure .stat-label {
+        display: none;
+    }
+
+    .strip-pressure .stat-value {
+        font-size: 9px;
+    }
+
+    /* Hide market trend text on mobile */
+    .strip-market {
+        display: none;
+    }
+
+    /* Desktop actions hidden, mobile menu shown */
+    .strip-actions-desktop {
+        display: none;
+    }
+
+    .strip-actions-mobile {
+        display: block;
+        order: 4;
+    }
+}
+
+/* Very small screens - 2 row layout */
+@media (max-width: 400px) {
+    .status-strip {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        grid-template-rows: auto auto;
+        gap: 6px 8px;
+    }
+
+    .strip-identity {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .strip-survival {
+        grid-column: 2;
+        grid-row: 1;
+        justify-content: center;
+    }
+
+    .strip-actions-mobile {
+        grid-column: 3;
+        grid-row: 1;
+    }
+
+    .strip-pressure {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        justify-content: center;
+        padding-top: 4px;
+        border-top: 1px solid rgba(255,255,255,0.1);
+    }
 }
 
 /* ========================================

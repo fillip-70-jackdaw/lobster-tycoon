@@ -26,6 +26,20 @@
         </div>
     </div>
 
+    <!-- Opening Story Screen -->
+    <div id="story-screen" class="story-screen" style="display: none;">
+        <div class="story-content">
+            <div class="story-icon">🦞</div>
+            <p class="story-text">
+                You've put <strong>$5,000</strong> of your own savings on the line,
+                secured a spot on the <strong>Stonington fish pier</strong>,
+                and bet everything on making it as a lobster dealer.
+            </p>
+            <p class="story-subtext">Buy from the boats. Sell to the buyers. Build your empire.</p>
+            <button id="story-continue-btn" class="btn-ceremony">Start Day 1</button>
+        </div>
+    </div>
+
     <!-- Tutorial Overlay -->
     <div id="tutorial-overlay" class="tutorial-overlay" style="display: none;">
         <div class="tutorial-backdrop"></div>
@@ -89,11 +103,20 @@
                 </div>
             </div>
 
-            <!-- Quick Actions -->
-            <div class="strip-actions">
+            <!-- Quick Actions - Desktop shows all, mobile shows overflow menu -->
+            <div class="strip-actions strip-actions-desktop">
                 <button id="shop-btn" class="strip-btn" title="Shop">🛒</button>
                 <button id="bank-btn" class="strip-btn" title="Bank">🏦</button>
                 <button id="stats-btn" class="strip-btn" title="Stats">📊</button>
+            </div>
+            <!-- Mobile overflow menu -->
+            <div class="strip-actions-mobile">
+                <button id="more-menu-btn" class="strip-btn more-btn" title="More">⋯</button>
+                <div class="more-menu" id="more-menu">
+                    <button id="shop-btn-mobile" class="more-menu-item">🛒 Shop</button>
+                    <button id="bank-btn-mobile" class="more-menu-item">🏦 Bank</button>
+                    <button id="stats-btn-mobile" class="more-menu-item">📊 Stats</button>
+                </div>
             </div>
         </header>
 
