@@ -6872,11 +6872,16 @@ function updatePortDetails(townId) {
         }
     }
 
+    // Check daily travel limit
+    const noTravelsLeft = gameState.dailyTravels >= 2;
+
     // Confirm button
     if (confirmBtn) {
-        confirmBtn.disabled = isLocked || gameState.cash < town.travelCost;
+        confirmBtn.disabled = isLocked || gameState.cash < town.travelCost || noTravelsLeft;
         if (isLocked) {
             confirmBtn.textContent = isVanLocked ? 'Need Van' : `Requires ${requiredTier}`;
+        } else if (noTravelsLeft) {
+            confirmBtn.textContent = 'No Travels Left Today';
         } else if (gameState.cash < town.travelCost) {
             confirmBtn.textContent = 'Not Enough Cash';
         } else {
@@ -6890,16 +6895,17 @@ function confirmTravel() {
     const town = TOWNS[selectedPort];
     if (!town) return;
 
-    const hasVan = hasEquipment('deliveryVan');
-    const currentTierIndex = TIER_ORDER.indexOf(gameState.repTier);
-    const requiredTier = PORT_UNLOCKS[selectedPort] || "Dock Nobody";
-    const requiredTierIndex = TIER_ORDER.indexOf(requiredTier);
-    const isLocked = !hasVan || currentTierIndex < requiredTierIndex;
+    // Use canTravelTo for all checks (includes van, rep, cash, daily limit)
+    if (!canTravelTo(selectedPort)) {
+        // Refresh the travel view to show updated button state
+        updateTravelView();
+        return;
+    }
 
-    if (isLocked || gameState.cash < town.travelCost) return;
-
-    travelTo(selectedPort);
-    switchWorkspaceView('dock');
+    const success = travelTo(selectedPort);
+    if (success) {
+        switchWorkspaceView('dock');
+    }
 }
 
 // Convert percentage modifiers to qualitative labels
