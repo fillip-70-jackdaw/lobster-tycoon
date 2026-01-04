@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maine Lobster Dealer Tycoon</title>
 
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-T964PW0X9P"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-T964PW0X9P');
+    </script>
+
     <!-- Open Graph / Social sharing -->
     <meta property="og:title" content="Maine Lobster Dealer Tycoon">
     <meta property="og:description" content="Build your empire on the Maine coast. Buy low, sell high, survive 30 days.">
@@ -620,77 +629,6 @@
             </div>
         </div>
 
-        <!-- How to Play Modal -->
-        <div id="how-to-play-modal" class="modal" style="display: none;">
-            <div class="modal-content modal-large">
-                <div class="modal-header">
-                    <h2>How to Play</h2>
-                    <button id="close-how-to-play-btn" class="btn btn-small">X</button>
-                </div>
-                <div class="how-to-play-content">
-                    <div class="guide-section">
-                        <h3>🎯 What You're Trying to Do</h3>
-                        <p>You start with $5,000, a spot on the Stonington pier, and no reputation.</p>
-                        <ul class="guide-list">
-                            <li>Grow your cash over 30 summer days</li>
-                            <li>Buy smart, manage risk, earn trust</li>
-                        </ul>
-                        <p class="guide-tiers-compact">
-                            ⭐ $10K · ⭐⭐ $25K · ⭐⭐⭐ $50K · ⭐⭐⭐⭐ $100K
-                        </p>
-                    </div>
-                    <div class="guide-section">
-                        <h3>🦞 How You Make Money</h3>
-                        <ul class="guide-list">
-                            <li><strong>Buy</strong> lobsters from boats at the dock</li>
-                            <li><strong>Sell</strong> to restaurants, tourists, wholesalers</li>
-                            <li><strong>End Day</strong> to advance — new boats and buyers arrive</li>
-                        </ul>
-                        <p>Sell before freshness drops. Don't hold too long!</p>
-                    </div>
-                    <div class="guide-section">
-                        <h3>💡 The Real Secret</h3>
-                        <ul class="guide-list">
-                            <li><strong>Fishing villages</strong> (Stonington) → cheap lobster</li>
-                            <li><strong>Tourist towns</strong> (Bar Harbor) → premium prices</li>
-                        </ul>
-                        <p>Buy low, travel, sell high. That's the game.</p>
-                    </div>
-                    <div class="guide-section">
-                        <h3>🚚 Travel</h3>
-                        <p>Get a <strong>Delivery Van</strong> ($2,000 from Shop) to travel. It's your first big investment.</p>
-                    </div>
-                    <div class="guide-section">
-                        <h3>📊 Lobster Grades</h3>
-                        <ul class="guide-list">
-                            <li><strong>Selects</strong> — 2+ lbs, highest price, slower to sell</li>
-                            <li><strong>Quarters</strong> — 1.25-2 lbs, reliable value</li>
-                            <li><strong>Chix</strong> — 1-1.25 lbs, cheaper, easier to move</li>
-                            <li><strong>Run</strong> — Mixed sizes, lowest price, fast turnover</li>
-                        </ul>
-                    </div>
-                    <div class="guide-section">
-                        <h3>⭐ Reputation</h3>
-                        <p>Trade fairly to build trust. Higher rep unlocks:</p>
-                        <ul class="guide-list">
-                            <li>Better prices from loyal captains</li>
-                            <li>Access to premium ports</li>
-                            <li>Special buyers</li>
-                        </ul>
-                    </div>
-                    <div class="guide-section">
-                        <h3>⚠️ Watch Out For</h3>
-                        <ul class="guide-list">
-                            <li>Lobsters lose value over time</li>
-                            <li>Tanks have limited capacity</li>
-                            <li>Bad weather reduces supply</li>
-                            <li>Rivals take boats if you wait too long</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Map Modal -->
         <div id="map-modal" class="modal" style="display: none;">
             <div class="modal-content modal-large">
@@ -840,6 +778,76 @@
         </div>
     </div>
 
+    <!-- How to Play Modal - Outside game-container for proper z-index stacking -->
+    <div id="how-to-play-modal" class="modal" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>How to Play</h2>
+                <button id="close-how-to-play-btn" class="btn btn-small">X</button>
+            </div>
+            <div class="how-to-play-content">
+                <div class="guide-section">
+                    <h3>🎯 What You're Trying to Do</h3>
+                    <p>You start with $5,000, a spot on the Stonington pier, and no reputation.</p>
+                    <ul class="guide-list">
+                        <li>Grow your cash over 30 summer days</li>
+                        <li>Buy smart, manage risk, earn trust</li>
+                    </ul>
+                    <p class="guide-tiers-compact">
+                        ⭐ $10K · ⭐⭐ $25K · ⭐⭐⭐ $50K · ⭐⭐⭐⭐ $100K
+                    </p>
+                </div>
+                <div class="guide-section">
+                    <h3>🦞 How You Make Money</h3>
+                    <ul class="guide-list">
+                        <li><strong>Buy</strong> lobsters from boats at the dock</li>
+                        <li><strong>Sell</strong> to restaurants, tourists, wholesalers</li>
+                        <li><strong>End Day</strong> to advance — new boats and buyers arrive</li>
+                    </ul>
+                    <p>Sell before freshness drops. Don't hold too long!</p>
+                </div>
+                <div class="guide-section">
+                    <h3>💡 The Real Secret</h3>
+                    <ul class="guide-list">
+                        <li><strong>Fishing villages</strong> (Stonington) → cheap lobster</li>
+                        <li><strong>Tourist towns</strong> (Bar Harbor) → premium prices</li>
+                    </ul>
+                    <p>Buy low, travel, sell high. That's the game.</p>
+                </div>
+                <div class="guide-section">
+                    <h3>🚚 Travel</h3>
+                    <p>Get a <strong>Delivery Van</strong> ($2,000 from Shop) to travel. It's your first big investment.</p>
+                </div>
+                <div class="guide-section">
+                    <h3>📊 Lobster Grades</h3>
+                    <ul class="guide-list">
+                        <li><strong>Selects</strong> — 2+ lbs, highest price, slower to sell</li>
+                        <li><strong>Quarters</strong> — 1.25-2 lbs, reliable value</li>
+                        <li><strong>Chix</strong> — 1-1.25 lbs, cheaper, easier to move</li>
+                        <li><strong>Run</strong> — Mixed sizes, lowest price, fast turnover</li>
+                    </ul>
+                </div>
+                <div class="guide-section">
+                    <h3>⭐ Reputation</h3>
+                    <p>Trade fairly to build trust. Higher rep unlocks:</p>
+                    <ul class="guide-list">
+                        <li>Better prices from loyal captains</li>
+                        <li>Access to premium ports</li>
+                        <li>Special buyers</li>
+                    </ul>
+                </div>
+                <div class="guide-section">
+                    <h3>⚠️ Watch Out For</h3>
+                    <ul class="guide-list">
+                        <li>Lobsters lose value over time</li>
+                        <li>Tanks have limited capacity</li>
+                        <li>Bad weather reduces supply</li>
+                        <li>Rivals take boats if you wait too long</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="js/main.js"></script>
 </body>

@@ -3866,6 +3866,22 @@ function nextDay() {
     gameState.day++;
     gameState.week = Math.ceil(gameState.day / 7);
 
+    // CRITICAL: Update day counter immediately after increment
+    const dayEl = document.getElementById("day");
+    if (dayEl) dayEl.textContent = gameState.day;
+
+    // Update summary modal's next-day button to stay in sync
+    const summaryNextDay = document.getElementById("summary-next-day");
+    if (summaryNextDay) summaryNextDay.textContent = gameState.day;
+
+    // CRITICAL: Check for season end IMMEDIATELY after day increment
+    // This ensures the game ends properly after day 30
+    if (gameState.day > CONFIG.summerLength) {
+        showSeasonEndScreen();
+        updateUI();
+        return;
+    }
+
     if (gameState.week > oldWeek) {
         processWeeklyEvents();
     }
@@ -4233,11 +4249,13 @@ function log(message, type = "") {
 }
 
 function showToast(message, type = "") {
-    // On mobile, only show important toasts (positive/negative events, warnings)
-    if (isMobile()) {
-        const importantTypes = ['positive', 'negative', 'event-positive', 'event-negative', 'warning'];
-        if (!importantTypes.includes(type)) return;
-    }
+    // Only show critical toasts to reduce distraction
+    // Skip: flavor text, warnings (expenses shown in summary), rival messages, empty types
+    const criticalTypes = ['positive', 'negative', 'event-positive', 'event-negative'];
+    if (!criticalTypes.includes(type)) return;
+
+    // Skip routine expense/travel messages (already shown in day summary)
+    if (message.includes('Daily expenses') || message.includes('Traveled from')) return;
 
     // Create toast container if it doesn't exist
     let container = document.getElementById("toast-container");
@@ -6200,7 +6218,16 @@ function showDaySummary() {
     }
 
     document.getElementById("summary-total-cash").textContent = `$${formatMoney(gameState.cash)}`;
-    document.getElementById("summary-next-day").textContent = data.day + 1;
+
+    // Check if this is the last day of summer
+    const isLastDay = data.day >= CONFIG.summerLength;
+    const continueBtn = document.getElementById("summary-continue");
+    if (isLastDay) {
+        // Show funny end-of-season message
+        continueBtn.innerHTML = "🦞 See How You Did!";
+    } else {
+        continueBtn.innerHTML = `Start Day <span id="summary-next-day">${data.day + 1}</span>`;
+    }
 
     // Inventory status
     const stockEl = document.getElementById("summary-stock");
@@ -6338,6 +6365,9 @@ function showDaySummary() {
 function closeDaySummary() {
     const modal = document.getElementById("day-summary-modal");
     if (modal) modal.style.display = "none";
+
+    // Ensure UI is fully synced after closing summary
+    updateUI();
 }
 
 function checkSeasonEnd() {
@@ -6396,6 +6426,10 @@ function showStatewideVictory() {
 
 function showSeasonEndScreen() {
     gameState.gameOver = true;
+
+    // Close day summary modal if it's open
+    const summaryModal = document.getElementById("day-summary-modal");
+    if (summaryModal) summaryModal.style.display = "none";
 
     // Calculate final tier
     const tiers = CONFIG.goalTiers;
