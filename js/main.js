@@ -1684,6 +1684,76 @@ function flashElement(elementId) {
     setTimeout(() => el.classList.remove('flash'), 500);
 }
 
+// Sprite helper - returns HTML for a pixel art sprite
+function sprite(name, sizeClass) {
+    return `<span class="sprite sprite-${name}${sizeClass ? ' ' + sizeClass : ''}" aria-hidden="true"></span>`;
+}
+
+// Transaction juice - animated cash change
+function animateCashChange(oldCash, newCash) {
+    const diff = newCash - oldCash;
+    if (diff === 0) return;
+
+    const isPositive = diff > 0;
+    const cashEl = document.getElementById('cash');
+
+    // Set guard so updateUI doesn't stomp the rolling animation
+    window._cashAnimUntil = Date.now() + 500;
+
+    // 1. Floating text
+    if (cashEl) {
+        const rect = cashEl.getBoundingClientRect();
+        const floater = document.createElement('div');
+        floater.className = `cash-float ${isPositive ? 'positive' : 'negative'}`;
+        floater.textContent = `${isPositive ? '+' : '-'}$${formatMoney(Math.abs(diff))}`;
+        floater.style.left = `${rect.left}px`;
+        floater.style.top = `${rect.top - 10}px`;
+        document.body.appendChild(floater);
+        setTimeout(() => floater.remove(), 1300);
+
+        // 2. Bounce
+        cashEl.classList.remove('cash-bounce');
+        void cashEl.offsetWidth;
+        cashEl.classList.add('cash-bounce');
+        setTimeout(() => cashEl.classList.remove('cash-bounce'), 500);
+
+        // 3. Rolling number
+        animateCashRoll(cashEl, oldCash, newCash);
+    }
+
+    // 4. Screen pulse for large transactions
+    if (Math.abs(diff) >= 500) {
+        const container = document.querySelector('.game-container');
+        if (container) {
+            const pulseClass = isPositive ? 'screen-pulse-earn' : 'screen-pulse-spend';
+            container.classList.remove('screen-pulse-earn', 'screen-pulse-spend');
+            void container.offsetWidth;
+            container.classList.add(pulseClass);
+            setTimeout(() => container.classList.remove(pulseClass), 700);
+        }
+    }
+}
+
+function animateCashRoll(el, oldVal, newVal) {
+    const duration = 400;
+    const startTime = performance.now();
+
+    function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // Ease-out cubic
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const current = Math.round(oldVal + (newVal - oldVal) * eased);
+        el.textContent = `$${formatMoney(current)}`;
+
+        if (progress < 1) {
+            requestAnimationFrame(update);
+        }
+    }
+
+    requestAnimationFrame(update);
+}
+
 // ============================================
 // REPUTATION & TRUST HELPER FUNCTIONS
 // ============================================
@@ -3428,6 +3498,7 @@ function buyFromBoat(boatIndex, amount) {
     }
 
     // Buy the lobsters
+    const oldCash = gameState.cash;
     gameState.cash -= cost;
     gameState.dailySpent += cost;  // Track daily spending
     boat.catchAmount -= buyAmount;
@@ -3462,8 +3533,8 @@ function buyFromBoat(boatIndex, amount) {
         log(`Bought ${buyAmount} lbs (run) @ $${boat.pricePerLb.toFixed(2)}/lb — $${formatMoney(cost)} spent, $${formatMoney(cashLeft)} left`, "positive");
     }
 
-    // Flash cash display to show change
-    flashElement('summary-cash');
+    // Animate cash change with transaction juice
+    animateCashChange(oldCash, gameState.cash);
 
     // Track playstyle stats
     if (cost > gameState.biggestSingleBuy) {
@@ -3605,6 +3676,7 @@ function sellToBuyer(buyerIndex) {
     revenue *= (1 + bonus);
     const finalRevenue = Math.round(revenue);
 
+    const oldCash = gameState.cash;
     gameState.cash += finalRevenue;
     gameState.dailyEarned += finalRevenue;  // Track daily earnings
     buyer.wantsAmount -= sold;
@@ -3637,8 +3709,8 @@ function sellToBuyer(buyerIndex) {
     const pricePerLb = (finalRevenue / sold).toFixed(2);
     log(`Sold ${sold} lbs${gradeInfo} @ $${pricePerLb}/lb — +$${formatMoney(finalRevenue)}, now $${formatMoney(gameState.cash)}`, "positive");
 
-    // Flash cash display to show change
-    flashElement('summary-cash');
+    // Animate cash change with transaction juice
+    animateCashChange(oldCash, gameState.cash);
 
     // Track playstyle stats
     if (finalRevenue > gameState.biggestSingleSale) {
@@ -4334,9 +4406,11 @@ function dismissToast(toast) {
 // ============================================
 function updateUI() {
     // === STATUS STRIP UPDATES ===
-    // Cash
+    // Cash (guarded so rolling animation isn't stomped)
     const cashEl = document.getElementById("cash");
-    if (cashEl) cashEl.textContent = `$${formatMoney(gameState.cash)}`;
+    if (cashEl && (!window._cashAnimUntil || Date.now() > window._cashAnimUntil)) {
+        cashEl.textContent = `$${formatMoney(gameState.cash)}`;
+    }
 
     // Day
     const dayEl = document.getElementById("day");
@@ -4356,12 +4430,13 @@ function updateUI() {
         avgFresh.textContent = `${freshness}%`;
     }
 
-    // Weather
+    // Weather (pixel art sprites)
+    const weatherSpriteMap = { sunny: 'sun', cloudy: 'cloud', rainy: 'rain', stormy: 'storm', foggy: 'fog' };
     const weatherIcon = document.getElementById("weather-icon");
-    if (weatherIcon) weatherIcon.textContent = CONFIG.weather[gameState.weather].icon;
+    if (weatherIcon) weatherIcon.innerHTML = sprite(weatherSpriteMap[gameState.weather] || 'sun', 'sprite-md');
 
     const tomorrowWeather = document.getElementById("tomorrow-weather");
-    if (tomorrowWeather) tomorrowWeather.textContent = CONFIG.weather[gameState.tomorrowWeather].icon;
+    if (tomorrowWeather) tomorrowWeather.innerHTML = sprite(weatherSpriteMap[gameState.tomorrowWeather] || 'sun', 'sprite-sm');
 
     // Market trend
     const trendEl = document.getElementById("market-trend");
@@ -4485,7 +4560,7 @@ function updateUI() {
     const lobsterIconsEl = document.getElementById("lobster-icons");
     if (lobsterIconsEl) {
         const lobsterCount = Math.min(Math.floor(total / 25), 15);
-        lobsterIconsEl.textContent = "🦞".repeat(lobsterCount);
+        lobsterIconsEl.innerHTML = sprite('lobster', 'sprite-sm').repeat(lobsterCount);
     }
 
     // Dock
@@ -4568,7 +4643,8 @@ function updateDockUI() {
         const totalCost = Math.round(boat.catchAmount * boat.pricePerLb);
         const halfCost = Math.round((boat.catchAmount / 2) * boat.pricePerLb);
         const loyaltyStars = Math.floor(boat.loyalty / 25);
-        const boatEmoji = boat.boatTypeData ? boat.boatTypeData.emoji : '🚤';
+        const boatSpriteMap = { dory: 'dory', lobsterBoat: 'boat', trawler: 'trawler' };
+        const boatSpriteHtml = sprite(boatSpriteMap[boat.boatType] || 'boat', 'sprite-lg');
         const boatTypeName = boat.boatTypeData ? boat.boatTypeData.name : 'Boat';
 
         // Get price tags
@@ -4599,7 +4675,7 @@ function updateDockUI() {
                 <span class="timer-text">${boat.timeLeft}s</span>
             </div>
             <div class="boat-header">
-                <span class="boat-emoji floating">${boatEmoji}</span>
+                <span class="boat-emoji floating">${boatSpriteHtml}</span>
                 <div class="boat-info">
                     <span class="boat-name">${boat.name}</span>
                     <span class="boat-type-label">${boatTypeName}</span>
@@ -4860,7 +4936,7 @@ function updateBuyersUI() {
         div.className = "buyer-card";
         div.innerHTML = `
             <div class="buyer-info">
-                <span class="buyer-emoji">${buyer.emoji}</span>
+                <span class="buyer-emoji">${sprite('lobster', 'sprite-lg')}</span>
                 <span class="buyer-name">${buyer.name} ${"★".repeat(trustStars)}</span>
                 <span class="buyer-type">(${buyer.type})</span>
             </div>
@@ -5931,6 +6007,15 @@ function updateWeatherEffects() {
         clouds.style.opacity = "0.3";
         weatherEl.appendChild(clouds);
     }
+
+    updateWeatherAtmosphere();
+}
+
+function updateWeatherAtmosphere() {
+    const container = document.querySelector('.game-container');
+    if (!container) return;
+    container.classList.remove('weather-sunny','weather-cloudy','weather-rainy','weather-stormy','weather-foggy');
+    if (gameState.weather) container.classList.add('weather-' + gameState.weather);
 }
 
 function scheduleRandomLightning(container) {
@@ -5944,6 +6029,15 @@ function scheduleRandomLightning(container) {
         lightning.className = "lightning";
         container.appendChild(lightning);
         setTimeout(() => lightning.remove(), 300);
+
+        // Screen shake
+        const gameContainer = document.querySelector('.game-container');
+        if (gameContainer) {
+            gameContainer.classList.remove('lightning-shake');
+            void gameContainer.offsetWidth;
+            gameContainer.classList.add('lightning-shake');
+            setTimeout(() => gameContainer.classList.remove('lightning-shake'), 350);
+        }
 
         // Schedule next
         scheduleRandomLightning(container);
@@ -6950,7 +7044,7 @@ function updateTanksView() {
     const tankLobsters = document.getElementById('tank-lobsters');
     if (tankLobsters) {
         const lobsterCount = total === 0 ? 0 : Math.min(10, Math.max(3, Math.floor(fillPercent / 10)));
-        tankLobsters.innerHTML = Array(lobsterCount).fill('<span class="tank-lobster">🦞</span>').join('');
+        tankLobsters.innerHTML = Array(lobsterCount).fill(`<span class="tank-lobster">${sprite('lobster')}</span>`).join('');
     }
 
     // === TankSummaryRow ===
