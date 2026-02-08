@@ -1684,11 +1684,6 @@ function flashElement(elementId) {
     setTimeout(() => el.classList.remove('flash'), 500);
 }
 
-// Sprite helper - returns HTML for a pixel art sprite
-function sprite(name, sizeClass) {
-    return `<span class="sprite sprite-${name}${sizeClass ? ' ' + sizeClass : ''}" aria-hidden="true"></span>`;
-}
-
 // Transaction juice - animated cash change
 function animateCashChange(oldCash, newCash) {
     const diff = newCash - oldCash;
@@ -2501,6 +2496,88 @@ function maybeIdleChatter() {
 }
 
 // ============================================
+// DRAMATIC BANNER SYSTEM
+// ============================================
+
+// Queue for managing multiple banners
+let bannerQueue = [];
+let bannerInProgress = false;
+
+/**
+ * Show a dramatic achievement-style banner overlay
+ * @param {Object} config - Banner configuration
+ * @param {string} config.emoji - Banner emoji/icon
+ * @param {string} config.title - Main title text
+ * @param {string} config.subtitle - Subtitle/details text
+ * @param {string} config.theme - Color theme (gold, ocean, danger, success, warning)
+ * @param {number} config.duration - Display duration in ms (default 2500)
+ * @param {string} config.logMessage - Optional message to add to game log
+ */
+function showDramaticBanner(config) {
+    const {
+        emoji = '⭐',
+        title = 'Achievement!',
+        subtitle = '',
+        theme = 'ocean',
+        duration = 2500,
+        logMessage = null
+    } = config;
+
+    // Add to game log if message provided
+    if (logMessage) {
+        log(logMessage, theme === 'danger' ? 'negative' : theme === 'warning' ? 'warning' : 'positive');
+    }
+
+    // Add to queue
+    bannerQueue.push({ emoji, title, subtitle, theme, duration });
+
+    // Process queue if not already processing
+    if (!bannerInProgress) {
+        processBannerQueue();
+    }
+}
+
+function processBannerQueue() {
+    if (bannerQueue.length === 0) {
+        bannerInProgress = false;
+        return;
+    }
+
+    bannerInProgress = true;
+    const banner = bannerQueue.shift();
+
+    // Get container
+    const container = document.getElementById('dramatic-banner-container');
+    if (!container) {
+        console.error('Dramatic banner container not found');
+        bannerInProgress = false;
+        return;
+    }
+
+    // Create banner element
+    const bannerEl = document.createElement('div');
+    bannerEl.className = `dramatic-banner theme-${banner.theme}`;
+    bannerEl.innerHTML = `
+        <div class="banner-emoji">${banner.emoji}</div>
+        <div class="banner-title">${banner.title}</div>
+        ${banner.subtitle ? `<div class="banner-subtitle">${banner.subtitle}</div>` : ''}
+    `;
+
+    // Add to container
+    container.appendChild(bannerEl);
+
+    // Remove after duration
+    setTimeout(() => {
+        bannerEl.remove();
+
+        // Process next in queue after a brief delay
+        setTimeout(() => {
+            processBannerQueue();
+        }, 200);
+    }, banner.duration);
+}
+
+// ============================================
 // RIVAL DEALER SYSTEM
 // ============================================
 function initializeRivals() {
@@ -3058,6 +3135,52 @@ function generateBoats() {
         });
     }
 
+    // Guaranteed minimum boat: ensure at least one boat spawns unless weather is stormy
+    // This prevents frustrating dead periods at the dock while keeping storms meaningful
+    if (boats.length === 0 && gameState.weather !== 'stormy') {
+        // Force spawn one boat
+        const boatTypeId = weightedRandom(boatTypeWeights);
+        const boatType = CONFIG.boatTypes[boatTypeId] || CONFIG.boatTypes.lobsterBoat;
+
+        const captain = randomChoice(CONFIG.captainNames);
+        const captainData = CONFIG.captains[captain] || { priceVar: 1.0, catchMod: 1.0, trait: "regular" };
+        const boatName = randomChoice(CONFIG.boatNames);
+
+        const sellerId = getOrCreateSeller(captain, captainData.trait);
+        const sellerNPC = gameState.sellerNPCs[sellerId];
+
+        let catchAmount = randomInt(boatType.minCatch || 50, boatType.maxCatch || 200);
+        catchAmount = Math.round(catchAmount * captainData.catchMod);
+
+        const loyalty = gameState.fishermenRelations[captain] || 0;
+        const loyaltyDiscount = loyalty * 0.001;
+        const trustMod = getTrustBuyMod(sellerId);
+
+        let pricePerLb = calculateBuyPrice('B');
+        pricePerLb = pricePerLb * (1 + (boatType.qualityBias || 0) * 0.5);
+        pricePerLb = pricePerLb * captainData.priceVar;
+        pricePerLb = pricePerLb * trustMod;
+        pricePerLb = Math.round((pricePerLb * (1 - loyaltyDiscount)) * 100) / 100;
+
+        boats.push({
+            id: `boat_${boatIdCounter}_guaranteed`,
+            name: boatName,
+            captain: captain,
+            sellerId: sellerId,
+            captainTrait: captainData.trait,
+            captainFlavor: captainData.flavorText,
+            loyalty: loyalty,
+            sellerTrust: sellerNPC ? sellerNPC.trust : 0,
+            catchAmount: catchAmount,
+            pricePerLb: pricePerLb,
+            boatType: boatTypeId || 'lobsterBoat',
+            boatTypeData: boatType,
+            timeLeft: boatType.timer || 40,
+            arrived: true,
+            timerStarted: false
+        });
+    }
+
     return boats;
 }
 
@@ -3390,11 +3513,24 @@ function processTankDaily() {
     // Track spoilage for reputation calculations
     gameState.dailySpoilage = totalLost + lotsRotted;
 
+    const totalSpoilage = totalLost + lotsRotted;
+
     if (totalLost > 0) {
         log(`Lost ${totalLost} lbs to mortality.`, "negative");
     }
     if (lotsRotted > 0) {
         log(`${lotsRotted} lbs rotted from old stock!`, "negative");
+    }
+
+    // DRAMATIC BANNER: SPOILAGE ALERT
+    if (totalSpoilage >= 30) {
+        showDramaticBanner({
+            emoji: '⚠️',
+            title: 'SPOILAGE HIT!',
+            subtitle: `${totalSpoilage} lbs lost to rot!`,
+            theme: 'warning',
+            logMessage: null // Already logged above
+        });
     }
 }
 
@@ -3546,6 +3682,17 @@ function buyFromBoat(boatIndex, amount) {
 
     // Check speed run milestones
     checkSpeedRunMilestones();
+
+    // DRAMATIC BANNER: MEGA HAUL
+    if (buyAmount >= 300) {
+        showDramaticBanner({
+            emoji: '🦞',
+            title: 'MEGA HAUL!',
+            subtitle: `${buyAmount} lbs purchased!`,
+            theme: 'ocean',
+            logMessage: `🦞 MEGA HAUL! Bought ${buyAmount} lbs in one transaction!`
+        });
+    }
 
     // Fisherman commentary on the purchase (25% chance - reduced for less popup spam)
     if (Math.random() < 0.25) {
@@ -3719,6 +3866,17 @@ function sellToBuyer(buyerIndex) {
 
     // Check speed run milestones
     checkSpeedRunMilestones();
+
+    // DRAMATIC BANNER: BIG SALE
+    if (finalRevenue >= 3000) {
+        showDramaticBanner({
+            emoji: '🔔',
+            title: 'BIG SALE!',
+            subtitle: `$${formatMoney(finalRevenue)} earned!`,
+            theme: 'success',
+            logMessage: `🔔 BIG SALE! Earned $${formatMoney(finalRevenue)} in one transaction!`
+        });
+    }
 
     // Fisherman commentary on the sale (25% chance - reduced for less popup spam)
     if (Math.random() < 0.25) {
@@ -4138,10 +4296,14 @@ function endGame(won, message) {
     const modal = document.getElementById("game-over-modal");
     const title = document.getElementById("game-over-title");
     const msg = document.getElementById("game-over-message");
+    const shareCardSection = document.getElementById("share-card-section");
 
     title.textContent = won ? "Victory!" : "Game Over";
     title.style.color = won ? "var(--success)" : "var(--danger)";
     msg.innerHTML = message + `<br><br>Final stats: Day ${gameState.day}, Cash: $${formatMoney(gameState.cash)}, Debt: $${formatMoney(gameState.debt)}`;
+
+    // Hide share card for bankruptcy/game over (not season completion)
+    if (shareCardSection) shareCardSection.style.display = "none";
 
     modal.style.display = "flex";
 }
@@ -4430,13 +4592,12 @@ function updateUI() {
         avgFresh.textContent = `${freshness}%`;
     }
 
-    // Weather (pixel art sprites)
-    const weatherSpriteMap = { sunny: 'sun', cloudy: 'cloud', rainy: 'rain', stormy: 'storm', foggy: 'fog' };
+    // Weather
     const weatherIcon = document.getElementById("weather-icon");
-    if (weatherIcon) weatherIcon.innerHTML = sprite(weatherSpriteMap[gameState.weather] || 'sun', 'sprite-md');
+    if (weatherIcon) weatherIcon.textContent = CONFIG.weather[gameState.weather].icon;
 
     const tomorrowWeather = document.getElementById("tomorrow-weather");
-    if (tomorrowWeather) tomorrowWeather.innerHTML = sprite(weatherSpriteMap[gameState.tomorrowWeather] || 'sun', 'sprite-sm');
+    if (tomorrowWeather) tomorrowWeather.textContent = CONFIG.weather[gameState.tomorrowWeather].icon;
 
     // Market trend
     const trendEl = document.getElementById("market-trend");
@@ -4560,7 +4721,7 @@ function updateUI() {
     const lobsterIconsEl = document.getElementById("lobster-icons");
     if (lobsterIconsEl) {
         const lobsterCount = Math.min(Math.floor(total / 25), 15);
-        lobsterIconsEl.innerHTML = sprite('lobster', 'sprite-sm').repeat(lobsterCount);
+        lobsterIconsEl.textContent = "🦞".repeat(lobsterCount);
     }
 
     // Dock
@@ -4643,8 +4804,7 @@ function updateDockUI() {
         const totalCost = Math.round(boat.catchAmount * boat.pricePerLb);
         const halfCost = Math.round((boat.catchAmount / 2) * boat.pricePerLb);
         const loyaltyStars = Math.floor(boat.loyalty / 25);
-        const boatSpriteMap = { dory: 'dory', lobsterBoat: 'boat', trawler: 'trawler' };
-        const boatSpriteHtml = sprite(boatSpriteMap[boat.boatType] || 'boat', 'sprite-lg');
+        const boatEmoji = boat.boatTypeData ? boat.boatTypeData.emoji : '🚤';
         const boatTypeName = boat.boatTypeData ? boat.boatTypeData.name : 'Boat';
 
         // Get price tags
@@ -4675,7 +4835,7 @@ function updateDockUI() {
                 <span class="timer-text">${boat.timeLeft}s</span>
             </div>
             <div class="boat-header">
-                <span class="boat-emoji floating">${boatSpriteHtml}</span>
+                <span class="boat-emoji floating">${boatEmoji}</span>
                 <div class="boat-info">
                     <span class="boat-name">${boat.name}</span>
                     <span class="boat-type-label">${boatTypeName}</span>
@@ -4856,6 +5016,15 @@ function boatLostToRival(boat) {
     const taunt = randomChoice(CONFIG.rivalDealer.taunt);
     log(`⏰ ${taunt}`, "negative");
 
+    // DRAMATIC BANNER: RIVAL HEIST
+    showDramaticBanner({
+        emoji: '😈',
+        title: 'SLICK RICK STRIKES!',
+        subtitle: `Stole the ${boat.name}!`,
+        theme: 'danger',
+        logMessage: null // Already logged above
+    });
+
     updateDockUI();
 }
 
@@ -4936,7 +5105,7 @@ function updateBuyersUI() {
         div.className = "buyer-card";
         div.innerHTML = `
             <div class="buyer-info">
-                <span class="buyer-emoji">${sprite('lobster', 'sprite-lg')}</span>
+                <span class="buyer-emoji">${buyer.emoji}</span>
                 <span class="buyer-name">${buyer.name} ${"★".repeat(trustStars)}</span>
                 <span class="buyer-type">(${buyer.type})</span>
             </div>
@@ -5526,25 +5695,44 @@ function unlockAchievement(achievementId, achievement) {
 }
 
 function showAchievementPopup(achievement) {
+    // Create toast container if it doesn't exist
+    let container = document.getElementById("toast-container");
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "toast-container";
+        document.body.appendChild(container);
+    }
+
+    // Render achievement as a styled toast inside the shared container
     const popup = document.createElement("div");
-    popup.className = `achievement-popup tier-${achievement.tier}`;
+    popup.className = `toast toast-achievement tier-${achievement.tier}`;
     popup.innerHTML = `
-        <div class="achievement-glow"></div>
-        <div class="achievement-icon">${achievement.emoji}</div>
-        <div class="achievement-info">
-            <div class="achievement-unlocked">Achievement Unlocked!</div>
-            <div class="achievement-name">${achievement.name}</div>
-            <div class="achievement-desc">${achievement.description}</div>
-            ${achievement.reward ? `<div class="achievement-reward">+${achievement.reward.amount} ${achievement.reward.type}</div>` : ''}
-        </div>
+        <span class="toast-icon achievement-icon-inline">${achievement.emoji}</span>
+        <span class="toast-message">
+            <span class="achievement-unlocked-inline">Achievement Unlocked!</span>
+            <strong>${achievement.name}</strong> — ${achievement.description}
+            ${achievement.reward ? `<br><span class="achievement-reward-inline">+${achievement.reward.amount} ${achievement.reward.type}</span>` : ''}
+        </span>
+        <button class="toast-close">×</button>
     `;
 
-    document.body.appendChild(popup);
+    container.appendChild(popup);
+
+    // Animate in
     setTimeout(() => popup.classList.add("show"), 10);
 
+    // Close button
+    popup.querySelector(".toast-close").addEventListener("click", () => {
+        popup.classList.add("hiding");
+        setTimeout(() => popup.remove(), 300);
+    });
+
+    // Auto-dismiss after 5 seconds
     setTimeout(() => {
-        popup.classList.remove("show");
-        setTimeout(() => popup.remove(), 500);
+        if (popup.parentNode) {
+            popup.classList.add("hiding");
+            setTimeout(() => popup.remove(), 300);
+        }
     }, 5000);
 }
 
@@ -5842,9 +6030,13 @@ function showRetirementEnding(option) {
     const modal = document.getElementById("game-over-modal");
     const title = document.getElementById("game-over-title");
     const msg = document.getElementById("game-over-message");
+    const shareCardSection = document.getElementById("share-card-section");
 
     title.textContent = `🎊 ${option.name}!`;
     title.style.color = "var(--gold)";
+
+    // Hide share card for retirement ending
+    if (shareCardSection) shareCardSection.style.display = "none";
     msg.innerHTML = `
         <div class="retirement-ending">
             <p class="ending-story">${option.ending}</p>
@@ -6178,12 +6370,9 @@ function checkHelperTips() {
 }
 
 function showHelperTip(tip) {
-    // Remove existing tip if any
-    const existing = document.querySelector(".helper-tip");
+    // Remove existing helper tip toast if any
+    const existing = document.querySelector(".toast-helper-tip");
     if (existing) existing.remove();
-
-    const tipEl = document.createElement("div");
-    tipEl.className = "helper-tip";
 
     // Handle dynamic message
     let message = tip.message;
@@ -6191,26 +6380,41 @@ function showHelperTip(tip) {
         message = message(gameState);
     }
 
+    // Create toast container if it doesn't exist
+    let container = document.getElementById("toast-container");
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "toast-container";
+        document.body.appendChild(container);
+    }
+
+    // Render as a toast inside the shared toast container
+    const tipEl = document.createElement("div");
+    tipEl.className = "toast toast-helper-tip";
     tipEl.innerHTML = `
-        <button class="helper-tip-close">✕</button>
-        <span>${message}</span>
+        <span class="toast-icon">💡</span>
+        <span class="toast-message">${message}</span>
+        <button class="toast-close">×</button>
     `;
 
-    document.body.appendChild(tipEl);
+    container.appendChild(tipEl);
+
+    // Animate in
+    setTimeout(() => tipEl.classList.add("show"), 10);
 
     // Close button
-    tipEl.querySelector(".helper-tip-close").addEventListener("click", () => {
-        tipEl.remove();
+    tipEl.querySelector(".toast-close").addEventListener("click", () => {
+        tipEl.classList.add("hiding");
+        setTimeout(() => tipEl.remove(), 300);
     });
 
-    // Auto-dismiss after 8 seconds
+    // Auto-dismiss after 5 seconds
     setTimeout(() => {
         if (tipEl.parentNode) {
-            tipEl.style.opacity = "0";
-            tipEl.style.transition = "opacity 0.3s";
+            tipEl.classList.add("hiding");
             setTimeout(() => tipEl.remove(), 300);
         }
-    }, 8000);
+    }, 5000);
 }
 
 // ============================================
@@ -6312,6 +6516,17 @@ function showDaySummary() {
     }
 
     document.getElementById("summary-total-cash").textContent = `$${formatMoney(gameState.cash)}`;
+
+    // DRAMATIC BANNER: JACKPOT DAY
+    if (dailyProfit >= 5000) {
+        showDramaticBanner({
+            emoji: '💰',
+            title: 'JACKPOT DAY!',
+            subtitle: `+$${formatMoney(dailyProfit)} profit`,
+            theme: 'gold',
+            logMessage: `💰 JACKPOT DAY! Made $${formatMoney(dailyProfit)} profit today!`
+        });
+    }
 
     // Check if this is the last day of summer
     const isLastDay = data.day >= CONFIG.summerLength;
@@ -6485,9 +6700,13 @@ function showStatewideVictory() {
     const modal = document.getElementById("game-over-modal");
     const title = document.getElementById("game-over-title");
     const msg = document.getElementById("game-over-message");
+    const shareCardSection = document.getElementById("share-card-section");
 
     title.textContent = "👑 STATEWIDE POWER!";
     title.style.color = "var(--gold)";
+
+    // Hide share card for this special victory screen
+    if (shareCardSection) shareCardSection.style.display = "none";
 
     // Calculate prestige bonus for early victory
     const daysRemaining = CONFIG.summerLength - gameState.day + 1;
@@ -6545,6 +6764,7 @@ function showSeasonEndScreen() {
     const stars = finalTier ? "⭐".repeat(finalTier.stars) : "☆";
     const rankTitle = finalTier ? finalTier.title : "Struggling Newcomer";
     const rankDesc = finalTier ? finalTier.description : "Better luck next summer!";
+    const nickname = generateNickname();
 
     // Award prestige based on performance
     const prestigeEarned = finalTier ? finalTier.stars : 0;
@@ -6558,25 +6778,23 @@ function showSeasonEndScreen() {
         .map(([amount, day]) => `$${formatMoney(parseInt(amount))} on Day ${day}`)
         .join(' • ');
 
-    msg.innerHTML = `
-        <div class="season-end-results">
-            <div class="season-end-stars">${stars}</div>
-            <div class="season-end-rank">${rankTitle}</div>
-            <div class="season-end-nickname">"${generateNickname()}"</div>
-            <p>${rankDesc}</p>
-            <div class="season-end-stats">
-                <p>Final Cash: $${formatMoney(gameState.cash)}</p>
-                <p>Reputation: ${gameState.reputation} (${gameState.repTier})</p>
-                <p>Best Streak: 🔥 ${gameState.bestStreak} days</p>
-                <p>Perfect Days: ⭐ ${gameState.perfectDays}</p>
-                <p>Days Played: ${gameState.day - 1}</p>
-                <p>Lobsters Traded: ${formatMoney(gameState.stats.totalLobstersBought)} lbs</p>
-                <p>Total Earned: $${formatMoney(gameState.stats.totalMoneyEarned)}</p>
-                ${milestones ? `<p class="speed-run-milestones">Speed Run: ${milestones}</p>` : ''}
-                ${prestigeEarned > 0 ? `<p style="color: var(--gold);">Prestige Earned: +${prestigeEarned} ⭐</p>` : ''}
-            </div>
-        </div>
-    `;
+    // For season end, clear the message area - share card will be the hero content
+    msg.innerHTML = '';
+
+    // Populate and show share card
+    populateShareCard({
+        cash: gameState.cash,
+        stars: stars,
+        starCount: finalTier ? finalTier.stars : 0,
+        rankTitle: rankTitle,
+        nickname: nickname,
+        bestDay: gameState.stats.bestDayProfit,
+        bought: gameState.stats.totalLobstersBought,
+        sold: gameState.stats.totalLobstersSold,
+        reputation: gameState.repTier,
+        rivalsBeat: gameState.stats.rivalsOutbid,
+        rivalsLost: gameState.stats.lostToRivals
+    });
 
     modal.style.display = "flex";
 
@@ -7044,7 +7262,7 @@ function updateTanksView() {
     const tankLobsters = document.getElementById('tank-lobsters');
     if (tankLobsters) {
         const lobsterCount = total === 0 ? 0 : Math.min(10, Math.max(3, Math.floor(fillPercent / 10)));
-        tankLobsters.innerHTML = Array(lobsterCount).fill(`<span class="tank-lobster">${sprite('lobster')}</span>`).join('');
+        tankLobsters.innerHTML = Array(lobsterCount).fill('<span class="tank-lobster">🦞</span>').join('');
     }
 
     // === TankSummaryRow ===
@@ -7193,6 +7411,13 @@ function initEventHandlers() {
     if (endDayBtn) endDayBtn.addEventListener("click", nextDay);
 
     document.getElementById("restart-btn").addEventListener("click", resetGame);
+
+    // Share card buttons
+    const shareBtn = document.getElementById("share-btn");
+    const copyScoreBtn = document.getElementById("copy-score-btn");
+    if (shareBtn) shareBtn.addEventListener("click", shareResults);
+    if (copyScoreBtn) copyScoreBtn.addEventListener("click", copyScoreToClipboard);
+
     document.getElementById("shop-btn").addEventListener("click", openShop);
     document.getElementById("close-shop-btn").addEventListener("click", closeShop);
     document.getElementById("bank-btn").addEventListener("click", openBank);
@@ -7329,6 +7554,188 @@ function initEventHandlers() {
             }
         });
     }
+}
+
+// ============================================
+// SHARE CARD - End of Run Summary
+// ============================================
+function populateShareCard(data) {
+    const shareCardSection = document.getElementById("share-card-section");
+    if (!shareCardSection) return;
+
+    // Populate share card with data (with safety checks)
+    const setCashEl = document.getElementById("share-cash");
+    if (setCashEl) setCashEl.textContent = `$${formatMoney(data.cash || 0)}`;
+
+    const setStarsEl = document.getElementById("share-stars");
+    if (setStarsEl) setStarsEl.textContent = data.stars || "☆";
+
+    const setRankEl = document.getElementById("share-rank");
+    if (setRankEl) setRankEl.textContent = data.rankTitle || "Newcomer";
+
+    const setNicknameEl = document.getElementById("share-nickname");
+    if (setNicknameEl) setNicknameEl.textContent = `"${data.nickname || "The Newcomer"}"`;
+
+    const setBestDayEl = document.getElementById("share-best-day");
+    if (setBestDayEl) setBestDayEl.textContent = `$${formatMoney(data.bestDay || 0)}`;
+
+    const setBoughtEl = document.getElementById("share-bought");
+    if (setBoughtEl) setBoughtEl.textContent = `${formatMoney(data.bought || 0)} lbs`;
+
+    const setSoldEl = document.getElementById("share-sold");
+    if (setSoldEl) setSoldEl.textContent = `${formatMoney(data.sold || 0)} lbs`;
+
+    const setReputationEl = document.getElementById("share-reputation");
+    if (setReputationEl) setReputationEl.textContent = data.reputation || "Unknown";
+
+    const setRivalsBeatEl = document.getElementById("share-rivals-beat");
+    if (setRivalsBeatEl) setRivalsBeatEl.textContent = data.rivalsBeat || 0;
+
+    const setRivalsLostEl = document.getElementById("share-rivals-lost");
+    if (setRivalsLostEl) setRivalsLostEl.textContent = data.rivalsLost || 0;
+
+    // Generate tagline based on performance
+    const tagline = generateShareTagline(data);
+    const setTaglineEl = document.getElementById("share-tagline");
+    if (setTaglineEl) setTaglineEl.textContent = tagline;
+
+    // Show the share card section
+    shareCardSection.style.display = "block";
+}
+
+function generateShareTagline(data) {
+    const taglines = {
+        legendary: [
+            "Built a lobster empire that'll be talked about for generations!",
+            "Dominated the Maine coast like a true tycoon!",
+            "The legend of the lobster dealer lives on!",
+            "Turned $5K into a coastal dynasty!"
+        ],
+        excellent: [
+            "Built a thriving lobster business on the Maine coast!",
+            "Made a name as a serious lobster dealer!",
+            "Proved the doubters wrong with serious profits!",
+            "From nobody to somebody in 30 days!"
+        ],
+        good: [
+            "Survived 30 days and lived to tell the tale!",
+            "Made decent money dealing lobsters!",
+            "Learned the ropes and turned a profit!",
+            "Built a solid foundation on the docks!"
+        ],
+        struggling: [
+            "Survived 30 days on the rough Maine coast!",
+            "Got a taste of the lobster dealing life!",
+            "Made it through summer... barely!",
+            "The lobster game is tougher than it looks!"
+        ]
+    };
+
+    let category = 'struggling';
+    if (data.starCount >= 4) category = 'legendary';
+    else if (data.starCount >= 3) category = 'excellent';
+    else if (data.starCount >= 2) category = 'good';
+
+    const options = taglines[category];
+    return options[Math.floor(Math.random() * options.length)];
+}
+
+function generateShareText(data) {
+    const emoji = data.starCount >= 4 ? "👑" : data.starCount >= 3 ? "🦞" : data.starCount >= 2 ? "⚓" : "🎣";
+
+    let text = `${emoji} I built a $${formatMoney(data.cash || 0)} lobster empire in 30 days on the Maine coast!\n\n`;
+    text += `${data.stars} ${data.rankTitle} - "${data.nickname}"\n\n`;
+    text += `📊 Stats:\n`;
+    text += `• Best day: $${formatMoney(data.bestDay || 0)}\n`;
+    text += `• Lobsters traded: ${formatMoney(data.bought || 0)} lbs\n`;
+    text += `• Rivals beaten: ${data.rivalsBeat || 0}\n\n`;
+    text += `Can you beat my score? Play at lobstertycoon.com`;
+
+    return text;
+}
+
+async function shareResults() {
+    const shareBtn = document.getElementById("share-btn");
+    const shareBtnIcon = document.getElementById("share-btn-icon");
+
+    // Gather data from share card
+    const data = {
+        cash: gameState.cash,
+        stars: document.getElementById("share-stars").textContent,
+        starCount: CONFIG.goalTiers.filter(t => gameState.cash >= t.cash).length,
+        rankTitle: document.getElementById("share-rank").textContent,
+        nickname: document.getElementById("share-nickname").textContent.replace(/"/g, ''),
+        bestDay: gameState.stats.bestDayProfit,
+        bought: gameState.stats.totalLobstersBought,
+        sold: gameState.stats.totalLobstersSold,
+        rivalsBeat: gameState.stats.rivalsOutbid
+    };
+
+    const shareText = generateShareText(data);
+
+    // Try Web Share API first (mobile-friendly)
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: 'Maine Lobster Dealer Tycoon',
+                text: shareText,
+                url: 'https://lobstertycoon.com'
+            });
+
+            // Show success feedback
+            shareBtnIcon.textContent = "✅";
+            setTimeout(() => {
+                shareBtnIcon.textContent = "📤";
+            }, 2000);
+
+            return;
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                console.log('Share failed:', err);
+            }
+        }
+    }
+
+    // Fallback: Copy to clipboard
+    try {
+        await navigator.clipboard.writeText(shareText);
+        shareBtn.textContent = "✅ Copied!";
+        setTimeout(() => {
+            shareBtn.innerHTML = '<span id="share-btn-icon">📤</span> Share Result';
+        }, 2000);
+    } catch (err) {
+        // Final fallback: Show text in alert
+        alert("Copy this text to share:\n\n" + shareText);
+    }
+}
+
+function copyScoreToClipboard() {
+    const copyBtn = document.getElementById("copy-score-btn");
+
+    // Gather data from share card
+    const data = {
+        cash: gameState.cash,
+        stars: document.getElementById("share-stars").textContent,
+        starCount: CONFIG.goalTiers.filter(t => gameState.cash >= t.cash).length,
+        rankTitle: document.getElementById("share-rank").textContent,
+        nickname: document.getElementById("share-nickname").textContent.replace(/"/g, ''),
+        bestDay: gameState.stats.bestDayProfit,
+        bought: gameState.stats.totalLobstersBought,
+        sold: gameState.stats.totalLobstersSold,
+        rivalsBeat: gameState.stats.rivalsOutbid
+    };
+
+    const shareText = generateShareText(data);
+
+    navigator.clipboard.writeText(shareText).then(() => {
+        copyBtn.textContent = "✅ Copied!";
+        setTimeout(() => {
+            copyBtn.textContent = "📋 Copy Score";
+        }, 2000);
+    }).catch(err => {
+        console.error('Copy failed:', err);
+        alert("Copy this text:\n\n" + shareText);
+    });
 }
 
 // ============================================

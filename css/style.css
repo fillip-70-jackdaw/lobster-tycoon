@@ -4958,12 +4958,12 @@ body::before {
    ======================================== */
 #toast-container {
     position: fixed;
-    top: 20px;
+    top: 70px;
     right: 20px;
-    z-index: 1500;
+    z-index: 10000;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     max-width: 380px;
     pointer-events: none;
 }
@@ -5068,112 +5068,53 @@ body::before {
 /* ========================================
    ACHIEVEMENT POPUP
    ======================================== */
-.achievement-popup {
-    position: fixed;
-    top: 20%;
-    left: 50%;
-    transform: translateX(-50%) translateY(-20px);
-    background: linear-gradient(135deg, var(--ocean-darkest) 0%, var(--ocean-deepest) 100%);
-    border: 3px solid var(--gold);
-    border-radius: 12px;
-    padding: 20px 30px;
-    z-index: 10000;
-    text-align: center;
-    box-shadow:
-        0 0 30px rgba(255, 215, 0, 0.4),
-        0 10px 40px rgba(0, 0, 0, 0.5),
-        inset 0 0 20px rgba(255, 215, 0, 0.1);
-    opacity: 0;
-    transform: translateX(-50%) translateY(-40px) scale(0.9);
-    transition: all 0.5s ease;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.achievement-popup.show {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
-}
-
-.achievement-glow {
-    position: absolute;
-    top: -5px;
-    left: -5px;
-    right: -5px;
-    bottom: -5px;
-    border-radius: 16px;
-    background: linear-gradient(45deg, var(--gold), transparent, var(--gold));
-    opacity: 0.3;
-    z-index: -1;
-    animation: achievementGlow 2s ease-in-out infinite;
-}
-
-@keyframes achievementGlow {
-    0%, 100% { opacity: 0.2; }
-    50% { opacity: 0.5; }
-}
-
-.achievement-icon {
-    font-size: 48px;
-    animation: achievementBounce 0.6s ease infinite alternate;
-}
-
-@keyframes achievementBounce {
-    from { transform: translateY(0); }
-    to { transform: translateY(-8px); }
-}
-
-.achievement-info {
-    text-align: left;
-}
-
-.achievement-unlocked {
-    color: var(--gold);
-    font-size: 0.8em;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    margin-bottom: 5px;
-}
-
-.achievement-name {
-    font-size: 1.2em;
-    color: var(--ocean-foam);
-    font-weight: bold;
-    margin-bottom: 3px;
-}
-
-.achievement-desc {
-    color: var(--dock-wood);
-    font-size: 0.85em;
-    margin-bottom: 5px;
-}
-
-.achievement-reward {
-    color: var(--success-glow);
-    font-weight: bold;
-    font-size: 0.9em;
-}
-
-/* Tier-specific border colors */
-.achievement-popup.tier-bronze {
-    border-color: #cd7f32;
-    box-shadow: 0 0 30px rgba(205, 127, 50, 0.4), 0 10px 40px rgba(0, 0, 0, 0.5);
-}
-
-.achievement-popup.tier-silver {
-    border-color: #c0c0c0;
-    box-shadow: 0 0 30px rgba(192, 192, 192, 0.4), 0 10px 40px rgba(0, 0, 0, 0.5);
-}
-
-.achievement-popup.tier-gold {
+/* Achievement toast (renders inside #toast-container) */
+.toast-achievement {
     border-color: var(--gold);
-    box-shadow: 0 0 30px rgba(255, 215, 0, 0.4), 0 10px 40px rgba(0, 0, 0, 0.5);
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, var(--ocean-deepest) 100%);
+    box-shadow:
+        0 0 20px rgba(255, 215, 0, 0.3),
+        0 6px 20px rgba(0, 0, 0, 0.4);
 }
 
-.achievement-popup.tier-platinum {
+.toast-achievement .achievement-icon-inline {
+    font-size: 28px;
+    flex-shrink: 0;
+}
+
+.toast-achievement .achievement-unlocked-inline {
+    color: var(--gold);
+    font-size: 7px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.toast-achievement .achievement-reward-inline {
+    color: var(--success-glow);
+    font-size: 8px;
+}
+
+/* Tier-specific border colors for achievement toasts */
+.toast-achievement.tier-bronze {
+    border-color: #cd7f32;
+    box-shadow: 0 0 15px rgba(205, 127, 50, 0.3), 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.toast-achievement.tier-silver {
+    border-color: #c0c0c0;
+    box-shadow: 0 0 15px rgba(192, 192, 192, 0.3), 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.toast-achievement.tier-gold {
+    border-color: var(--gold);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.toast-achievement.tier-platinum {
     border-color: #e5e4e2;
-    box-shadow: 0 0 30px rgba(229, 228, 226, 0.4), 0 10px 40px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 15px rgba(229, 228, 226, 0.3), 0 6px 20px rgba(0, 0, 0, 0.4);
 }
 
 /* ========================================
@@ -5989,64 +5930,37 @@ body::before {
     50% { opacity: 0.6; }
 }
 
-/* Helper tip toast (distinct from regular toasts) */
-.helper-tip {
-    position: fixed;
-    bottom: 100px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, var(--ocean-deepest) 100%);
-    border: 2px solid var(--gold);
-    border-radius: 10px;
-    padding: 12px 20px;
-    max-width: 400px;
+/* Helper tip styled as a toast (renders inside #toast-container) */
+.toast-helper-tip {
+    border-color: var(--gold);
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, var(--ocean-deepest) 100%);
+}
+
+.toast-helper-tip .toast-message {
     color: var(--ocean-foam);
-    z-index: 8000;
-    animation: tipSlideUp 0.3s ease;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
 }
 
-@keyframes tipSlideUp {
-    from {
-        opacity: 0;
-        transform: translateX(-50%) translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-    }
-}
-
-.helper-tip-close {
-    position: absolute;
-    top: 5px;
-    right: 10px;
-    background: none;
-    border: none;
-    color: var(--ocean-foam);
-    cursor: pointer;
-    font-size: 14px;
-    opacity: 0.7;
-}
-
-.helper-tip-close:hover {
-    opacity: 1;
-}
-
-/* Season End Modal */
+/* Season End Modal - Minimal (share card is now the hero) */
 .season-end-results {
     text-align: center;
 }
 
-.season-end-title {
-    font-size: 1.5em;
-    color: var(--gold);
-    margin-bottom: 15px;
+/* Victory Screen (Statewide Power) - Keep these for early victory */
+.victory-screen {
+    background: linear-gradient(180deg, rgba(255, 215, 0, 0.1), transparent);
+    border: 2px solid var(--gold);
+    border-radius: 12px;
+    padding: 20px;
 }
 
 .season-end-stars {
     font-size: 2em;
     margin: 15px 0;
+}
+
+.victory-screen .season-end-stars {
+    font-size: 2.5em;
+    animation: pulse-glow 2s ease-in-out infinite;
 }
 
 .season-end-stats {
@@ -6066,35 +5980,6 @@ body::before {
     font-weight: bold;
 }
 
-.season-end-nickname {
-    color: var(--ocean-foam);
-    font-size: 1.1em;
-    font-style: italic;
-    margin: 10px 0;
-}
-
-.speed-run-milestones {
-    color: var(--gold);
-    font-size: 0.9em;
-    background: rgba(255, 215, 0, 0.1);
-    padding: 8px;
-    border-radius: 6px;
-    margin-top: 10px;
-}
-
-/* Victory Screen (Statewide Power) */
-.victory-screen {
-    background: linear-gradient(180deg, rgba(255, 215, 0, 0.1), transparent);
-    border: 2px solid var(--gold);
-    border-radius: 12px;
-    padding: 20px;
-}
-
-.victory-screen .season-end-stars {
-    font-size: 2.5em;
-    animation: pulse-glow 2s ease-in-out infinite;
-}
-
 .victory-message {
     color: var(--gold);
     font-style: italic;
@@ -6105,6 +5990,290 @@ body::before {
 @keyframes pulse-glow {
     0%, 100% { text-shadow: 0 0 10px var(--gold); }
     50% { text-shadow: 0 0 25px var(--gold), 0 0 35px var(--gold); }
+}
+
+/* ========================================
+   SHARE CARD - End of Run Summary (Hero Content)
+   ======================================== */
+.share-card-section {
+    margin: 20px 0 0 0;
+    padding: 0;
+}
+
+.share-card {
+    background: linear-gradient(180deg, var(--ocean-dark) 0%, var(--ocean-deepest) 100%);
+    border: 4px solid var(--black);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow:
+        0 0 0 2px var(--ocean-light),
+        inset 0 2px 0 rgba(255,255,255,0.1),
+        0 8px 24px rgba(0,0,0,0.5);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.share-card:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 0 0 2px var(--gold),
+        inset 0 2px 0 rgba(255,255,255,0.1),
+        0 12px 32px rgba(0,0,0,0.6);
+}
+
+/* Certificate-style corner decoration */
+.share-card::before {
+    content: "🦞";
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    font-size: 20px;
+    opacity: 0.1;
+}
+
+.share-card::after {
+    content: "🦞";
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    font-size: 20px;
+    opacity: 0.1;
+}
+
+.share-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--ocean-deepest);
+}
+
+.share-card-emoji {
+    font-size: 32px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+.share-card-title {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.share-card-season {
+    font-size: 10px;
+    color: var(--gold);
+    text-shadow: 2px 2px 0 var(--black);
+}
+
+.share-card-location {
+    font-size: 8px;
+    color: var(--ocean-foam);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.share-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+}
+
+.share-stat-cash {
+    padding: 16px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    border: 2px solid var(--gold);
+}
+
+.share-stat-label {
+    display: block;
+    font-size: 8px;
+    color: var(--ocean-foam);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.share-stat-value {
+    display: block;
+    font-size: 20px;
+    color: var(--gold);
+    text-shadow:
+        2px 2px 0 var(--black),
+        0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+.share-card-stars {
+    font-size: 24px;
+    margin: 8px 0;
+    filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+}
+
+.share-card-rank {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px;
+    background: linear-gradient(90deg, rgba(255, 215, 0, 0.1) 0%, transparent 50%, rgba(255, 215, 0, 0.1) 100%);
+    border-radius: 6px;
+}
+
+.share-rank-title {
+    font-size: 12px;
+    color: var(--gold);
+    text-shadow: 2px 2px 0 var(--black);
+    text-transform: uppercase;
+}
+
+.share-rank-nickname {
+    font-size: 9px;
+    color: var(--ocean-bright);
+    font-style: italic;
+}
+
+.share-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin: 12px 0;
+}
+
+.share-stat-small {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px;
+    background: rgba(0,0,0,0.2);
+    border: 2px solid var(--ocean-deepest);
+    border-radius: 6px;
+}
+
+.share-stat-icon {
+    font-size: 16px;
+    margin-bottom: 2px;
+}
+
+.share-stat-small-label {
+    font-size: 7px;
+    color: var(--ocean-foam);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.share-stat-small-value {
+    font-size: 9px;
+    color: var(--cream);
+}
+
+.share-rival-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 12px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 6px;
+    border-left: 3px solid var(--lobster-red);
+}
+
+.share-rival-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.share-rival-icon {
+    font-size: 16px;
+}
+
+.share-rival-label {
+    font-size: 7px;
+    color: var(--ocean-foam);
+    text-align: center;
+}
+
+.share-rival-value {
+    font-size: 11px;
+}
+
+.share-rival-value.positive {
+    color: var(--success-glow);
+}
+
+.share-rival-value.negative {
+    color: var(--danger);
+}
+
+.share-tagline {
+    font-size: 9px;
+    color: var(--ocean-bright);
+    font-style: italic;
+    padding: 12px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 6px;
+    line-height: 1.6;
+}
+
+.share-card-footer {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 2px solid var(--ocean-deepest);
+    text-align: center;
+}
+
+.share-card-branding {
+    font-size: 8px;
+    color: var(--ocean-light);
+    text-transform: lowercase;
+    letter-spacing: 1px;
+}
+
+.share-actions {
+    display: flex;
+    gap: 12px;
+    flex-direction: column;
+}
+
+.share-actions .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+#share-btn-icon {
+    font-size: 14px;
+}
+
+@media (min-width: 600px) {
+    .share-actions {
+        flex-direction: row;
+    }
+
+    .share-actions .btn {
+        flex: 1;
+    }
+
+    .share-stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .share-card {
+        padding: 24px;
+    }
+
+    .share-stat-value {
+        font-size: 24px;
+    }
+
+    .share-rank-title {
+        font-size: 14px;
+    }
 }
 
 /* ========================================
@@ -6631,108 +6800,245 @@ body::before {
 }
 
 /* ========================================
-   PIXEL ART SPRITE SYSTEM
+   DRAMATIC BANNERS (Achievement-Style)
    ======================================== */
 
-.sprite {
-    display: inline-block;
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    image-rendering: pixelated;
-    image-rendering: -moz-crisp-edges;
-    image-rendering: crisp-edges;
-    vertical-align: middle;
-    width: 16px;
-    height: 16px;
+/* Container for stacking multiple banners */
+.dramatic-banner-container {
+    position: fixed;
+    top: 80px; /* Below the status strip */
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2500;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 90vw;
 }
 
-/* Size variants */
-.sprite-sm { width: 14px; height: 14px; }
-.sprite-md { width: 18px; height: 18px; }
-.sprite-lg { width: 24px; height: 24px; }
-.sprite-xl { width: 32px; height: 32px; }
-.sprite-hero { width: 80px; height: 80px; }
-
-/* Lobster sprite - red/orange crustacean on 16x16 grid */
-.sprite-lobster {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect x='3' y='1' width='2' height='1' fill='%23e84545'/%3E%3Crect x='11' y='1' width='2' height='1' fill='%23e84545'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23e84545'/%3E%3Crect x='5' y='2' width='1' height='1' fill='%23e84545'/%3E%3Crect x='10' y='2' width='1' height='1' fill='%23e84545'/%3E%3Crect x='13' y='2' width='1' height='1' fill='%23e84545'/%3E%3Crect x='2' y='3' width='1' height='1' fill='%23b33030'/%3E%3Crect x='5' y='3' width='2' height='1' fill='%23e84545'/%3E%3Crect x='9' y='3' width='2' height='1' fill='%23e84545'/%3E%3Crect x='13' y='3' width='1' height='1' fill='%23b33030'/%3E%3Crect x='5' y='4' width='6' height='1' fill='%23e84545'/%3E%3Crect x='4' y='5' width='8' height='1' fill='%23ff6b6b'/%3E%3Crect x='5' y='6' width='6' height='1' fill='%23e84545'/%3E%3Crect x='6' y='7' width='4' height='1' fill='%23e84545'/%3E%3Crect x='7' y='8' width='2' height='1' fill='%23b33030'/%3E%3Crect x='6' y='9' width='1' height='1' fill='%23e84545'/%3E%3Crect x='9' y='9' width='1' height='1' fill='%23e84545'/%3E%3Crect x='5' y='10' width='2' height='1' fill='%23e84545'/%3E%3Crect x='9' y='10' width='2' height='1' fill='%23e84545'/%3E%3Crect x='5' y='11' width='1' height='1' fill='%23b33030'/%3E%3Crect x='7' y='11' width='2' height='1' fill='%23e84545'/%3E%3Crect x='10' y='11' width='1' height='1' fill='%23b33030'/%3E%3Crect x='4' y='12' width='2' height='1' fill='%23e84545'/%3E%3Crect x='7' y='12' width='2' height='1' fill='%23ff6b6b'/%3E%3Crect x='10' y='12' width='2' height='1' fill='%23e84545'/%3E%3Crect x='3' y='13' width='2' height='1' fill='%23e84545'/%3E%3Crect x='11' y='13' width='2' height='1' fill='%23e84545'/%3E%3Crect x='6' y='5' width='1' height='1' fill='%23111'/%3E%3Crect x='9' y='5' width='1' height='1' fill='%23111'/%3E%3C/svg%3E");
+/* Individual dramatic banner */
+.dramatic-banner {
+    position: relative;
+    background: linear-gradient(135deg, var(--ocean-dark), var(--ocean-deep));
+    border: 3px solid var(--ocean-light);
+    border-radius: 8px;
+    padding: 12px 20px;
+    min-width: 300px;
+    max-width: 450px;
+    box-shadow:
+        0 4px 20px rgba(0, 0, 0, 0.7),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+    text-align: center;
+    animation: bannerEnter 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
+               bannerExit 0.25s ease-in forwards;
+    animation-delay: 0s, 2.25s;
+    opacity: 0;
+    transform: translateY(-30px);
 }
 
-/* Boat sprite - standard lobster boat */
-.sprite-boat {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect x='7' y='2' width='1' height='5' fill='%236b4423'/%3E%3Crect x='8' y='3' width='4' height='1' fill='%23fff8e7'/%3E%3Crect x='8' y='4' width='3' height='1' fill='%23fff8e7'/%3E%3Crect x='8' y='5' width='2' height='1' fill='%23fff8e7'/%3E%3Crect x='3' y='7' width='10' height='2' fill='%234a9cc7'/%3E%3Crect x='4' y='7' width='8' height='1' fill='%23fff8e7'/%3E%3Crect x='2' y='9' width='12' height='2' fill='%23b33030'/%3E%3Crect x='3' y='11' width='10' height='1' fill='%23e84545'/%3E%3Crect x='4' y='12' width='8' height='1' fill='%236b4423'/%3E%3Crect x='1' y='13' width='3' height='1' fill='%234a9cc7'/%3E%3Crect x='6' y='13' width='4' height='1' fill='%234a9cc7'/%3E%3Crect x='12' y='13' width='3' height='1' fill='%234a9cc7'/%3E%3C/svg%3E");
+/* Banner entrance animation - slide down from top */
+@keyframes bannerEnter {
+    0% {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-/* Dory sprite - small rowboat */
-.sprite-dory {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect x='7' y='5' width='1' height='1' fill='%236b4423'/%3E%3Crect x='5' y='6' width='1' height='1' fill='%236b4423'/%3E%3Crect x='6' y='6' width='3' height='1' fill='%236b4423'/%3E%3Crect x='9' y='6' width='1' height='1' fill='%236b4423'/%3E%3Crect x='4' y='8' width='8' height='1' fill='%236b4423'/%3E%3Crect x='3' y='9' width='10' height='1' fill='%238b6914'/%3E%3Crect x='4' y='10' width='8' height='1' fill='%236b4423'/%3E%3Crect x='5' y='11' width='6' height='1' fill='%234a3728'/%3E%3Crect x='2' y='12' width='3' height='1' fill='%234a9cc7'/%3E%3Crect x='6' y='12' width='4' height='1' fill='%234a9cc7'/%3E%3Crect x='11' y='12' width='3' height='1' fill='%234a9cc7'/%3E%3C/svg%3E");
+/* Banner exit animation - slide up and fade */
+@keyframes bannerExit {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
 }
 
-/* Trawler sprite - large fishing vessel */
-.sprite-trawler {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect x='5' y='1' width='1' height='4' fill='%236b4423'/%3E%3Crect x='10' y='2' width='1' height='3' fill='%236b4423'/%3E%3Crect x='6' y='2' width='3' height='1' fill='%23fff8e7'/%3E%3Crect x='6' y='3' width='2' height='1' fill='%23fff8e7'/%3E%3Crect x='2' y='5' width='12' height='1' fill='%23c0c0c0'/%3E%3Crect x='1' y='6' width='14' height='2' fill='%23fff8e7'/%3E%3Crect x='3' y='6' width='2' height='1' fill='%234a9cc7'/%3E%3Crect x='7' y='6' width='2' height='1' fill='%234a9cc7'/%3E%3Crect x='11' y='6' width='2' height='1' fill='%234a9cc7'/%3E%3Crect x='1' y='8' width='14' height='2' fill='%231a4066'/%3E%3Crect x='2' y='10' width='12' height='1' fill='%230f2847'/%3E%3Crect x='3' y='11' width='10' height='1' fill='%230a1628'/%3E%3Crect x='1' y='12' width='3' height='1' fill='%234a9cc7'/%3E%3Crect x='6' y='12' width='4' height='1' fill='%234a9cc7'/%3E%3Crect x='12' y='12' width='3' height='1' fill='%234a9cc7'/%3E%3C/svg%3E");
+/* Banner emoji/icon */
+.banner-emoji {
+    font-size: 32px;
+    line-height: 1;
+    margin-bottom: 6px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+    animation: bannerEmojiBounce 0.4s ease-out;
 }
 
-/* Truck sprite - delivery van */
-.sprite-truck {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect x='1' y='4' width='9' height='6' fill='%23fff8e7'/%3E%3Crect x='2' y='5' width='7' height='4' fill='%234a9cc7'/%3E%3Crect x='10' y='5' width='5' height='5' fill='%23e84545'/%3E%3Crect x='11' y='6' width='3' height='2' fill='%236bc4e8'/%3E%3Crect x='1' y='10' width='14' height='2' fill='%23b33030'/%3E%3Crect x='3' y='12' width='3' height='2' fill='%23333'/%3E%3Crect x='4' y='12' width='1' height='2' fill='%23666'/%3E%3Crect x='10' y='12' width='3' height='2' fill='%23333'/%3E%3Crect x='11' y='12' width='1' height='2' fill='%23666'/%3E%3C/svg%3E");
+@keyframes bannerEmojiBounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
 }
 
-/* Sun sprite */
-.sprite-sun {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect x='7' y='1' width='2' height='2' fill='%23ffd700'/%3E%3Crect x='2' y='3' width='2' height='2' fill='%23ffd700'/%3E%3Crect x='12' y='3' width='2' height='2' fill='%23ffd700'/%3E%3Crect x='5' y='5' width='6' height='6' fill='%23ffd700'/%3E%3Crect x='6' y='6' width='4' height='4' fill='%23ffb347'/%3E%3Crect x='1' y='7' width='2' height='2' fill='%23ffd700'/%3E%3Crect x='13' y='7' width='2' height='2' fill='%23ffd700'/%3E%3Crect x='2' y='11' width='2' height='2' fill='%23ffd700'/%3E%3Crect x='12' y='11' width='2' height='2' fill='%23ffd700'/%3E%3Crect x='7' y='13' width='2' height='2' fill='%23ffd700'/%3E%3C/svg%3E");
+/* Banner title */
+.banner-title {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 14px;
+    line-height: 1.4;
+    margin-bottom: 4px;
+    text-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.8),
+        0 0 15px currentColor;
+    letter-spacing: 0.5px;
 }
 
-/* Cloud sprite */
-.sprite-cloud {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect x='4' y='4' width='3' height='2' fill='%23c0c0c0'/%3E%3Crect x='8' y='3' width='4' height='2' fill='%23ddd'/%3E%3Crect x='2' y='6' width='12' height='3' fill='%23ddd'/%3E%3Crect x='3' y='6' width='10' height='3' fill='%23eee'/%3E%3Crect x='1' y='7' width='14' height='2' fill='%23fff'/%3E%3Crect x='3' y='9' width='10' height='1' fill='%23c0c0c0'/%3E%3C/svg%3E");
+/* Banner subtitle */
+.banner-subtitle {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 10px;
+    line-height: 1.4;
+    opacity: 0.9;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
 }
 
-/* Rain sprite */
-.sprite-rain {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect x='3' y='2' width='10' height='3' fill='%23888'/%3E%3Crect x='2' y='3' width='12' height='2' fill='%23999'/%3E%3Crect x='4' y='5' width='8' height='1' fill='%23777'/%3E%3Crect x='4' y='7' width='1' height='2' fill='%234a9cc7'/%3E%3Crect x='7' y='8' width='1' height='2' fill='%234a9cc7'/%3E%3Crect x='10' y='7' width='1' height='2' fill='%234a9cc7'/%3E%3Crect x='5' y='10' width='1' height='2' fill='%234a9cc7'/%3E%3Crect x='9' y='11' width='1' height='2' fill='%234a9cc7'/%3E%3Crect x='12' y='10' width='1' height='2' fill='%234a9cc7'/%3E%3Crect x='3' y='12' width='1' height='2' fill='%234a9cc7'/%3E%3C/svg%3E");
+/* Theme: Gold (Jackpot Day) */
+.dramatic-banner.theme-gold {
+    border-color: var(--gold);
+    background: linear-gradient(135deg, #b8960f, #8b7109);
+    box-shadow:
+        0 0 60px rgba(255, 215, 0, 0.6),
+        0 0 100px rgba(255, 215, 0, 0.3),
+        inset 0 2px 0 rgba(255, 255, 255, 0.2),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.4);
 }
 
-/* Storm sprite */
-.sprite-storm {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect x='2' y='1' width='12' height='3' fill='%23555'/%3E%3Crect x='1' y='2' width='14' height='2' fill='%23666'/%3E%3Crect x='3' y='4' width='10' height='1' fill='%23444'/%3E%3Crect x='7' y='5' width='3' height='1' fill='%23ffd700'/%3E%3Crect x='6' y='6' width='2' height='1' fill='%23ffd700'/%3E%3Crect x='7' y='7' width='3' height='1' fill='%23ffd700'/%3E%3Crect x='8' y='8' width='2' height='1' fill='%23ffd700'/%3E%3Crect x='4' y='9' width='1' height='2' fill='%234a9cc7'/%3E%3Crect x='7' y='10' width='1' height='2' fill='%234a9cc7'/%3E%3Crect x='11' y='9' width='1' height='2' fill='%234a9cc7'/%3E%3Crect x='3' y='12' width='1' height='2' fill='%234a9cc7'/%3E%3Crect x='9' y='12' width='1' height='2' fill='%234a9cc7'/%3E%3C/svg%3E");
+.dramatic-banner.theme-gold .banner-title {
+    color: var(--gold);
 }
 
-/* Fog sprite */
-.sprite-fog {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect x='1' y='3' width='14' height='1' fill='%23ccc' opacity='0.6'/%3E%3Crect x='2' y='5' width='12' height='1' fill='%23ddd' opacity='0.5'/%3E%3Crect x='0' y='7' width='16' height='1' fill='%23ccc' opacity='0.7'/%3E%3Crect x='3' y='9' width='10' height='1' fill='%23ddd' opacity='0.5'/%3E%3Crect x='1' y='11' width='14' height='1' fill='%23ccc' opacity='0.6'/%3E%3Crect x='4' y='13' width='8' height='1' fill='%23ddd' opacity='0.4'/%3E%3C/svg%3E");
+.dramatic-banner.theme-gold .banner-subtitle {
+    color: var(--cream);
 }
 
-/* Anchor sprite */
-.sprite-anchor {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect x='7' y='1' width='2' height='1' fill='%23c0c0c0'/%3E%3Crect x='6' y='2' width='1' height='1' fill='%23c0c0c0'/%3E%3Crect x='9' y='2' width='1' height='1' fill='%23c0c0c0'/%3E%3Crect x='7' y='2' width='2' height='1' fill='%23999'/%3E%3Crect x='7' y='3' width='2' height='1' fill='%23c0c0c0'/%3E%3Crect x='4' y='4' width='8' height='1' fill='%23c0c0c0'/%3E%3Crect x='7' y='5' width='2' height='6' fill='%23c0c0c0'/%3E%3Crect x='3' y='11' width='2' height='1' fill='%23999'/%3E%3Crect x='5' y='10' width='1' height='1' fill='%23c0c0c0'/%3E%3Crect x='7' y='11' width='2' height='1' fill='%23c0c0c0'/%3E%3Crect x='10' y='10' width='1' height='1' fill='%23c0c0c0'/%3E%3Crect x='11' y='11' width='2' height='1' fill='%23999'/%3E%3Crect x='2' y='12' width='2' height='1' fill='%23c0c0c0'/%3E%3Crect x='12' y='12' width='2' height='1' fill='%23c0c0c0'/%3E%3Crect x='7' y='12' width='2' height='2' fill='%23999'/%3E%3C/svg%3E");
+/* Theme: Ocean Blue (Mega Haul) */
+.dramatic-banner.theme-ocean {
+    border-color: var(--ocean-bright);
+    background: linear-gradient(135deg, var(--ocean-dark), var(--ocean-medium));
+    box-shadow:
+        0 0 60px rgba(75, 156, 199, 0.6),
+        0 0 100px rgba(75, 156, 199, 0.3),
+        inset 0 2px 0 rgba(255, 255, 255, 0.15),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.3);
 }
 
-/* Coins sprite */
-.sprite-coins {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect x='3' y='3' width='6' height='1' fill='%23ffd700'/%3E%3Crect x='2' y='4' width='8' height='4' fill='%23ffd700'/%3E%3Crect x='3' y='4' width='6' height='1' fill='%23ffb347'/%3E%3Crect x='5' y='5' width='2' height='2' fill='%23b8960f'/%3E%3Crect x='3' y='8' width='6' height='1' fill='%23b8960f'/%3E%3Crect x='7' y='6' width='6' height='1' fill='%23ffd700'/%3E%3Crect x='6' y='7' width='8' height='4' fill='%23ffd700'/%3E%3Crect x='7' y='7' width='6' height='1' fill='%23ffb347'/%3E%3Crect x='9' y='8' width='2' height='2' fill='%23b8960f'/%3E%3Crect x='7' y='11' width='6' height='1' fill='%23b8960f'/%3E%3C/svg%3E");
+.dramatic-banner.theme-ocean .banner-title {
+    color: var(--ocean-bright);
 }
 
-/* Map sprite */
-.sprite-map {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect x='2' y='2' width='12' height='12' fill='%23f4e4bc'/%3E%3Crect x='3' y='3' width='10' height='10' fill='%23fff8e7'/%3E%3Crect x='5' y='4' width='1' height='3' fill='%232d4a3a'/%3E%3Crect x='6' y='4' width='2' height='1' fill='%232d4a3a'/%3E%3Crect x='8' y='5' width='3' height='2' fill='%232d4a3a'/%3E%3Crect x='4' y='8' width='4' height='1' fill='%234a9cc7'/%3E%3Crect x='9' y='9' width='3' height='1' fill='%234a9cc7'/%3E%3Crect x='6' y='6' width='1' height='1' fill='%23e84545'/%3E%3Crect x='10' y='8' width='1' height='1' fill='%23e84545'/%3E%3Crect x='2' y='2' width='12' height='1' fill='%236b4423'/%3E%3Crect x='2' y='13' width='12' height='1' fill='%236b4423'/%3E%3Crect x='2' y='2' width='1' height='12' fill='%236b4423'/%3E%3Crect x='13' y='2' width='1' height='12' fill='%236b4423'/%3E%3C/svg%3E");
+.dramatic-banner.theme-ocean .banner-subtitle {
+    color: var(--ocean-foam);
 }
 
-/* Sprite inside tab icons - match tab icon sizing */
-.tab-icon .sprite {
-    width: 16px;
-    height: 16px;
+/* Theme: Red/Danger (Rival Heist) */
+.dramatic-banner.theme-danger {
+    border-color: var(--lobster-glow);
+    background: linear-gradient(135deg, #8b2020, #5a1515);
+    box-shadow:
+        0 0 60px rgba(232, 69, 69, 0.6),
+        0 0 100px rgba(232, 69, 69, 0.3),
+        inset 0 2px 0 rgba(255, 107, 107, 0.2),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.4);
 }
 
-/* Sprite inside boat header */
-.boat-emoji .sprite {
-    width: 24px;
-    height: 24px;
+.dramatic-banner.theme-danger .banner-title {
+    color: var(--lobster-glow);
 }
 
-/* Tank lobster sprites */
-.tank-lobster .sprite {
-    width: 16px;
-    height: 16px;
+.dramatic-banner.theme-danger .banner-subtitle {
+    color: var(--cream);
 }
+
+/* Theme: Green/Success (Big Sale) */
+.dramatic-banner.theme-success {
+    border-color: var(--success-glow);
+    background: linear-gradient(135deg, #2d7d51, #1e5435);
+    box-shadow:
+        0 0 60px rgba(80, 200, 120, 0.6),
+        0 0 100px rgba(80, 200, 120, 0.3),
+        inset 0 2px 0 rgba(125, 255, 170, 0.2),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.4);
+}
+
+.dramatic-banner.theme-success .banner-title {
+    color: var(--success-glow);
+}
+
+.dramatic-banner.theme-success .banner-subtitle {
+    color: var(--cream);
+}
+
+/* Theme: Warning/Amber (Spoilage Alert) */
+.dramatic-banner.theme-warning {
+    border-color: var(--warning);
+    background: linear-gradient(135deg, #b87e2e, #8b5f1f);
+    box-shadow:
+        0 0 60px rgba(255, 179, 71, 0.6),
+        0 0 100px rgba(255, 179, 71, 0.3),
+        inset 0 2px 0 rgba(255, 215, 120, 0.2),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.4);
+}
+
+.dramatic-banner.theme-warning .banner-title {
+    color: var(--warning);
+}
+
+.dramatic-banner.theme-warning .banner-subtitle {
+    color: var(--cream);
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .dramatic-banner-container {
+        top: 60px; /* Adjust for smaller mobile header */
+    }
+
+    .dramatic-banner {
+        min-width: 260px;
+        max-width: 90vw;
+        padding: 10px 16px;
+    }
+
+    .banner-emoji {
+        font-size: 28px;
+        margin-bottom: 4px;
+    }
+
+    .banner-title {
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    .banner-subtitle {
+        font-size: 9px;
+    }
+}
+
+/* Accessibility: Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+    .dramatic-banner {
+        animation: bannerEnterSimple 0.2s ease forwards,
+                   bannerExitSimple 0.2s ease forwards;
+        animation-delay: 0s, 2.25s;
+    }
+
+    @keyframes bannerEnterSimple {
+        0% { opacity: 0; }
+        100% { opacity: 1; }
+    }
+
+    @keyframes bannerExitSimple {
+        0% { opacity: 1; }
+        100% { opacity: 0; }
+    }
+
+    .banner-emoji {
+        animation: none;
+    }
+}
+

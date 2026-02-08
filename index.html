@@ -40,7 +40,7 @@
             <div class="hero-ocean"></div>
             <div class="hero-dock-silhouette"></div>
             <div class="hero-lighthouse"></div>
-            <div class="hero-lobster-silhouette"><span class="sprite sprite-lobster sprite-hero" aria-hidden="true"></span></div>
+            <div class="hero-lobster-silhouette">🦞</div>
         </div>
         <!-- Content Overlay -->
         <div class="welcome-content">
@@ -52,7 +52,7 @@
     <!-- Opening Story Screen -->
     <div id="story-screen" class="story-screen" style="display: none;">
         <div class="story-content">
-            <div class="story-icon"><span class="sprite sprite-lobster sprite-hero" aria-hidden="true"></span></div>
+            <div class="story-icon">🦞</div>
             <p class="story-text">
                 You've put <strong>$5,000</strong> of your own savings on the line,
                 secured a spot on the <strong>Stonington fish pier</strong>,
@@ -151,19 +151,19 @@
              ═══════════════════════════════════════════════════════════ -->
         <nav class="workspace-nav">
             <button id="tab-dock" class="nav-tab active" data-view="dock">
-                <span class="tab-icon"><span class="sprite sprite-anchor" aria-hidden="true"></span></span>
+                <span class="tab-icon">⚓</span>
                 <span class="tab-label">Dock</span>
             </button>
             <button id="tab-tanks" class="nav-tab" data-view="tanks">
-                <span class="tab-icon"><span class="sprite sprite-lobster" aria-hidden="true"></span></span>
+                <span class="tab-icon">🦞</span>
                 <span class="tab-label">Tanks</span>
             </button>
             <button id="tab-buyers" class="nav-tab" data-view="buyers">
-                <span class="tab-icon"><span class="sprite sprite-coins" aria-hidden="true"></span></span>
+                <span class="tab-icon">💰</span>
                 <span class="tab-label">Buyers</span>
             </button>
             <button id="tab-travel" class="nav-tab" data-view="travel">
-                <span class="tab-icon"><span class="sprite sprite-map" aria-hidden="true"></span></span>
+                <span class="tab-icon">🗺️</span>
                 <span class="tab-label">Travel</span>
             </button>
         </nav>
@@ -176,11 +176,11 @@
             <div class="scene-overlay" id="scene-overlay">
                 <div class="weather-effects" id="weather-effects"></div>
                 <div class="boat-arrival" id="boat-arrival">
-                    <div class="arrival-boat"><span class="sprite sprite-boat sprite-hero" aria-hidden="true"></span></div>
+                    <div class="arrival-boat">🚤</div>
                     <div class="arrival-wake"></div>
                 </div>
                 <div class="truck-travel" id="truck-travel">
-                    <div class="travel-truck"><span class="sprite sprite-truck sprite-hero" aria-hidden="true"></span></div>
+                    <div class="travel-truck">🚚</div>
                     <div class="travel-road"></div>
                 </div>
             </div>
@@ -680,9 +680,91 @@
 
         <!-- Game Over Modal -->
         <div id="game-over-modal" class="modal" style="display: none;">
-            <div class="modal-content">
+            <div class="modal-content modal-large">
                 <h2 id="game-over-title">Game Over</h2>
+
+                <!-- Game Over Message (for bankruptcy only) -->
                 <p id="game-over-message"></p>
+
+                <!-- Share Card Section (shown on season end) -->
+                <div id="share-card-section" class="share-card-section" style="display: none;">
+                    <div class="share-card">
+                        <div class="share-card-header">
+                            <div class="share-card-emoji">🦞</div>
+                            <div class="share-card-title">
+                                <span class="share-card-season">30-Day Challenge</span>
+                                <span class="share-card-location">Maine Coast</span>
+                            </div>
+                        </div>
+
+                        <div class="share-card-body">
+                            <div class="share-stat share-stat-cash">
+                                <span class="share-stat-label">Final Cash</span>
+                                <span class="share-stat-value" id="share-cash">$0</span>
+                            </div>
+
+                            <div class="share-card-stars" id="share-stars">⭐⭐⭐</div>
+
+                            <div class="share-card-rank">
+                                <span class="share-rank-title" id="share-rank">Lobster Legend</span>
+                                <span class="share-rank-nickname" id="share-nickname">"The Coastal King"</span>
+                            </div>
+
+                            <div class="share-stats-grid">
+                                <div class="share-stat-small">
+                                    <span class="share-stat-icon">💰</span>
+                                    <span class="share-stat-small-label">Best Day</span>
+                                    <span class="share-stat-small-value" id="share-best-day">$0</span>
+                                </div>
+                                <div class="share-stat-small">
+                                    <span class="share-stat-icon">📦</span>
+                                    <span class="share-stat-small-label">Bought</span>
+                                    <span class="share-stat-small-value" id="share-bought">0 lbs</span>
+                                </div>
+                                <div class="share-stat-small">
+                                    <span class="share-stat-icon">🚢</span>
+                                    <span class="share-stat-small-label">Sold</span>
+                                    <span class="share-stat-small-value" id="share-sold">0 lbs</span>
+                                </div>
+                                <div class="share-stat-small">
+                                    <span class="share-stat-icon">🏅</span>
+                                    <span class="share-stat-small-label">Reputation</span>
+                                    <span class="share-stat-small-value" id="share-reputation">Legend</span>
+                                </div>
+                            </div>
+
+                            <div class="share-rival-stats" id="share-rival-section">
+                                <div class="share-rival-stat">
+                                    <span class="share-rival-icon">😎</span>
+                                    <span class="share-rival-label">Rivals Beaten</span>
+                                    <span class="share-rival-value positive" id="share-rivals-beat">0</span>
+                                </div>
+                                <div class="share-rival-stat">
+                                    <span class="share-rival-icon">😈</span>
+                                    <span class="share-rival-label">Lost to Rivals</span>
+                                    <span class="share-rival-value negative" id="share-rivals-lost">0</span>
+                                </div>
+                            </div>
+
+                            <div class="share-tagline" id="share-tagline">
+                                Built a lobster empire on the Maine coast!
+                            </div>
+                        </div>
+
+                        <div class="share-card-footer">
+                            <span class="share-card-branding">lobstertycoon.com</span>
+                        </div>
+                    </div>
+
+                    <div class="share-actions">
+                        <button id="share-btn" class="btn btn-primary btn-large">
+                            <span id="share-btn-icon">📤</span> Share Result
+                        </button>
+                        <button id="copy-score-btn" class="btn btn-secondary">📋 Copy Score</button>
+                    </div>
+                </div>
+
+                <!-- Play Again button (always shown) -->
                 <button id="restart-btn" class="btn btn-primary">Play Again</button>
             </div>
         </div>
@@ -778,6 +860,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Dramatic Banner Container (for achievement-style overlays) -->
+    <div id="dramatic-banner-container" class="dramatic-banner-container"></div>
 
     <!-- How to Play Modal - Outside game-container for proper z-index stacking -->
     <div id="how-to-play-modal" class="modal" style="display: none;">
