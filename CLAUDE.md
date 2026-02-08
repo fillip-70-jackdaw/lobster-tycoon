@@ -24,3 +24,12 @@ A 30-day summer challenge where you start with $5,000 on the Stonington fish pie
 
 ## Running locally
 Open `index.html` in a browser. That's it.
+
+## Development log
+All work is tracked in `CHANGELOG.md` at the project root. When completing a session or significant milestone, add an entry with:
+- **Date and phase/feature name** as the heading
+- **Session summary** — one-liner of what was accomplished
+- **Features built** — what was added, with file references
+- **Bug fixes** — what was broken and how it was fixed
+- **Commits** — hash and message for each commit
+- **Stats** — lines changed, files touched
