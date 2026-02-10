@@ -1,5 +1,66 @@
 # Lobster Tycoon Development Log
 
+## 2026-02-10 — Coastal Map Visual Overhaul (Farmville/Pokemon-Inspired)
+
+### Session Summary
+Overhauled the coastal map visuals to feel warm, inviting, and game-like — inspired by Farmville and Pokemon map aesthetics. CSS-only changes plus minor SVG gradient tweaks.
+
+### Features Built
+
+#### Ocean — From Dead to Alive
+- Base color lifted from `#0d1f30` to `#122d4a`
+- Shallow water gradients shifted from cold gray-blue to warmer turquoise tones with higher opacity
+- Wave lines brightened (`rgba(80, 140, 190, 0.12)`) with opacity increased to 0.8
+- New sparkle glint animation: 7 tiny radial-gradient dots with `sparkle-glint` keyframes (4s cycle)
+- Files: `css/style.css`
+
+#### Coastline Glow
+- Brighter stroke `rgba(180, 220, 255, 0.7)` at width 1.3 (was 0.5 opacity, 0.8 width)
+- Two `drop-shadow` CSS filters for blue-white bloom along coast edge
+- Files: `css/style.css`
+
+#### Land — Lush Green
+- SVG gradient stops brightened: `#4a8a5a` / `#3a7048` / `#2d5a3a`
+- Texture pattern circle opacities increased (0.03→0.05 etc.)
+- Files: `index.html`
+
+#### Port Markers — More Game-Like
+- Unlocked ports: 44px → 48px
+- Locked ports: opacity 0.4→0.55, brighter border, labels visible at 0.35 opacity, `locked-port-pulse` animation (3s breathe)
+- Current port: warmer gradient (`#ffe082`→`#ffca28`→`#ffa000`), larger glow radii (24/48px)
+- Files: `css/style.css`
+
+#### Route Lines
+- Active routes: warmer `rgba(255, 200, 110, 0.45)`, width 2→2.5
+- Locked routes: more visible `rgba(120, 150, 180, 0.25)`
+- Files: `css/style.css`
+
+#### Reputation Filters — Less Punishing
+- Dock Nobody: `saturate(0.85) brightness(0.95)` (was 0.7/0.9), port glow 0.3→0.4
+- Local Regular: `saturate(0.9) brightness(0.98)` (was 0.85/0.95)
+- Files: `css/style.css`
+
+#### Vignette & Border — Softened
+- Background `#0f2035`, border `#2a4a60`, reduced inset shadows and overlays
+- Files: `css/style.css`
+
+#### Accessibility
+- Sparkle and locked-port-pulse added to `prefers-reduced-motion: reduce`
+- Sparkle slowed to 6s on mobile
+- Files: `css/style.css`
+
+### Bug Fixes
+None — visual-only changes.
+
+### Commits
+1. `f343f75` — Add vibrant coastal map visual overhaul inspired by Farmville/Pokemon
+
+### Stats
+- ~130 lines changed across 2 files (`css/style.css`, `index.html`)
+- No JS changes
+
+---
+
 ## 2026-02-08 — Phase 1: Viral Sharing & Growth Foundation
 
 ### Session Summary
