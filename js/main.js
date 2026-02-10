@@ -774,7 +774,7 @@ const CAPTAIN_STORIES = {
         title: "A Captain in Need",
         trigger: (state, captain) => {
             const loyalty = state.fishermenRelations[captain] || 0;
-            return loyalty >= 20 && Math.random() < 0.02;
+            return loyalty >= 20 && gameRandom() < 0.02;
         },
         story: (captain) => `Captain ${captain}'s boat engine is failing. He needs $1,500 for repairs or he'll be out of business for weeks.`,
         choices: [
@@ -810,7 +810,7 @@ const CAPTAIN_STORIES = {
         title: "Family Matters",
         trigger: (state, captain) => {
             const loyalty = state.fishermenRelations[captain] || 0;
-            return loyalty >= 30 && Math.random() < 0.015;
+            return loyalty >= 30 && gameRandom() < 0.015;
         },
         story: (captain) => `Captain ${captain}'s daughter is getting married next week. He wants to take a few days off but is worried about losing his best customer (you) to rivals.`,
         choices: [
@@ -840,7 +840,7 @@ const CAPTAIN_STORIES = {
         title: "The Secret Spot",
         trigger: (state, captain) => {
             const loyalty = state.fishermenRelations[captain] || 0;
-            return loyalty >= 50 && Math.random() < 0.01 && !state.secretSpotRevealed;
+            return loyalty >= 50 && gameRandom() < 0.01 && !state.secretSpotRevealed;
         },
         story: (captain) => `Captain ${captain} pulls you aside. "I've been fishing these waters for 30 years. I know a spot... pristine lobsters, barely touched. But I only share it with people I trust."`,
         choices: [
@@ -861,7 +861,7 @@ const CAPTAIN_STORIES = {
         title: "A Tempting Offer",
         trigger: (state, captain) => {
             const loyalty = state.fishermenRelations[captain] || 0;
-            return loyalty >= 10 && loyalty < 40 && Math.random() < 0.03;
+            return loyalty >= 10 && loyalty < 40 && gameRandom() < 0.03;
         },
         story: (captain) => `Captain ${captain} seems uncomfortable. "Look, I like doing business with you, but ${Object.keys(RIVALS)[0]} offered me 20% more for exclusive rights to my catch..."`,
         choices: [
@@ -904,7 +904,7 @@ const CAPTAIN_STORIES = {
         title: "Once in a Lifetime",
         trigger: (state, captain) => {
             const loyalty = state.fishermenRelations[captain] || 0;
-            return loyalty >= 40 && Math.random() < 0.01;
+            return loyalty >= 40 && gameRandom() < 0.01;
         },
         story: (captain) => `Captain ${captain} radios in, excitement in his voice. "You're not gonna believe this - I found a MASSIVE haul! 500 lbs, mostly premium! But I need $3,000 upfront to pay my crew overtime to haul it all in. You in?"`,
         choices: [
@@ -927,7 +927,7 @@ const CAPTAIN_STORIES = {
                 effect: (state, captain) => {
                     state.fishermenRelations[captain] = Math.max(0, (state.fishermenRelations[captain] || 0) - 5);
                     // Rival gets it instead
-                    const rivalId = Object.keys(state.rivals)[Math.floor(Math.random() * Object.keys(state.rivals).length)];
+                    const rivalId = Object.keys(state.rivals)[Math.floor(gameRandom() * Object.keys(state.rivals).length)];
                     if (rivalId && state.rivals[rivalId]) {
                         state.rivals[rivalId].inventory += 400;
                     }
@@ -1646,11 +1646,106 @@ let gameState = {
 // UTILITY FUNCTIONS
 // ============================================
 function randomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+    return Math.floor(gameRandom() * (max - min + 1)) + min;
 }
 
 function randomFloat(min, max) {
-    return Math.random() * (max - min) + min;
+    return gameRandom() * (max - min) + min;
+}
+
+function gameRandom() {
+    if (gameState && gameState.rng) {
+        return gameState.rng();
+    }
+    return Math.random();
+}
+
+function getDailySeedKey(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function getLocalMidnight(date = new Date()) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function wasYesterday(dateStr) {
+    if (!dateStr) return false;
+    const [year, month, day] = dateStr.split('-').map(Number);
+    if (!year || !month || !day) return false;
+    const target = new Date(year, month - 1, day);
+    const today = getLocalMidnight(new Date());
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    return target.getTime() === yesterday.getTime();
+}
+
+function hashSeedKey(seedKey) {
+    let hash = 0;
+    for (let i = 0; i < seedKey.length; i++) {
+        hash = ((hash << 5) - hash) + seedKey.charCodeAt(i);
+        hash |= 0; // Convert to 32bit integer
+    }
+    return Math.abs(hash) + 1000;
+}
+
+const DAILY_CHALLENGE_STORAGE_KEY = 'lobsterTycoon_dailyChallengeProgress';
+
+function loadDailyChallengeProgress() {
+    try {
+        const raw = localStorage.getItem(DAILY_CHALLENGE_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : { lastDate: null, streak: 0, bestStreak: 0 };
+    } catch (e) {
+        return { lastDate: null, streak: 0, bestStreak: 0 };
+    }
+}
+
+function saveDailyChallengeProgress(progress) {
+    localStorage.setItem(DAILY_CHALLENGE_STORAGE_KEY, JSON.stringify(progress));
+}
+
+function registerDailyChallengeAttempt(dateKey) {
+    const progress = loadDailyChallengeProgress();
+    if (progress.lastDate === dateKey) {
+        return progress;
+    }
+
+    if (wasYesterday(progress.lastDate)) {
+        progress.streak += 1;
+    } else {
+        progress.streak = 1;
+    }
+
+    if (progress.streak > (progress.bestStreak || 0)) {
+        progress.bestStreak = progress.streak;
+    }
+
+    progress.lastDate = dateKey;
+    saveDailyChallengeProgress(progress);
+    return progress;
+}
+
+const WEEKLY_EVENTS = [
+    { id: "harbor_festival", name: "Harbor Festival", description: "Tourists are hungry. Premium buyers pay more.", sellMod: 1.06 },
+    { id: "coastal_storms", name: "Coastal Storms", description: "Supply tight. Prices inch up for fresh lobster.", sellMod: 1.04 },
+    { id: "chef_spotlight", name: "Chef Spotlight Week", description: "Restaurants pay top dollar for quality.", sellMod: 1.05 },
+    { id: "fleet_maintenance", name: "Fleet Maintenance", description: "Fewer boats, but buyers hold strong.", sellMod: 1.03 }
+];
+
+function getWeekNumber(date = new Date()) {
+    const start = new Date(date.getFullYear(), 0, 1);
+    const dayOfYear = Math.floor((getLocalMidnight(date) - getLocalMidnight(start)) / 86400000) + 1;
+    return Math.ceil(dayOfYear / 7);
+}
+
+function getWeeklyEvent(date = new Date()) {
+    if (WEEKLY_EVENTS.length === 0) return null;
+    const week = getWeekNumber(date);
+    const year = date.getFullYear();
+    const index = (year * 53 + week) % WEEKLY_EVENTS.length;
+    return WEEKLY_EVENTS[index];
 }
 
 // Seeded random number generator (Mulberry32)
@@ -1665,7 +1760,7 @@ function mulberry32(seed) {
 }
 
 function randomChoice(array) {
-    return array[Math.floor(Math.random() * array.length)];
+    return array[Math.floor(gameRandom() * array.length)];
 }
 
 function formatMoney(amount) {
@@ -2490,7 +2585,7 @@ function checkMilestones() {
 
 function maybeIdleChatter() {
     // 5% chance of random chatter (reduced to minimize popup overload)
-    if (Math.random() < 0.05) {
+    if (gameRandom() < 0.05) {
         fishermanSays(getRandomComment(CONFIG.dockworker.idle));
     }
 }
@@ -2578,6 +2673,149 @@ function processBannerQueue() {
 }
 
 // ============================================
+// VIRAL EVENT SYSTEM
+// ============================================
+const VIRAL_EVENT_COPY = {
+    jackpot_day: [
+        "Pulled a monster profit day on the Maine coast.",
+        "Best dock day yet. The coast is mine.",
+        "Turned chaos into a jackpot haul."
+    ],
+    mega_haul: [
+        "Just bought a mega haul off the dock.",
+        "Biggest buy yet. Tanks are overflowing.",
+        "Took a monster load in one deal."
+    ],
+    big_sale: [
+        "Just closed a massive sale in one shot.",
+        "Big sale day. Lobsters flying off the dock.",
+        "Turned a single buyer into a payday."
+    ],
+    rival_heist: [
+        "Slick Rick stole a boat. I'm still standing.",
+        "Got burned by the rival, but I’ll bounce back.",
+        "Rick swiped the haul — the rivalry is on."
+    ],
+    spoilage_hit: [
+        "Lost a chunk to spoilage. The sea is unforgiving.",
+        "Spoilage hit hard. Learned the lesson.",
+        "Rot took its cut today."
+    ],
+    personal_best: [
+        "New personal best day on the docks.",
+        "Set a new record on the Maine coast.",
+        "Best run moment so far."
+    ]
+};
+
+const VIRAL_EVENTS = {
+    jackpot_day: {
+        emoji: '💰',
+        title: 'JACKPOT DAY!',
+        theme: 'gold',
+        cooldownDays: 2,
+        condition: (data) => data.dailyProfit >= 5000 || (data.dailyProfit >= 3000 && data.dailyProfit >= data.avgRecentProfit * 1.8),
+        subtitle: (data) => `+$${formatMoney(data.dailyProfit)} profit`
+    },
+    mega_haul: {
+        emoji: '🦞',
+        title: 'MEGA HAUL!',
+        theme: 'ocean',
+        cooldownDays: 2,
+        condition: (data) => data.buyAmount >= 300,
+        subtitle: (data) => `${data.buyAmount} lbs purchased!`
+    },
+    big_sale: {
+        emoji: '🔔',
+        title: 'BIG SALE!',
+        theme: 'success',
+        cooldownDays: 2,
+        condition: (data) => data.finalRevenue >= 3000,
+        subtitle: (data) => `$${formatMoney(data.finalRevenue)} earned!`
+    },
+    rival_heist: {
+        emoji: '😈',
+        title: 'SLICK RICK STRIKES!',
+        theme: 'danger',
+        cooldownDays: 2,
+        condition: (data) => data.potentialValue >= 500,
+        subtitle: (data) => `Stole the ${data.boatName}!`
+    },
+    spoilage_hit: {
+        emoji: '⚠️',
+        title: 'SPOILAGE HIT!',
+        theme: 'warning',
+        cooldownDays: 2,
+        condition: (data) => data.totalSpoilage >= 30,
+        subtitle: (data) => `${data.totalSpoilage} lbs lost to rot!`
+    },
+    personal_best: {
+        emoji: '🏆',
+        title: 'NEW PERSONAL BEST!',
+        theme: 'gold',
+        cooldownDays: 3,
+        condition: (data) => data.bestDay === data.dailyProfit && data.dailyProfit > 0,
+        subtitle: (data) => `+$${formatMoney(data.dailyProfit)} in one day`
+    }
+};
+
+function initViralEventState() {
+    return {
+        lastDayAny: 0,
+        lastDayByType: {},
+        lastEvent: null,
+        history: []
+    };
+}
+
+function pickViralCopy(eventId) {
+    const options = VIRAL_EVENT_COPY[eventId] || [];
+    if (options.length === 0) return "";
+    return options[Math.floor(Math.random() * options.length)];
+}
+
+function tryTriggerViralEvent(eventId, data = {}) {
+    const def = VIRAL_EVENTS[eventId];
+    if (!def) return false;
+
+    if (!gameState.viralEvents) {
+        gameState.viralEvents = initViralEventState();
+    }
+
+    const today = gameState.day;
+    if (gameState.viralEvents.lastDayAny === today) return false;
+
+    const lastDay = gameState.viralEvents.lastDayByType[eventId] || -9999;
+    const cooldown = def.cooldownDays || 0;
+    if (today - lastDay <= cooldown) return false;
+
+    if (def.condition && !def.condition(data)) return false;
+
+    const title = typeof def.title === 'function' ? def.title(data) : def.title;
+    const subtitle = typeof def.subtitle === 'function' ? def.subtitle(data) : def.subtitle;
+    const shareText = pickViralCopy(eventId);
+
+    showDramaticBanner({
+        emoji: def.emoji,
+        title: title,
+        subtitle: subtitle,
+        theme: def.theme
+    });
+
+    gameState.viralEvents.lastDayAny = today;
+    gameState.viralEvents.lastDayByType[eventId] = today;
+    gameState.viralEvents.lastEvent = {
+        id: eventId,
+        day: today,
+        title: title,
+        subtitle: subtitle,
+        shareText: shareText
+    };
+    gameState.viralEvents.history.push(gameState.viralEvents.lastEvent);
+    return true;
+}
+
+// ============================================
 // RIVAL DEALER SYSTEM
 // ============================================
 function initializeRivals() {
@@ -2642,12 +2880,12 @@ function rivalWantsToBuy(rivalId, boat) {
 
         case "chaotic":
             // Crazy Carl: Random decisions
-            if (Math.random() > 0.4 && state.cash >= totalCost * 0.5) {
-                const randomMod = 0.8 + Math.random() * 0.5; // 0.8 to 1.3
+            if (gameRandom() > 0.4 && state.cash >= totalCost * 0.5) {
+                const randomMod = 0.8 + gameRandom() * 0.5; // 0.8 to 1.3
                 return {
                     willBuy: true,
                     maxPrice: Math.min(state.cash, totalCost * randomMod),
-                    urgency: Math.random() // Completely random
+                    urgency: gameRandom() // Completely random
                 };
             }
             break;
@@ -2677,7 +2915,7 @@ function processRivalActions() {
         interestedRivals.sort((a, b) => b.urgency - a.urgency);
 
         // The most urgent rival acts (if any) - but only 40% chance per boat
-        if (interestedRivals.length > 0 && Math.random() < 0.4) {
+        if (interestedRivals.length > 0 && gameRandom() < 0.4) {
             const acting = interestedRivals[0];
             const rival = RIVALS[acting.rivalId];
             const state = getRivalState(acting.rivalId);
@@ -2707,7 +2945,7 @@ function processRivalActions() {
 
     // Rivals sell some inventory each day (simplified)
     for (const [rivalId, state] of Object.entries(gameState.rivals)) {
-        if (state.inventory > 50 && Math.random() > 0.5) {
+        if (state.inventory > 50 && gameRandom() > 0.5) {
             const sellAmount = Math.floor(state.inventory * randomFloat(0.3, 0.6));
             const sellPrice = randomFloat(5.5, 7.5);
             state.cash += Math.round(sellAmount * sellPrice);
@@ -2799,7 +3037,7 @@ function processRandomEvents() {
 
     for (const [eventId, event] of Object.entries(RANDOM_EVENTS)) {
         // Check if event can trigger
-        if (Math.random() > event.chance) continue;
+        if (gameRandom() > event.chance) continue;
 
         // Check requirements
         if (event.requiresEquipment && !hasEquipment(event.requiresEquipment)) continue;
@@ -2807,7 +3045,7 @@ function processRandomEvents() {
         if (event.minInventory && getTotalInventory() < event.minInventory) continue;
 
         // Limit to 1 event per day (50% chance of second event)
-        if (events.length >= 1 && Math.random() > 0.5) break;
+        if (events.length >= 1 && gameRandom() > 0.5) break;
 
         // Apply event effect
         const data = event.effect(gameState);
@@ -2841,7 +3079,7 @@ function generateWeather() {
 
     const seasonWeights = weights[gameState.season];
     const total = Object.values(seasonWeights).reduce((a, b) => a + b, 0);
-    let roll = Math.random() * total;
+    let roll = gameRandom() * total;
 
     for (const weather of weathers) {
         roll -= seasonWeights[weather];
@@ -2852,7 +3090,7 @@ function generateWeather() {
 
 function getMarketTrend() {
     // Simple trend based on recent conditions
-    const roll = Math.random();
+    const roll = gameRandom();
     if (roll < 0.3) return -1; // falling
     if (roll < 0.7) return 0; // stable
     return 1; // rising
@@ -2905,6 +3143,11 @@ function calculateSellPrice(grade) {
     // Equipment bonuses
     const transactionBonus = getEquipmentEffect('transactionBonus', 0);
     price *= (1 + transactionBonus);
+
+    // Weekly event bonus
+    if (gameState.weeklyEvent && gameState.weeklyEvent.sellMod) {
+        price *= gameState.weeklyEvent.sellMod;
+    }
 
     // Random variation
     price += randomFloat(-0.30, 0.50);
@@ -3084,7 +3327,7 @@ function generateBoats() {
 
     for (let i = 0; i < maxBoats; i++) {
         const boatChance = seasonData.boatChance * weatherData.boatMod;
-        if (Math.random() > boatChance) continue;
+        if (gameRandom() > boatChance) continue;
 
         // Select boat type based on weights
         const boatTypeId = weightedRandom(boatTypeWeights);
@@ -3187,7 +3430,7 @@ function generateBoats() {
 // Weighted random selection helper
 function weightedRandom(options) {
     const totalWeight = options.reduce((sum, opt) => sum + opt.weight, 0);
-    let random = Math.random() * totalWeight;
+    let random = gameRandom() * totalWeight;
 
     for (const option of options) {
         random -= option.weight;
@@ -3381,14 +3624,14 @@ function generateBuyers() {
 
     // Restaurant buyer - wants quarters or selects (graded only)
     const restaurantChance = town.traits.includes('tourist') || town.traits.includes('wealthy') ? 0.2 : 0.3;
-    if (hasEquipment('bandingStation') || Math.random() > restaurantChance) {
+    if (hasEquipment('bandingStation') || gameRandom() > restaurantChance) {
         const name = randomChoice(localBuyers.restaurants);
         const trust = gameState.buyerRelations[name] || 0;
         const rBuyerId = getOrCreateBuyer(name, "restaurant");
         const rTrustMod = getTrustSellMod(rBuyerId);
 
-        if (Math.random() < weatherData.buyerMod) {
-            const wantsSelects = Math.random() > 0.6;
+        if (gameRandom() < weatherData.buyerMod) {
+            const wantsSelects = gameRandom() > 0.6;
             buyers.push({
                 name: name,
                 buyerId: rBuyerId,
@@ -3406,7 +3649,7 @@ function generateBuyers() {
 
     // Special buyer (tourists, events) - wants selects only (premium)
     const specialChance = town.traits.includes('tourist') ? 0.3 : town.traits.includes('wealthy') ? 0.4 : 0.5;
-    if (Math.random() > specialChance && weatherData.buyerMod > 0.7) {
+    if (gameRandom() > specialChance && weatherData.buyerMod > 0.7) {
         const sName = randomChoice(localBuyers.special);
         const sBuyerId = getOrCreateBuyer(sName, "tourist");
         const sTrustMod = getTrustSellMod(sBuyerId);
@@ -3425,7 +3668,7 @@ function generateBuyers() {
     }
 
     // Chix buyer - specifically wants smaller lobsters (cheaper for them)
-    if (Math.random() > 0.6) {
+    if (gameRandom() > 0.6) {
         const cName = randomChoice(localBuyers.budget);
         const cBuyerId = getOrCreateBuyer(cName, "restaurant");
         const cTrustMod = getTrustSellMod(cBuyerId);
@@ -3444,7 +3687,7 @@ function generateBuyers() {
     }
 
     // Extra buyer in high-volume towns (Portland, Bar Harbor) - accepts run
-    if (locationBuyerBonus >= 1 && Math.random() > 0.5) {
+    if (locationBuyerBonus >= 1 && gameRandom() > 0.5) {
         // Use a wholesaler from a different location for variety
         const otherLocations = Object.keys(LOCATION_BUYERS).filter(l => l !== locationId);
         const otherLocation = randomChoice(otherLocations);
@@ -3522,22 +3765,18 @@ function processTankDaily() {
         log(`${lotsRotted} lbs rotted from old stock!`, "negative");
     }
 
-    // DRAMATIC BANNER: SPOILAGE ALERT
-    if (totalSpoilage >= 30) {
-        showDramaticBanner({
-            emoji: '⚠️',
-            title: 'SPOILAGE HIT!',
-            subtitle: `${totalSpoilage} lbs lost to rot!`,
-            theme: 'warning',
-            logMessage: null // Already logged above
-        });
-    }
+    // Viral event: spoilage hit
+    tryTriggerViralEvent('spoilage_hit', { totalSpoilage: totalSpoilage });
 }
 
 // ============================================
 // FINANCE SYSTEM
 // ============================================
 function takeLoan(amount) {
+    if (!Number.isFinite(amount) || amount <= 0) {
+        log("Enter a valid loan amount.", "negative");
+        return false;
+    }
     if (gameState.debt > 0) {
         log("Pay off existing loan first!", "negative");
         return false;
@@ -3683,19 +3922,11 @@ function buyFromBoat(boatIndex, amount) {
     // Check speed run milestones
     checkSpeedRunMilestones();
 
-    // DRAMATIC BANNER: MEGA HAUL
-    if (buyAmount >= 300) {
-        showDramaticBanner({
-            emoji: '🦞',
-            title: 'MEGA HAUL!',
-            subtitle: `${buyAmount} lbs purchased!`,
-            theme: 'ocean',
-            logMessage: `🦞 MEGA HAUL! Bought ${buyAmount} lbs in one transaction!`
-        });
-    }
+    // Viral event: mega haul
+    tryTriggerViralEvent('mega_haul', { buyAmount: buyAmount });
 
     // Fisherman commentary on the purchase (25% chance - reduced for less popup spam)
-    if (Math.random() < 0.25) {
+    if (gameRandom() < 0.25) {
         const bob = CONFIG.dockworker;
         if (buyAmount >= 150) {
             fishermanSays(getRandomComment(bob.buying.big_haul));
@@ -3709,7 +3940,7 @@ function buyFromBoat(boatIndex, amount) {
     }
 
     // Check for low cash warning (20% chance)
-    if (gameState.cash < 500 && Math.random() < 0.2) {
+    if (gameState.cash < 500 && gameRandom() < 0.2) {
         fishermanSays(getRandomComment(CONFIG.dockworker.low_cash));
     }
 
@@ -3867,19 +4098,11 @@ function sellToBuyer(buyerIndex) {
     // Check speed run milestones
     checkSpeedRunMilestones();
 
-    // DRAMATIC BANNER: BIG SALE
-    if (finalRevenue >= 3000) {
-        showDramaticBanner({
-            emoji: '🔔',
-            title: 'BIG SALE!',
-            subtitle: `$${formatMoney(finalRevenue)} earned!`,
-            theme: 'success',
-            logMessage: `🔔 BIG SALE! Earned $${formatMoney(finalRevenue)} in one transaction!`
-        });
-    }
+    // Viral event: big sale
+    tryTriggerViralEvent('big_sale', { finalRevenue: finalRevenue });
 
     // Fisherman commentary on the sale (25% chance - reduced for less popup spam)
-    if (Math.random() < 0.25) {
+    if (gameRandom() < 0.25) {
         const bob = CONFIG.dockworker;
         if (finalRevenue >= 500) {
             fishermanSays(getRandomComment(bob.selling.big_sale));
@@ -4036,6 +4259,14 @@ function nextDay() {
         console.error("Error showing day summary:", e);
     }
 
+    if (!gameState.stats.dailyProfits) {
+        gameState.stats.dailyProfits = [];
+    }
+    gameState.stats.dailyProfits.push(dailyProfit);
+    if (gameState.stats.dailyProfits.length > 10) {
+        gameState.stats.dailyProfits.shift();
+    }
+
     // Clear today's fortune for new day
     gameState.todayFortune = null;
 
@@ -4169,12 +4400,12 @@ function nextDay() {
         }
 
         // Fisherman morning commentary (15% chance - reduced for less popup spam)
-        if (Math.random() < 0.15) {
+        if (gameRandom() < 0.15) {
             fishermanSays(getRandomComment(CONFIG.dockworker.morning));
         }
 
         // Weather-specific commentary (20% chance - only on notable weather)
-        if (Math.random() < 0.2 && gameState.weather !== "sunny") {
+        if (gameRandom() < 0.2 && gameState.weather !== "sunny") {
             const weatherComments = CONFIG.dockworker.weather[gameState.weather];
             if (weatherComments) {
                 fishermanSays(getRandomComment(weatherComments));
@@ -4182,7 +4413,7 @@ function nextDay() {
         }
 
         // Market trend commentary (15% chance - only when trending)
-        if (Math.random() < 0.15 && gameState.marketTrend !== 0) {
+        if (gameRandom() < 0.15 && gameState.marketTrend !== 0) {
             const trendType = gameState.marketTrend > 0 ? 'rising' : 'falling';
             fishermanSays(getRandomComment(CONFIG.dockworker.market[trendType]));
         }
@@ -4194,7 +4425,7 @@ function nextDay() {
         }
 
         // Daily flavor event (one-liner, no popup) - 50% chance
-        if (Math.random() < 0.5) {
+        if (gameRandom() < 0.5) {
             showDailyFlavorEvent();
         }
 
@@ -4308,7 +4539,7 @@ function endGame(won, message) {
     modal.style.display = "flex";
 }
 
-function resetGame() {
+function resetGame(options = {}) {
     // Reset milestones tracker
     resetMilestones();
 
@@ -4323,8 +4554,19 @@ function resetGame() {
     // Calculate starting cash with prestige bonus
     const startingCash = CONFIG.startingCash + (prestigeBonuses.startingCash || 0);
 
-    // Generate a random seed for this game run
-    const gameSeed = Date.now() + Math.floor(Math.random() * 10000);
+    const useDailyChallenge = options.dailyChallenge === true
+        ? true
+        : options.dailyChallenge === false
+            ? false
+            : gameState?.isDailyChallenge || false;
+
+    const dailySeedKey = useDailyChallenge ? getDailySeedKey() : null;
+    const weeklyEvent = getWeeklyEvent();
+
+    // Generate a seed for this game run
+    const gameSeed = useDailyChallenge
+        ? hashSeedKey(dailySeedKey)
+        : Date.now() + Math.floor(Math.random() * 10000);
 
     // Use seed to create initial variety
     const seedRng = mulberry32(gameSeed);
@@ -4332,7 +4574,11 @@ function resetGame() {
     const initialMarketTrend = seedRng() > 0.6 ? (seedRng() > 0.5 ? 1 : -1) : 0; // 40% chance of initial trend
 
     gameState = {
+        isDailyChallenge: useDailyChallenge,
+        dailySeedKey: dailySeedKey,
         gameSeed: gameSeed,
+        weeklyEvent: weeklyEvent,
+        rng: useDailyChallenge ? mulberry32(gameSeed) : null,
         cash: startingCash,
         debt: 0,
         day: 1,
@@ -4400,6 +4646,7 @@ function resetGame() {
             totalMoneySpent: 0,
             bestDayProfit: 0,
             worstDayLoss: 0,
+            dailyProfits: [],
             dealsWithCaptains: {},
             salesToBuyers: {},
             loansTotal: 0,
@@ -4419,6 +4666,7 @@ function resetGame() {
         rivals: {},
         gameOver: false,
         daysInTrouble: 0,
+        viralEvents: initViralEventState(),
         // New systems
         achievements: prestigeData?.achievements || {},
         prestige: startingPrestige,
@@ -4438,6 +4686,8 @@ function resetGame() {
 
     document.getElementById("game-over-modal").style.display = "none";
     document.getElementById("game-log").innerHTML = "<p>Welcome to Maine! Build your lobster empire!</p>";
+
+    updateDailyChallengeBadge();
 
     // Show prestige bonus if applicable
     if (prestigeBonuses.startingCash > 0) {
@@ -5016,14 +5266,8 @@ function boatLostToRival(boat) {
     const taunt = randomChoice(CONFIG.rivalDealer.taunt);
     log(`⏰ ${taunt}`, "negative");
 
-    // DRAMATIC BANNER: RIVAL HEIST
-    showDramaticBanner({
-        emoji: '😈',
-        title: 'SLICK RICK STRIKES!',
-        subtitle: `Stole the ${boat.name}!`,
-        theme: 'danger',
-        logMessage: null // Already logged above
-    });
+    // Viral event: rival heist
+    tryTriggerViralEvent('rival_heist', { boatName: boat.name, potentialValue: potentialValue });
 
     updateDockUI();
 }
@@ -6071,9 +6315,10 @@ function createCelebrationEffect() {
         const particle = document.createElement("div");
         particle.className = "confetti";
         particle.style.left = `${Math.random() * 100}%`;
-        particle.style.backgroundColor = randomChoice([
+        const confettiColors = [
             '#ffd700', '#ff6b6b', '#50c878', '#4a9cc7', '#ff69b4', '#ffa500'
-        ]);
+        ];
+        particle.style.backgroundColor = confettiColors[Math.floor(Math.random() * confettiColors.length)];
         particle.style.animationDelay = `${Math.random() * 2}s`;
         particle.style.animationDuration = `${2 + Math.random() * 2}s`;
         container.appendChild(particle);
@@ -6517,16 +6762,17 @@ function showDaySummary() {
 
     document.getElementById("summary-total-cash").textContent = `$${formatMoney(gameState.cash)}`;
 
-    // DRAMATIC BANNER: JACKPOT DAY
-    if (dailyProfit >= 5000) {
-        showDramaticBanner({
-            emoji: '💰',
-            title: 'JACKPOT DAY!',
-            subtitle: `+$${formatMoney(dailyProfit)} profit`,
-            theme: 'gold',
-            logMessage: `💰 JACKPOT DAY! Made $${formatMoney(dailyProfit)} profit today!`
-        });
-    }
+    // Viral events: jackpot day / personal best
+    const recentProfits = gameState.stats.dailyProfits || [];
+    const recentWindow = recentProfits.slice(-5);
+    const avgRecentProfit = recentWindow.length > 0
+        ? recentWindow.reduce((sum, val) => sum + val, 0) / recentWindow.length
+        : 0;
+    tryTriggerViralEvent('jackpot_day', { dailyProfit: dailyProfit, avgRecentProfit: avgRecentProfit });
+    tryTriggerViralEvent('personal_best', { dailyProfit: dailyProfit, bestDay: gameState.stats.bestDayProfit });
+
+    // Share preview for today's viral moment
+    populateSharePreview(data.day);
 
     // Check if this is the last day of summer
     const isLastDay = data.day >= CONFIG.summerLength;
@@ -6574,6 +6820,32 @@ function showDaySummary() {
             marketEl.className = "summary-value";
         }
         marketEl.textContent = marketText;
+    }
+
+    const weeklyEventSection = document.getElementById("summary-weekly-event");
+    if (weeklyEventSection) {
+        if (gameState.weeklyEvent) {
+            weeklyEventSection.style.display = "block";
+            const nameEl = document.getElementById("summary-event-name");
+            const bonusEl = document.getElementById("summary-event-bonus");
+            const descEl = document.getElementById("summary-event-desc");
+            if (nameEl) nameEl.textContent = gameState.weeklyEvent.name;
+            if (bonusEl) bonusEl.textContent = `+${Math.round((gameState.weeklyEvent.sellMod - 1) * 100)}% sell`;
+            if (descEl) descEl.textContent = gameState.weeklyEvent.description;
+        } else {
+            weeklyEventSection.style.display = "none";
+        }
+    }
+
+    const dailyChallengeSection = document.getElementById("summary-daily-challenge");
+    if (dailyChallengeSection) {
+        if (gameState.isDailyChallenge && gameState.dailySeedKey) {
+            dailyChallengeSection.style.display = "block";
+            const seedEl = document.getElementById("summary-daily-seed");
+            if (seedEl) seedEl.textContent = gameState.dailySeedKey;
+        } else {
+            dailyChallengeSection.style.display = "none";
+        }
     }
 
     // Missed opportunities section
@@ -6825,6 +7097,12 @@ function startGame() {
 
 function startFromStory() {
     const storyScreen = document.getElementById("story-screen");
+    const dailyToggle = document.getElementById("daily-challenge-toggle");
+    const useDailyChallenge = dailyToggle ? dailyToggle.checked : false;
+    if (useDailyChallenge) {
+        registerDailyChallengeAttempt(getDailySeedKey());
+    }
+    resetGame({ dailyChallenge: useDailyChallenge });
 
     // Fade out story screen
     if (storyScreen) {
@@ -6851,6 +7129,35 @@ function startFromStory() {
         setTimeout(() => {
             fishermanSays("Welcome back! You've got 30 days of summer to make your fortune. Good luck!");
         }, 800);
+    }
+}
+
+function updateDailyChallengeBadge() {
+    const badge = document.getElementById("daily-challenge-badge");
+    const streakEl = document.getElementById("daily-challenge-streak");
+    const weeklyBanner = document.getElementById("weekly-event-banner");
+    if (!badge) return;
+    if (gameState.isDailyChallenge && gameState.dailySeedKey) {
+        badge.style.display = "inline-flex";
+        badge.textContent = `Daily Challenge • ${gameState.dailySeedKey}`;
+    } else {
+        badge.style.display = "none";
+    }
+
+    if (streakEl) {
+        const progress = loadDailyChallengeProgress();
+        const streak = progress.streak || 0;
+        const best = progress.bestStreak || 0;
+        streakEl.textContent = `Daily Challenge Streak: ${streak} day${streak === 1 ? '' : 's'} (Best ${best})`;
+    }
+
+    if (weeklyBanner) {
+        if (gameState.weeklyEvent) {
+            weeklyBanner.style.display = "block";
+            weeklyBanner.textContent = `${gameState.weeklyEvent.name} • ${Math.round((gameState.weeklyEvent.sellMod - 1) * 100)}% sell boost`;
+        } else {
+            weeklyBanner.style.display = "none";
+        }
     }
 }
 
@@ -7417,6 +7724,8 @@ function initEventHandlers() {
     const copyScoreBtn = document.getElementById("copy-score-btn");
     if (shareBtn) shareBtn.addEventListener("click", shareResults);
     if (copyScoreBtn) copyScoreBtn.addEventListener("click", copyScoreToClipboard);
+    const sharePreviewBtn = document.getElementById("share-preview-btn");
+    if (sharePreviewBtn) sharePreviewBtn.addEventListener("click", shareViralMoment);
 
     document.getElementById("shop-btn").addEventListener("click", openShop);
     document.getElementById("close-shop-btn").addEventListener("click", closeShop);
@@ -7483,7 +7792,12 @@ function initEventHandlers() {
     if (summaryContinue) summaryContinue.addEventListener("click", closeDaySummary);
 
     document.getElementById("loan-btn").addEventListener("click", () => {
-        const amount = parseInt(document.getElementById("loan-amount").value) || 5000;
+        const amountInput = document.getElementById("loan-amount");
+        const rawValue = amountInput.value.trim();
+        if (rawValue === "") {
+            amountInput.value = "5000";
+        }
+        const amount = parseInt(amountInput.value, 10) || 5000;
         takeLoan(amount);
         updateBankUI();
     });
@@ -7559,6 +7873,92 @@ function initEventHandlers() {
 // ============================================
 // SHARE CARD - End of Run Summary
 // ============================================
+function populateSharePreview(day) {
+    const previewSection = document.getElementById("share-preview-section");
+    if (!previewSection) return;
+
+    const lastEvent = gameState.viralEvents?.lastEvent;
+    if (!lastEvent || lastEvent.day !== day) {
+        previewSection.style.display = "none";
+        return;
+    }
+
+    const titleEl = document.getElementById("share-preview-title");
+    const subtitleEl = document.getElementById("share-preview-subtitle");
+    const textEl = document.getElementById("share-preview-text");
+    const seedEl = document.getElementById("share-preview-seed");
+
+    if (titleEl) titleEl.textContent = lastEvent.title || "Dockside Highlight";
+    if (subtitleEl) subtitleEl.textContent = lastEvent.subtitle || "";
+    if (textEl) textEl.textContent = lastEvent.shareText || "Another big day on the docks.";
+
+    if (seedEl) {
+        if (gameState.isDailyChallenge && gameState.dailySeedKey) {
+            seedEl.textContent = `Daily Challenge • ${gameState.dailySeedKey}`;
+        } else {
+            seedEl.textContent = "";
+        }
+    }
+
+    previewSection.style.display = "block";
+}
+
+function generateViralShareText(event) {
+    const town = getCurrentTown();
+    let text = `${event.title} ${event.subtitle}\n\n`;
+    if (event.shareText) {
+        text += `${event.shareText}\n`;
+    }
+    text += `Day ${event.day} • ${town.name}\n`;
+    if (gameState.isDailyChallenge && gameState.dailySeedKey) {
+        text += `Daily Challenge: ${gameState.dailySeedKey}\n`;
+    }
+    text += `Play at lobstertycoon.com`;
+    return text;
+}
+
+async function shareViralMoment() {
+    const btn = document.getElementById("share-preview-btn");
+    const lastEvent = gameState.viralEvents?.lastEvent;
+    if (!lastEvent) return;
+
+    const shareText = generateViralShareText(lastEvent);
+
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: 'Maine Lobster Dealer Tycoon',
+                text: shareText,
+                url: 'https://lobstertycoon.com'
+            });
+
+            if (btn) {
+                btn.textContent = "✅ Shared";
+                setTimeout(() => {
+                    btn.textContent = "Share Moment";
+                }, 2000);
+            }
+            return;
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                console.log('Share failed:', err);
+            }
+        }
+    }
+
+    try {
+        await navigator.clipboard.writeText(shareText);
+        if (btn) {
+            btn.textContent = "✅ Copied";
+            setTimeout(() => {
+                btn.textContent = "Share Moment";
+            }, 2000);
+        }
+    } catch (err) {
+        alert("Copy this text:\n\n" + shareText);
+    }
+}
+
 function populateShareCard(data) {
     const shareCardSection = document.getElementById("share-card-section");
     if (!shareCardSection) return;
@@ -7637,7 +8037,7 @@ function generateShareTagline(data) {
     else if (data.starCount >= 2) category = 'good';
 
     const options = taglines[category];
-    return options[Math.floor(Math.random() * options.length)];
+    return options[Math.floor(gameRandom() * options.length)];
 }
 
 function generateShareText(data) {
@@ -7649,6 +8049,9 @@ function generateShareText(data) {
     text += `• Best day: $${formatMoney(data.bestDay || 0)}\n`;
     text += `• Lobsters traded: ${formatMoney(data.bought || 0)} lbs\n`;
     text += `• Rivals beaten: ${data.rivalsBeat || 0}\n\n`;
+    if (gameState.isDailyChallenge && gameState.dailySeedKey) {
+        text += `Daily Challenge: ${gameState.dailySeedKey}\n\n`;
+    }
     text += `Can you beat my score? Play at lobstertycoon.com`;
 
     return text;

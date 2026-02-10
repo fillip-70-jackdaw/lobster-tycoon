@@ -59,6 +59,15 @@
                 and bet everything on making it as a lobster dealer.
             </p>
             <p class="story-subtext">Every day is a risk. Make it count.</p>
+            <label class="daily-challenge-toggle">
+                <input type="checkbox" id="daily-challenge-toggle">
+                <span>Daily Challenge (same seed for everyone today)</span>
+            </label>
+            <div id="daily-challenge-streak" class="daily-challenge-streak">Daily Challenge Streak: 0 days</div>
+            <div id="weekly-event-banner" class="weekly-event-banner" style="display: none;"></div>
+            <div id="daily-challenge-badge" class="daily-challenge-badge" style="display: none;">
+                Daily Challenge Active
+            </div>
             <button id="story-continue-btn" class="btn-ceremony">Start Day 1</button>
             <button id="story-how-to-play-btn" class="btn-secondary-ceremony" onclick="openHowToPlay()">How to Play</button>
         </div>
@@ -529,7 +538,7 @@
                 </div>
                 <div class="bank-actions">
                     <div class="bank-row">
-                        <input type="number" id="loan-amount" placeholder="Amount" value="5000">
+                        <input type="number" id="loan-amount" placeholder="Amount" value="5000" min="1" step="1">
                         <button id="loan-btn" class="btn btn-primary">Take Loan</button>
                     </div>
                     <div class="bank-row">
@@ -794,6 +803,19 @@
                     </div>
                 </div>
 
+                <div class="summary-section summary-share-preview" id="share-preview-section" style="display: none;">
+                    <h3>Share Highlight</h3>
+                    <div class="share-preview-card">
+                        <div class="share-preview-title" id="share-preview-title">Dockside Highlight</div>
+                        <div class="share-preview-subtitle" id="share-preview-subtitle">Big moment</div>
+                        <div class="share-preview-text" id="share-preview-text"></div>
+                        <div class="share-preview-footer">
+                            <span class="share-preview-seed" id="share-preview-seed"></span>
+                            <button id="share-preview-btn" class="btn btn-primary btn-small">Share Moment</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- What You Missed -->
                 <div class="summary-section summary-missed" id="summary-missed-section" style="display: none;">
                     <h3>What You Missed</h3>
@@ -847,6 +869,23 @@
                             <span class="summary-label">Market</span>
                             <span class="summary-value" id="summary-market">Stable</span>
                         </div>
+                    </div>
+                </div>
+
+                <div class="summary-section summary-weekly-event" id="summary-weekly-event" style="display: none;">
+                    <h3>Weekly Event</h3>
+                    <div class="summary-row">
+                        <span class="summary-label" id="summary-event-name">Event</span>
+                        <span class="summary-value" id="summary-event-bonus">Bonus</span>
+                    </div>
+                    <div class="summary-event-desc" id="summary-event-desc"></div>
+                </div>
+
+                <div class="summary-section summary-daily-challenge" id="summary-daily-challenge" style="display: none;">
+                    <h3>Daily Challenge</h3>
+                    <div class="summary-row">
+                        <span class="summary-label">Seed</span>
+                        <span class="summary-value" id="summary-daily-seed">YYYY-MM-DD</span>
                     </div>
                 </div>
 

@@ -3013,6 +3013,65 @@ body::before {
     letter-spacing: 1px;
 }
 
+.summary-share-preview .share-preview-card {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 215, 0, 0.35);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: left;
+}
+
+.share-preview-title {
+    font-size: 11px;
+    color: var(--gold);
+    margin-bottom: 4px;
+}
+
+.share-preview-subtitle {
+    font-size: 10px;
+    color: var(--cream);
+    margin-bottom: 6px;
+}
+
+.share-preview-text {
+    font-size: 9px;
+    color: var(--ocean-foam);
+    margin-bottom: 10px;
+}
+
+.share-preview-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.share-preview-seed {
+    font-size: 8px;
+    color: var(--ocean-foam);
+}
+
+.summary-daily-challenge .summary-row {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 6px;
+    padding: 8px 10px;
+}
+
+.daily-challenge-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 10px 0 14px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 9px;
+    color: var(--gold);
+    border: 1px solid rgba(255, 215, 0, 0.4);
+    background: rgba(0, 0, 0, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
 .summary-achieved h3::before {
     content: "✓ ";
     color: var(--positive);
@@ -3135,6 +3194,55 @@ body::before {
 
 .day-summary .btn-ceremony {
     margin-top: 10px;
+}
+
+.daily-challenge-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0 6px;
+    font-size: 9px;
+    color: var(--ocean-foam);
+    cursor: pointer;
+}
+
+.daily-challenge-toggle input {
+    accent-color: var(--gold);
+}
+
+.daily-challenge-toggle span {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.daily-challenge-streak {
+    font-size: 9px;
+    color: var(--cream);
+    margin-bottom: 8px;
+}
+
+.weekly-event-banner {
+    margin: 6px 0 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 215, 0, 0.35);
+    background: rgba(0, 0, 0, 0.35);
+    color: var(--gold);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.summary-weekly-event .summary-row {
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 6px;
+    padding: 8px 10px;
+}
+
+.summary-event-desc {
+    font-size: 9px;
+    color: var(--ocean-foam);
+    margin-top: 6px;
 }
 
 /* On mobile: fullscreen modal */
@@ -7041,4 +7149,3 @@ body::before {
         animation: none;
     }
 }
-
